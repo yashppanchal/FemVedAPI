@@ -637,6 +637,20 @@
             "method": "PUT",
             "url": { "raw": "{{baseUrl}}/admin/experts/PASTE_EXPERT_ID_HERE/deactivate", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "PASTE_EXPERT_ID_HERE", "deactivate"] }
           }
+        },
+        {
+          "name": "9.9 Change User Role (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));",
+            "console.log('User role changed. RoleId: 1=Admin, 2=Expert, 3=User');"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"roleId\": 2\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/user/change-role", "host": ["{{baseUrl}}"], "path": ["admin", "user", "change-role"] }
+          }
         }
       ]
     },

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FemVed.Application.Admin.Commands.ActivateExpert;
 using FemVed.Application.Admin.Commands.ActivateUser;
+using FemVed.Application.Admin.Commands.ChangeUserRole;
 using FemVed.Application.Admin.Commands.CreateCoupon;
 using FemVed.Application.Admin.Commands.DeactivateCoupon;
 using FemVed.Application.Admin.Commands.DeactivateExpert;
@@ -131,6 +132,31 @@ public sealed class AdminController : ControllerBase
     {
         await _mediator.Send(
             new DeleteUserCommand(userId, GetCurrentUserId(), GetIpAddress()),
+            cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Changes the role of the specified user account.
+    /// Pass roleId 1 = Admin, 2 = Expert (Coach), 3 = User.
+    /// </summary>
+    /// <param name="userId">Target user ID.</param>
+    /// <param name="request">Request body containing the new role ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success.</returns>
+    [HttpPut("user/change-role")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ChangeUserRole(
+        [FromBody] ChangeUserRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new ChangeUserRoleCommand(request.UserId, request.RoleId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
         return NoContent();
     }
@@ -435,6 +461,13 @@ public record UpdateCouponRequest(
     DateTimeOffset? ValidUntil,
     /// <summary>Set to true to explicitly clear ValidUntil (set to null).</summary>
     bool ClearValidUntil);
+
+/// <summary>HTTP request body for PUT /api/v1/admin/user/change-role.</summary>
+public record ChangeUserRoleRequest(
+    /// <summary>UUID of the user whose role will change.</summary>
+    Guid UserId,
+    /// <summary>New role ID: 1 = Admin, 2 = Expert (Coach), 3 = User.</summary>
+    short RoleId);
 
 /// <summary>HTTP request body for POST /api/v1/admin/gdpr-requests/{requestId}/process.</summary>
 public record ProcessGdprRequestBody(
