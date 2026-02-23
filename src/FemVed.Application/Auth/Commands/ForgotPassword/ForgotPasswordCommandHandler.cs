@@ -78,19 +78,26 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
         var baseUrl = _config["APP_BASE_URL"] ?? "https://femved.com";
         var resetLink = $"{baseUrl}/reset-password?token={Uri.EscapeDataString(rawToken)}";
 
-        await _email.SendAsync(
-            user.Email,
-            $"{user.FirstName} {user.LastName}",
-            "password_reset",
-            new Dictionary<string, object>
-            {
-                { "first_name", user.FirstName },
-                { "reset_link", resetLink },
-                { "expiry_minutes", 60 }
-            },
-            cancellationToken);
+        try
+        {
+            await _email.SendAsync(
+                user.Email,
+                $"{user.FirstName} {user.LastName}",
+                "password_reset",
+                new Dictionary<string, object>
+                {
+                    { "first_name", user.FirstName },
+                    { "reset_link", resetLink },
+                    { "expiry_minutes", 60 }
+                },
+                cancellationToken);
 
-        _logger.LogInformation("Password reset email dispatched for user {UserId}", user.Id);
+            _logger.LogInformation("Password reset email dispatched for user {UserId}", user.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ForgotPassword: failed to send reset email for user {UserId} — token still valid in DB", user.Id);
+        }
     }
 
     private static string HashToken(string token)

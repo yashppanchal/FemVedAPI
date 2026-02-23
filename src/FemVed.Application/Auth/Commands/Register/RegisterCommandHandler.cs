@@ -113,21 +113,28 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         var expiryMinutes = int.Parse(_config["JWT_ACCESS_EXPIRY_MINUTES"] ?? "15");
         var accessExpiry = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes);
 
-        // Send email verification (non-blocking; NullEmailService used until Phase 5)
+        // Send email verification — non-blocking; failure must never abort registration
         var verifyToken = _jwt.GenerateEmailVerificationToken(user.Id);
         var baseUrl = _config["APP_BASE_URL"] ?? "https://femved.com";
         var verifyLink = $"{baseUrl}/verify-email?token={Uri.EscapeDataString(verifyToken)}";
 
-        await _email.SendAsync(
-            user.Email,
-            $"{user.FirstName} {user.LastName}",
-            "email_verify",
-            new Dictionary<string, object>
-            {
-                { "first_name", user.FirstName },
-                { "verify_link", verifyLink }
-            },
-            cancellationToken);
+        try
+        {
+            await _email.SendAsync(
+                user.Email,
+                $"{user.FirstName} {user.LastName}",
+                "email_verify",
+                new Dictionary<string, object>
+                {
+                    { "first_name", user.FirstName },
+                    { "verify_link", verifyLink }
+                },
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Registration: verification email failed for user {UserId} — registration still succeeded", user.Id);
+        }
 
         _logger.LogInformation("User {UserId} registered successfully", user.Id);
 

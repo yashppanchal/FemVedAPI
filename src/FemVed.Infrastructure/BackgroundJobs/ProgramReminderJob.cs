@@ -34,10 +34,9 @@ public sealed class ProgramReminderJob : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(CheckInterval, stoppingToken);
-
             try
             {
+                await Task.Delay(CheckInterval, stoppingToken);
                 await RunAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

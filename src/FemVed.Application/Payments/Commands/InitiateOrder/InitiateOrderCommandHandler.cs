@@ -169,7 +169,20 @@ public sealed class InitiateOrderCommandHandler
             CustomerName: $"{user.FirstName} {user.LastName}",
             CustomerPhone: user.FullMobile);
 
-        var gatewayResult = await gateway.CreateOrderAsync(gatewayRequest, cancellationToken);
+        GatewayCreateOrderResult gatewayResult;
+        try
+        {
+            gatewayResult = await gateway.CreateOrderAsync(gatewayRequest, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Gateway {Gateway} failed to create order {OrderId}", gatewayEnum, order.Id);
+            order.Status = OrderStatus.Failed;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+            _orders.Update(order);
+            await _uow.SaveChangesAsync(cancellationToken);
+            throw new DomainException("Payment gateway is unavailable. Please try again shortly.");
+        }
 
         // ── 7. Store gateway reference ───────────────────────────────────────
         order.GatewayOrderId = gatewayResult.GatewayOrderId;
