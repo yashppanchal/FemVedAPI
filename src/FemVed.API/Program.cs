@@ -106,12 +106,12 @@ try
     // 3. Request logging
     app.UseMiddleware<RequestLoggingMiddleware>();
 
-    // 4. Swagger (all environments — Railway exposes this behind auth)
+    // 4. Swagger — served at root (https://api.femved.com/)
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "FemVed API v1");
-        c.RoutePrefix = "swagger";
+        c.RoutePrefix = string.Empty; // Swagger UI at root "/"
     });
 
     // 5. Forwarded headers — reads X-Forwarded-For and X-Forwarded-Proto from
@@ -140,10 +140,7 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // 9. Root redirect → Swagger
-    app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
-
-    // 10. Health check (outside rate limiter — always reachable by load balancer)
+    // 9. Health check (outside rate limiter — always reachable by load balancer)
     app.MapHealthChecks("/health");
 
     // 11. Controllers
