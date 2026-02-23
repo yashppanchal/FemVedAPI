@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
 using DotNetEnv;
 using FemVed.API.Extensions;
 using FemVed.API.Middleware;
@@ -113,7 +114,15 @@ try
         c.RoutePrefix = "swagger";
     });
 
-    // 5. HTTPS redirect
+    // 5. Forwarded headers — must run before HTTPS redirect.
+    // Railway (and most cloud proxies) terminate TLS at the edge and forward plain
+    // HTTP to the container. Without this, UseHttpsRedirection sees every request
+    // as HTTP and issues a redirect loop. This middleware reads X-Forwarded-Proto
+    // so ASP.NET Core correctly treats the request as HTTPS.
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    });
     app.UseHttpsRedirection();
 
     // 6. CORS
