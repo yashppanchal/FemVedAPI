@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Local environment secrets — never bake into image
+.env
+.env.local
+.env.*
+
+# Build outputs (will be rebuilt inside Docker)
+**/bin/
+**/obj/
+
+# Tests (not needed in the production image)
+tests/
+
+# IDE / editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.ide
+
+# Docs and tooling
+docs/
+*.md
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db

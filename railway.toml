@@ -1,0 +1,13 @@
+[build]
+# Tell Railway to use the Dockerfile instead of Railpack auto-detection
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Health check endpoint — Railway uses this to decide if the deployment is live
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+
+# Restart on crash with exponential backoff
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
