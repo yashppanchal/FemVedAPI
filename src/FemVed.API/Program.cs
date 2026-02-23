@@ -85,7 +85,8 @@ try
             policy.WithOrigins(
                     builder.Configuration["APP_BASE_URL"] ?? "https://femved.com",
                     "http://localhost:3000",
-                    "http://localhost:5173")
+                    "http://localhost:5173",
+                    "https://femvedfrontend.netlify.app/")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();
