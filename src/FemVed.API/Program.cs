@@ -114,16 +114,21 @@ try
         c.RoutePrefix = "swagger";
     });
 
-    // 5. Forwarded headers — must run before HTTPS redirect.
-    // Railway (and most cloud proxies) terminate TLS at the edge and forward plain
-    // HTTP to the container. Without this, UseHttpsRedirection sees every request
-    // as HTTP and issues a redirect loop. This middleware reads X-Forwarded-Proto
-    // so ASP.NET Core correctly treats the request as HTTPS.
+    // 5. Forwarded headers — reads X-Forwarded-For and X-Forwarded-Proto from
+    // Railway's edge proxy so the app sees the correct client IP and scheme.
     app.UseForwardedHeaders(new ForwardedHeadersOptions
     {
         ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
     });
-    app.UseHttpsRedirection();
+
+    // HTTPS redirect is only useful locally (where the app has an HTTPS port).
+    // In production Railway terminates TLS at its edge and forwards plain HTTP
+    // to the container — there is no HTTPS port for the app to redirect to,
+    // which causes a "Failed to determine the https port" warning on every request.
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
 
     // 6. CORS
     app.UseCors("FemVedCors");
