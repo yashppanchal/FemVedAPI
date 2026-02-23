@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FemVed.API/FemVed.API.csproj" />
+    <Project Path="src/FemVed.Application/FemVed.Application.csproj" />
+    <Project Path="src/FemVed.Domain/FemVed.Domain.csproj" />
+    <Project Path="src/FemVed.Infrastructure/FemVed.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FemVed.Tests/FemVed.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,30 @@
+name: FemVed API — Build & Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore FemVed.sln
+
+      - name: Build (Release)
+        run: dotnet build FemVed.sln --no-restore --configuration Release
+
+      - name: Run Tests
+        run: dotnet test FemVed.sln --no-build --configuration Release --verbosity normal

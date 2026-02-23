@@ -1,0 +1,46 @@
+## ── Secrets & local config ───────────────────────────────────────────────────
+.env.local
+.env
+*.env
+!.env.example
+
+## ── .NET / ASP.NET Core ──────────────────────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.swp
+*.swo
+
+## ── Build output ─────────────────────────────────────────────────────────────
+publish/
+out/
+artifacts/
+
+## ── Rider / JetBrains ────────────────────────────────────────────────────────
+.idea/
+*.DotSettings.user
+
+## ── VS Code ──────────────────────────────────────────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/tasks.json
+
+## ── Test coverage ────────────────────────────────────────────────────────────
+coverage/
+*.coverage
+*.coveragexml
+TestResults/
+
+## ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+## ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## ── User secrets (managed by dotnet user-secrets) ───────────────────────────
+secrets.json

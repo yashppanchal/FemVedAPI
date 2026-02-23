@@ -1,0 +1,55 @@
+using FluentValidation;
+
+namespace FemVed.Application.Auth.Commands.Register;
+
+/// <summary>Validates <see cref="RegisterCommand"/> inputs before the handler runs.</summary>
+public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand>
+{
+    /// <summary>Initialises all validation rules for user registration.</summary>
+    public RegisterCommandValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("A valid email address is required.")
+            .MaximumLength(254).WithMessage("Email must not exceed 254 characters.");
+
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required.")
+            .MinimumLength(8).WithMessage("Password must be at least 8 characters.")
+            .MaximumLength(128).WithMessage("Password must not exceed 128 characters.")
+            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
+            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
+            .Matches("[0-9]").WithMessage("Password must contain at least one digit.")
+            .Matches("[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+
+        RuleFor(x => x.FirstName)
+            .NotEmpty().WithMessage("First name is required.")
+            .MaximumLength(100).WithMessage("First name must not exceed 100 characters.");
+
+        RuleFor(x => x.LastName)
+            .NotEmpty().WithMessage("Last name is required.")
+            .MaximumLength(100).WithMessage("Last name must not exceed 100 characters.");
+
+        // countryCode: optional, but if provided must be valid format
+        RuleFor(x => x.CountryCode)
+            .Matches(@"^\+\d{1,4}$").WithMessage("Country code must start with + followed by 1–4 digits (e.g. +91, +44, +1).")
+            .MaximumLength(10).WithMessage("Country code must not exceed 10 characters.")
+            .When(x => !string.IsNullOrEmpty(x.CountryCode));
+
+        // mobileNumber: optional, but if provided must be digits only, 7–15 chars
+        RuleFor(x => x.MobileNumber)
+            .Matches(@"^\d+$").WithMessage("Mobile number must contain digits only (no spaces or dashes).")
+            .MinimumLength(7).WithMessage("Mobile number must be at least 7 digits.")
+            .MaximumLength(15).WithMessage("Mobile number must not exceed 15 digits.")
+            .When(x => !string.IsNullOrEmpty(x.MobileNumber));
+
+        // Cross-field: countryCode and mobileNumber must be provided together
+        RuleFor(x => x.MobileNumber)
+            .NotEmpty().WithMessage("Mobile number is required when country code is provided.")
+            .When(x => !string.IsNullOrEmpty(x.CountryCode));
+
+        RuleFor(x => x.CountryCode)
+            .NotEmpty().WithMessage("Country code is required when mobile number is provided.")
+            .When(x => !string.IsNullOrEmpty(x.MobileNumber));
+    }
+}

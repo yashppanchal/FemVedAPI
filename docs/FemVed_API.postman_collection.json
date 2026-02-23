@@ -1,0 +1,845 @@
+{
+  "info": {
+    "_postman_id": "femved-api-v1",
+    "name": "FemVed API v1",
+    "description": "Complete API collection for the FemVed backend. Set the `baseUrl` and `token` variables before use.\n\n**Variables required:**\n- `baseUrl` — e.g. `https://api.femved.com/api/v1` or `http://localhost:5001/api/v1`\n- `token` — JWT access token (auto-set by the Login request)\n- `refreshToken` — raw refresh token (auto-set by Login)\n\n**Workflow:**\n1. Run **Register** or **Login** — the test script stores the token automatically.\n2. All authenticated requests use `{{token}}` via the collection-level Authorization header.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",      "value": "http://localhost:5001/api/v1", "type": "string" },
+    { "key": "token",        "value": "",  "type": "string" },
+    { "key": "refreshToken", "value": "",  "type": "string" },
+    { "key": "userId",       "value": "",  "type": "string" },
+    { "key": "expertId",     "value": "",  "type": "string" },
+    { "key": "couponId",     "value": "",  "type": "string" },
+    { "key": "orderId",      "value": "",  "type": "string" },
+    { "key": "programId",    "value": "",  "type": "string" },
+    { "key": "accessId",     "value": "",  "type": "string" },
+    { "key": "gdprRequestId","value": "",  "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  pm.collectionVariables.set('token', body.accessToken);",
+                "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                "  pm.collectionVariables.set('userId', body.user.id);",
+                "  pm.test('Register returns 201', () => pm.response.to.have.status(201));",
+                "  pm.test('Has access token', () => pm.expect(body.accessToken).to.be.a('string'));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"Password1!\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"countryCode\": \"+44\",\n  \"mobileNumber\": \"7911123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  pm.collectionVariables.set('token', body.accessToken);",
+                "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                "  pm.collectionVariables.set('userId', body.user.id);",
+                "  pm.test('Login returns 200', () => pm.response.to.have.status(200));",
+                "  pm.test('Has access token', () => pm.expect(body.accessToken).to.be.a('string'));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"Password1!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  pm.collectionVariables.set('token', body.accessToken);",
+                "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"{{token}}\",\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"jane.doe@example.com\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"PASTE_RESET_TOKEN_FROM_EMAIL_HERE\",\n  \"newPassword\": \"NewPassword1!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"] }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email?token=PASTE_VERIFY_TOKEN_HERE",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-email"],
+              "query": [{ "key": "token", "value": "PASTE_VERIFY_TOKEN_HERE" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Guided Catalog (Public)",
+      "item": [
+        {
+          "name": "Get Guided Tree",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "pm.test('Has domains array', () => pm.expect(body.domains).to.be.an('array'));",
+                "if (body.domains.length > 0 && body.domains[0].categories.length > 0",
+                "    && body.domains[0].categories[0].programsInCategory.length > 0) {",
+                "  pm.collectionVariables.set('programId',",
+                "    body.domains[0].categories[0].programsInCategory[0].programId);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/guided/tree", "host": ["{{baseUrl}}"], "path": ["guided", "tree"] }
+          }
+        },
+        {
+          "name": "Get Category by Slug",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/guided/categories/hormonal-health-support",
+              "host": ["{{baseUrl}}"],
+              "path": ["guided", "categories", "hormonal-health-support"]
+            }
+          }
+        },
+        {
+          "name": "Get Program by Slug",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/guided/programs/break-the-stress-hormone-health-triangle",
+              "host": ["{{baseUrl}}"],
+              "path": ["guided", "programs", "break-the-stress-hormone-health-triangle"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Guided Content Mgmt (Admin)",
+      "item": [
+        {
+          "name": "Create Domain",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Guided 1:1 Care\",\n  \"description\": \"Expert-led one-to-one programs for women's wellness\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/guided/domains", "host": ["{{baseUrl}}"], "path": ["guided", "domains"] }
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"domainId\": \"PASTE_DOMAIN_ID\",\n  \"name\": \"Hormonal Health Support\",\n  \"slug\": \"hormonal-health-support\",\n  \"heroTitle\": \"Get Guided Hormonal Care\",\n  \"heroSubtext\": \"Expert support for PCOS, thyroid, and hormonal balance\",\n  \"ctaLabel\": \"Book Your Program\",\n  \"ctaTo\": \"/guided/hormonal-health-support\",\n  \"pageHeader\": \"Our Hormonal Health Programs\",\n  \"imageUrl\": \"https://assets.femved.com/categories/hormonal-health.jpg\",\n  \"whatsIncluded\": [\"Weekly 1:1 sessions\", \"Personalised protocol\", \"24/7 messaging support\"],\n  \"keyAreas\": [\"PCOS\", \"Thyroid\", \"Perimenopause\", \"PMS\"]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/guided/categories", "host": ["{{baseUrl}}"], "path": ["guided", "categories"] }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"heroTitle\": \"Updated Hero Title\",\n  \"heroSubtext\": \"Updated subtext\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/guided/categories/PASTE_CATEGORY_ID",
+              "host": ["{{baseUrl}}"],
+              "path": ["guided", "categories", "PASTE_CATEGORY_ID"]
+            }
+          }
+        },
+        {
+          "name": "Create Program (Expert)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"PASTE_CATEGORY_ID\",\n  \"name\": \"Break the Stress–Hormone–Health Triangle\",\n  \"slug\": \"break-the-stress-hormone-health-triangle\",\n  \"gridDescription\": \"A 6-week program to reset your stress response and rebalance your hormones\",\n  \"overview\": \"Full program overview text here...\",\n  \"gridImageUrl\": \"https://assets.femved.com/programs/stress-triangle.jpg\",\n  \"whatYouGet\": [\"Weekly video calls\", \"Personalised nutrition plan\", \"Supplement guide\"],\n  \"whoIsThisFor\": [\"Women with PCOS\", \"Women experiencing stress-related hormonal imbalance\"],\n  \"tags\": [\"stress\", \"hormones\", \"pcos\"],\n  \"durations\": [\n    {\n      \"label\": \"4 weeks\",\n      \"prices\": [\n        { \"locationCode\": \"GB\", \"amount\": 280.00, \"currency\": \"GBP\" },\n        { \"locationCode\": \"US\", \"amount\": 350.00, \"currency\": \"USD\" },\n        { \"locationCode\": \"IN\", \"amount\": 24000.00, \"currency\": \"INR\" }\n      ]\n    },\n    {\n      \"label\": \"6 weeks\",\n      \"prices\": [\n        { \"locationCode\": \"GB\", \"amount\": 380.00, \"currency\": \"GBP\" },\n        { \"locationCode\": \"US\", \"amount\": 480.00, \"currency\": \"USD\" },\n        { \"locationCode\": \"IN\", \"amount\": 33000.00, \"currency\": \"INR\" }\n      ]\n    }\n  ]\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/guided/programs", "host": ["{{baseUrl}}"], "path": ["guided", "programs"] }
+          }
+        },
+        {
+          "name": "Update Program",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gridDescription\": \"Updated description\",\n  \"overview\": \"Updated overview\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/guided/programs/{{programId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["guided", "programs", "{{programId}}"]
+            }
+          }
+        },
+        {
+          "name": "Submit Program for Review",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/guided/programs/{{programId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["guided", "programs", "{{programId}}", "submit"]
+            }
+          }
+        },
+        {
+          "name": "Publish Program (Admin)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/guided/programs/{{programId}}/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["guided", "programs", "{{programId}}", "publish"]
+            }
+          }
+        },
+        {
+          "name": "Archive Program (Admin)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{baseUrl}}/guided/programs/{{programId}}/archive",
+              "host": ["{{baseUrl}}"],
+              "path": ["guided", "programs", "{{programId}}", "archive"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Orders & Payments",
+      "item": [
+        {
+          "name": "Initiate Order (India — CashFree)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  pm.collectionVariables.set('orderId', body.orderId);",
+                "  pm.test('Returns 201', () => pm.response.to.have.status(201));",
+                "  pm.test('Gateway is CASHFREE', () => pm.expect(body.gateway).to.eql('CASHFREE'));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"durationId\": \"PASTE_DURATION_ID\",\n  \"couponCode\": null,\n  \"idempotencyKey\": \"{{$guid}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/initiate", "host": ["{{baseUrl}}"], "path": ["orders", "initiate"] },
+            "description": "Use this when logged in as an India user (countryIsoCode = IN). Returns CashFree paymentSessionId."
+          }
+        },
+        {
+          "name": "Initiate Order (UK — PayPal)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  pm.collectionVariables.set('orderId', body.orderId);",
+                "  pm.test('Returns 201', () => pm.response.to.have.status(201));",
+                "  pm.test('Gateway is PAYPAL', () => pm.expect(body.gateway).to.eql('PAYPAL'));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"durationId\": \"PASTE_DURATION_ID\",\n  \"couponCode\": \"WELCOME20\",\n  \"idempotencyKey\": \"{{$guid}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/initiate", "host": ["{{baseUrl}}"], "path": ["orders", "initiate"] },
+            "description": "Use this when logged in as a UK/US user (countryIsoCode = GB/US). Returns PayPal approvalUrl."
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get My Orders",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/orders/my", "host": ["{{baseUrl}}"], "path": ["orders", "my"] }
+          }
+        },
+        {
+          "name": "Initiate Refund (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Customer requested refund within 7-day window\",\n  \"amount\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "{{orderId}}", "refund"]
+            }
+          }
+        },
+        {
+          "name": "CashFree Webhook (simulate)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-webhook-signature", "value": "SIGNATURE_FROM_CASHFREE" },
+              { "key": "x-webhook-timestamp", "value": "1700000000" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"order\": {\n      \"order_id\": \"cf_CASHFREE_ORDER_ID\",\n      \"order_status\": \"PAID\"\n    },\n    \"payment\": {\n      \"cf_payment_id\": \"1234567890\",\n      \"payment_status\": \"SUCCESS\"\n    }\n  },\n  \"event_time\": \"2025-01-15T10:30:00+05:30\",\n  \"type\": \"PAYMENT_SUCCESS_WEBHOOK\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/payments/cashfree/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "cashfree", "webhook"] }
+          }
+        },
+        {
+          "name": "PayPal Webhook (simulate)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "PAYPAL-TRANSMISSION-ID", "value": "PAYPAL_TRANSMISSION_ID" },
+              { "key": "PAYPAL-TRANSMISSION-TIME", "value": "2025-01-15T10:30:00Z" },
+              { "key": "PAYPAL-TRANSMISSION-SIG", "value": "PAYPAL_SIGNATURE" },
+              { "key": "PAYPAL-CERT-URL", "value": "https://api.sandbox.paypal.com/v1/notifications/certs/CERT_ID" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"EVT-123456789\",\n  \"event_type\": \"CHECKOUT.ORDER.APPROVED\",\n  \"resource\": {\n    \"id\": \"PAYPAL_ORDER_ID\",\n    \"status\": \"APPROVED\"\n  },\n  \"create_time\": \"2025-01-15T10:30:00Z\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/payments/paypal/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "paypal", "webhook"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "User Dashboard",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Returns 200', () => pm.response.to.have.status(200));",
+                "const body = pm.response.json();",
+                "pm.test('Has email', () => pm.expect(body.email).to.be.a('string'));"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"countryCode\": \"+44\",\n  \"mobileNumber\": \"7911999888\",\n  \"whatsAppOptIn\": true\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
+          }
+        },
+        {
+          "name": "Get My Program Access",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/me/program-access", "host": ["{{baseUrl}}"], "path": ["users", "me", "program-access"] }
+          }
+        },
+        {
+          "name": "Request GDPR Deletion",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/users/me/gdpr-deletion-request", "host": ["{{baseUrl}}"], "path": ["users", "me", "gdpr-deletion-request"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Expert Dashboard",
+      "item": [
+        {
+          "name": "Get My Expert Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/experts/me", "host": ["{{baseUrl}}"], "path": ["experts", "me"] }
+          }
+        },
+        {
+          "name": "Get My Programs",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/experts/me/programs", "host": ["{{baseUrl}}"], "path": ["experts", "me", "programs"] }
+          }
+        },
+        {
+          "name": "Get My Enrollments",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  if (body.length > 0) {",
+                "    pm.collectionVariables.set('accessId', body[0].accessId);",
+                "  }",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments"] }
+          }
+        },
+        {
+          "name": "Send Progress Update",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Great progress this week! Your cortisol markers are showing improvement. Please continue with the morning routine we discussed and remember to log your sleep.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/progress-update",
+              "host": ["{{baseUrl}}"],
+              "path": ["experts", "me", "enrollments", "{{accessId}}", "progress-update"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Summary",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/summary", "host": ["{{baseUrl}}"], "path": ["admin", "summary"] }
+          }
+        },
+        {
+          "name": "Get All Users",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  if (body.length > 0) {",
+                "    pm.collectionVariables.set('userId', body[0].userId);",
+                "  }",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/users", "host": ["{{baseUrl}}"], "path": ["admin", "users"] }
+          }
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "Soft-Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get All Experts",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  if (body.length > 0) {",
+                "    pm.collectionVariables.set('expertId', body[0].expertId);",
+                "  }",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/experts", "host": ["{{baseUrl}}"], "path": ["admin", "experts"] }
+          }
+        },
+        {
+          "name": "Activate Expert",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/admin/experts/{{expertId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "experts", "{{expertId}}", "activate"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Expert",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/admin/experts/{{expertId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "experts", "{{expertId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "Get All Coupons",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  if (body.length > 0) {",
+                "    pm.collectionVariables.set('couponId', body[0].couponId);",
+                "  }",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/coupons", "host": ["{{baseUrl}}"], "path": ["admin", "coupons"] }
+          }
+        },
+        {
+          "name": "Create Coupon",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  const body = pm.response.json();",
+                "  pm.collectionVariables.set('couponId', body.couponId);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"WELCOME20\",\n  \"discountType\": \"Percentage\",\n  \"discountValue\": 20,\n  \"maxUses\": 100,\n  \"validFrom\": null,\n  \"validUntil\": \"2027-12-31T23:59:59Z\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/admin/coupons", "host": ["{{baseUrl}}"], "path": ["admin", "coupons"] }
+          }
+        },
+        {
+          "name": "Update Coupon",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discountValue\": 25,\n  \"maxUses\": 200,\n  \"clearMaxUses\": false,\n  \"validUntil\": \"2028-06-30T23:59:59Z\",\n  \"clearValidFrom\": false,\n  \"clearValidUntil\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/coupons/{{couponId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "coupons", "{{couponId}}"]
+            }
+          }
+        },
+        {
+          "name": "Deactivate Coupon",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{baseUrl}}/admin/coupons/{{couponId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "coupons", "{{couponId}}", "deactivate"]
+            }
+          }
+        },
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/orders", "host": ["{{baseUrl}}"], "path": ["admin", "orders"] }
+          }
+        },
+        {
+          "name": "Get GDPR Requests (Pending)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  const body = pm.response.json();",
+                "  if (body.length > 0) {",
+                "    pm.collectionVariables.set('gdprRequestId', body[0].requestId);",
+                "  }",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/gdpr-requests?status=Pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "gdpr-requests"],
+              "query": [{ "key": "status", "value": "Pending" }]
+            }
+          }
+        },
+        {
+          "name": "Process GDPR Request — Complete",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"Complete\",\n  \"rejectionReason\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/gdpr-requests/{{gdprRequestId}}/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "gdpr-requests", "{{gdprRequestId}}", "process"]
+            }
+          }
+        },
+        {
+          "name": "Process GDPR Request — Reject",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"action\": \"Reject\",\n  \"rejectionReason\": \"Active subscription exists. User must cancel before deletion can be processed.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/gdpr-requests/{{gdprRequestId}}/process",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "gdpr-requests", "{{gdprRequestId}}", "process"]
+            }
+          }
+        },
+        {
+          "name": "Get Audit Log",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/admin/audit-log?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "audit-log"],
+              "query": [{ "key": "limit", "value": "50" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "description": "Note: health check is at /health (not under /api/v1). Change the URL to http://localhost:5001/health manually.",
+            "url": {
+              "raw": "http://localhost:5001/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5001",
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    }
+
+  ]
+}

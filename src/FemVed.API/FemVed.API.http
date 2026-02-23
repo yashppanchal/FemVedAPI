@@ -1,0 +1,6 @@
+@FemVed.API_HostAddress = http://localhost:5064
+
+GET {{FemVed.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
