@@ -125,10 +125,13 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // 9. Health check (outside rate limiter — always reachable by load balancer)
+    // 9. Root redirect → Swagger
+    app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+
+    // 10. Health check (outside rate limiter — always reachable by load balancer)
     app.MapHealthChecks("/health");
 
-    // 10. Controllers
+    // 11. Controllers
     app.MapControllers().RequireRateLimiting("global");
 
     Log.Information("FemVed API configured successfully");

@@ -1,189 +1,334 @@
 {
   "info": {
-    "_postman_id": "femved-api-v1",
-    "name": "FemVed API v1",
-    "description": "Complete API collection for the FemVed backend. Set the `baseUrl` and `token` variables before use.\n\n**Variables required:**\n- `baseUrl` — e.g. `https://api.femved.com/api/v1` or `http://localhost:5001/api/v1`\n- `token` — JWT access token (auto-set by the Login request)\n- `refreshToken` — raw refresh token (auto-set by Login)\n\n**Workflow:**\n1. Run **Register** or **Login** — the test script stores the token automatically.\n2. All authenticated requests use `{{token}}` via the collection-level Authorization header.",
+    "_postman_id": "femved-api-v1-complete",
+    "name": "FemVed API — Complete Test Suite",
+    "description": "End-to-end test suite covering all 56 endpoints. Run folders in order: Step 1 → Step 11.\n\n## One-time DB Setup (run in pgAdmin before testing)\n\n### Create Admin user (password: Admin@12345)\n```sql\nINSERT INTO users (id, email, password_hash, role_id, first_name, last_name, country_iso_code, country_dial_code, is_email_verified, is_active, is_deleted, whats_app_opt_in, created_at, updated_at)\nVALUES (gen_random_uuid(), 'admin@femved.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TiGnikmklte5aCEtlnPAUGCqV3qK', 1, 'Admin', 'FemVed', 'GB', '+44', true, true, false, false, NOW(), NOW());\n```\n\n### After running Step 3 (Register Expert), promote to Expert role\n```sql\nUPDATE users SET role_id = 2 WHERE email = 'expert@femved.com';\nINSERT INTO experts (id, user_id, title, short_bio, full_bio, specializations, is_active, is_deleted, created_at, updated_at)\nVALUES (gen_random_uuid(), (SELECT id FROM users WHERE email = 'expert@femved.com'), 'Wellness Expert', 'Short bio here', 'Full bio here', 'Hormonal Health', true, false, NOW(), NOW());\n```",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl",      "value": "http://localhost:5001/api/v1", "type": "string" },
-    { "key": "token",        "value": "",  "type": "string" },
-    { "key": "refreshToken", "value": "",  "type": "string" },
-    { "key": "userId",       "value": "",  "type": "string" },
-    { "key": "expertId",     "value": "",  "type": "string" },
-    { "key": "couponId",     "value": "",  "type": "string" },
-    { "key": "orderId",      "value": "",  "type": "string" },
-    { "key": "programId",    "value": "",  "type": "string" },
-    { "key": "accessId",     "value": "",  "type": "string" },
-    { "key": "gdprRequestId","value": "",  "type": "string" }
+    { "key": "baseUrl",         "value": "http://localhost:5064/api/v1", "type": "string" },
+    { "key": "userToken",       "value": "", "type": "string" },
+    { "key": "userRefreshToken","value": "", "type": "string" },
+    { "key": "userId",          "value": "", "type": "string" },
+    { "key": "adminToken",      "value": "", "type": "string" },
+    { "key": "expertToken",     "value": "", "type": "string" },
+    { "key": "domainId",        "value": "", "type": "string" },
+    { "key": "categoryId",      "value": "", "type": "string" },
+    { "key": "categorySlug",    "value": "hormonal-health-support", "type": "string" },
+    { "key": "programId",       "value": "", "type": "string" },
+    { "key": "programSlug",     "value": "stress-hormone-triangle", "type": "string" },
+    { "key": "durationId",      "value": "", "type": "string" },
+    { "key": "orderId",         "value": "", "type": "string" },
+    { "key": "accessId",        "value": "", "type": "string" },
+    { "key": "couponId",        "value": "", "type": "string" },
+    { "key": "couponCode",      "value": "TEST10", "type": "string" },
+    { "key": "gdprRequestId",   "value": "", "type": "string" },
+    { "key": "resetToken",      "value": "", "type": "string" }
   ],
   "auth": {
     "type": "bearer",
-    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+    "bearer": [{ "key": "token", "value": "{{userToken}}", "type": "string" }]
   },
   "item": [
 
     {
-      "name": "Auth",
+      "name": "Step 1 — Auth (User)",
       "item": [
         {
-          "name": "Register",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 201) {",
-                "  const body = pm.response.json();",
-                "  pm.collectionVariables.set('token', body.accessToken);",
-                "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
-                "  pm.collectionVariables.set('userId', body.user.id);",
-                "  pm.test('Register returns 201', () => pm.response.to.have.status(201));",
-                "  pm.test('Has access token', () => pm.expect(body.accessToken).to.be.a('string'));",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "1.1 Register (User)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('userToken', j.accessToken);",
+            "pm.collectionVariables.set('userRefreshToken', j.refreshToken);",
+            "pm.collectionVariables.set('userId', j.user.id);",
+            "console.log('User registered:', j.user.email);"
+          ]}}],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"Password1!\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"countryCode\": \"+44\",\n  \"mobileNumber\": \"7911123456\"\n}"
-            },
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test@12345\",\n  \"countryCode\": \"+44\",\n  \"mobileNumber\": \"7700900001\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
           }
         },
         {
-          "name": "Login",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 200) {",
-                "  const body = pm.response.json();",
-                "  pm.collectionVariables.set('token', body.accessToken);",
-                "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
-                "  pm.collectionVariables.set('userId', body.user.id);",
-                "  pm.test('Login returns 200', () => pm.response.to.have.status(200));",
-                "  pm.test('Has access token', () => pm.expect(body.accessToken).to.be.a('string'));",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "1.2 Login (User)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('userToken', j.accessToken);",
+            "pm.collectionVariables.set('userRefreshToken', j.refreshToken);",
+            "pm.collectionVariables.set('userId', j.user.id);"
+          ]}}],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"Password1!\"\n}"
-            },
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test@12345\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
           }
         },
         {
-          "name": "Refresh Token",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 200) {",
-                "  const body = pm.response.json();",
-                "  pm.collectionVariables.set('token', body.accessToken);",
-                "  pm.collectionVariables.set('refreshToken', body.refreshToken);",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "1.3 Refresh Token",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('userToken', j.accessToken);",
+            "pm.collectionVariables.set('userRefreshToken', j.refreshToken);"
+          ]}}],
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accessToken\": \"{{token}}\",\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            },
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"refreshToken\": \"{{userRefreshToken}}\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/refresh", "host": ["{{baseUrl}}"], "path": ["auth", "refresh"] }
           }
         },
         {
-          "name": "Logout",
+          "name": "1.4 Forgot Password",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Check API logs for reset link (email not sent in dev)');"
+          ]}}],
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
-          }
-        },
-        {
-          "name": "Forgot Password",
-          "request": {
-            "auth": { "type": "noauth" },
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"jane.doe@example.com\"\n}"
-            },
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"email\": \"testuser@example.com\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] }
           }
         },
         {
-          "name": "Reset Password",
+          "name": "1.5 Reset Password (paste token from DB/logs into resetToken variable)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"PASTE_RESET_TOKEN_FROM_EMAIL_HERE\",\n  \"newPassword\": \"NewPassword1!\"\n}"
-            },
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"Test@NewPass1\"\n}" },
             "url": { "raw": "{{baseUrl}}/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"] }
           }
         },
         {
-          "name": "Verify Email",
+          "name": "1.6 Verify Email (paste JWT token from DB/logs into resetToken variable)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/auth/verify-email?token=PASTE_VERIFY_TOKEN_HERE",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "verify-email"],
-              "query": [{ "key": "token", "value": "PASTE_VERIFY_TOKEN_HERE" }]
-            }
+            "url": { "raw": "{{baseUrl}}/auth/verify-email?token={{resetToken}}", "host": ["{{baseUrl}}"], "path": ["auth", "verify-email"], "query": [{ "key": "token", "value": "{{resetToken}}" }] }
+          }
+        },
+        {
+          "name": "1.7 Logout",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"refreshToken\": \"{{userRefreshToken}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/logout", "host": ["{{baseUrl}}"], "path": ["auth", "logout"] }
           }
         }
       ]
     },
 
     {
-      "name": "Guided Catalog (Public)",
+      "name": "Step 2 — Admin Login & Catalog Setup",
+      "description": "Requires admin user created in DB first. See collection description for SQL.",
       "item": [
         {
-          "name": "Get Guided Tree",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Returns 200', () => pm.response.to.have.status(200));",
-                "const body = pm.response.json();",
-                "pm.test('Has domains array', () => pm.expect(body.domains).to.be.an('array'));",
-                "if (body.domains.length > 0 && body.domains[0].categories.length > 0",
-                "    && body.domains[0].categories[0].programsInCategory.length > 0) {",
-                "  pm.collectionVariables.set('programId',",
-                "    body.domains[0].categories[0].programsInCategory[0].programId);",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "2.1 Login (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('adminToken', j.accessToken);",
+            "console.log('Admin logged in:', j.user.email);"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"email\": \"admin@femved.com\",\n  \"password\": \"Admin@12345\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "2.2 Create Domain",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('domainId', j.domainId);",
+            "console.log('Domain created:', j.domainId);"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"name\": \"Guided 1:1 Care\",\n  \"slug\": \"guided-care\",\n  \"sortOrder\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/domains", "host": ["{{baseUrl}}"], "path": ["guided", "domains"] }
+          }
+        },
+        {
+          "name": "2.3 Create Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('categoryId', j.categoryId);",
+            "console.log('Category created:', j.categoryId);"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"domainId\": \"{{domainId}}\",\n  \"name\": \"hormonal-health-support\",\n  \"slug\": \"hormonal-health-support\",\n  \"categoryType\": \"Hormonal Health Support\",\n  \"heroTitle\": \"Get Guided Hormonal Care\",\n  \"heroSubtext\": \"Expert-led programs for hormonal balance\",\n  \"ctaLabel\": \"Book Your Program\",\n  \"ctaLink\": \"/guided/hormonal-health-support\",\n  \"pageHeader\": \"Our Hormonal Health Programs\",\n  \"imageUrl\": \"https://example.com/hormonal.jpg\",\n  \"sortOrder\": 1,\n  \"whatsIncluded\": [\"1:1 expert sessions\", \"Personalised plan\", \"WhatsApp support\"],\n  \"keyAreas\": [\"PCOS\", \"Thyroid\", \"Perimenopause\", \"Stress & Hormones\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/categories", "host": ["{{baseUrl}}"], "path": ["guided", "categories"] }
+          }
+        },
+        {
+          "name": "2.4 Update Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"heroTitle\": \"Get Expert Hormonal Care\",\n  \"heroSubtext\": \"Updated subtext\"\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["guided", "categories", "{{categoryId}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Step 3 — Expert: Register & Login",
+      "description": "Register the expert user first, then run the pgAdmin SQL (in collection description) to promote to Expert role and create expert profile.",
+      "item": [
+        {
+          "name": "3.1 Register (Expert User)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "console.log('Expert user registered. Now run pgAdmin SQL to set role_id=2 and insert into experts table, then run 3.2.');"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Expert\",\n  \"email\": \"expert@femved.com\",\n  \"password\": \"Expert@12345\",\n  \"countryCode\": \"+44\",\n  \"mobileNumber\": \"7700900002\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "3.2 Login (Expert)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('expertToken', j.accessToken);",
+            "console.log('Expert logged in:', j.user.email);"
+          ]}}],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"email\": \"expert@femved.com\",\n  \"password\": \"Expert@12345\"\n}" },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Step 4 — Expert: Program Management",
+      "item": [
+        {
+          "name": "4.1 Create Program (Draft)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('programId', j.programId);",
+            "console.log('Program created:', j.programId);"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Break the Stress Hormone Health Triangle\",\n  \"slug\": \"stress-hormone-triangle\",\n  \"gridDescription\": \"A 6-week guided program to rebalance your hormones.\",\n  \"gridImageUrl\": \"https://example.com/program.jpg\",\n  \"overview\": \"This program combines functional nutrition and lifestyle coaching.\",\n  \"sortOrder\": 1,\n  \"durations\": [\n    { \"label\": \"4 weeks\", \"weeks\": 4 },\n    { \"label\": \"6 weeks\", \"weeks\": 6 },\n    { \"label\": \"8 weeks\", \"weeks\": 8 }\n  ],\n  \"whatYouGet\": [\"Weekly 1:1 video calls\", \"Personalised nutrition plan\", \"WhatsApp support\"],\n  \"whoIsThisFor\": [\"Women with PCOS\", \"Anyone with irregular cycles\", \"Stress-related hormone issues\"],\n  \"tags\": [\"hormones\", \"pcos\", \"stress\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/programs", "host": ["{{baseUrl}}"], "path": ["guided", "programs"] }
+          }
+        },
+        {
+          "name": "4.2 Update Program",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"gridDescription\": \"Updated: A 6-week guided program to rebalance your hormones naturally.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}"] }
+          }
+        },
+        {
+          "name": "4.3 Submit Program for Review",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));",
+            "console.log('Program in PENDING_REVIEW. Run 4.4 as Admin to publish.');"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}/submit", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}", "submit"] }
+          }
+        },
+        {
+          "name": "4.4 Publish Program (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));",
+            "console.log('Program is now PUBLISHED and visible in the catalog.');"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}/publish", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}", "publish"] }
+          }
+        },
+        {
+          "name": "4.5 Archive Program (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}/archive", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}", "archive"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Step 5 — Public Catalog",
+      "item": [
+        {
+          "name": "5.1 GET Guided Tree (auto-captures durationId)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "try {",
+            "  const dur = j.domains[0].categories[0].programsInCategory[0].programDurations[0];",
+            "  if (dur) { pm.collectionVariables.set('durationId', dur.durationId); console.log('durationId captured:', dur.durationId); }",
+            "} catch(e) { console.log('No programs in tree yet — publish one first (Step 4.4)'); }"
+          ]}}],
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
@@ -191,313 +336,152 @@
           }
         },
         {
-          "name": "Get Category by Slug",
+          "name": "5.2 GET Category by Slug",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));"
+          ]}}],
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/guided/categories/hormonal-health-support",
-              "host": ["{{baseUrl}}"],
-              "path": ["guided", "categories", "hormonal-health-support"]
-            }
+            "url": { "raw": "{{baseUrl}}/guided/categories/{{categorySlug}}", "host": ["{{baseUrl}}"], "path": ["guided", "categories", "{{categorySlug}}"] }
           }
         },
         {
-          "name": "Get Program by Slug",
+          "name": "5.3 GET Program by Slug",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));"
+          ]}}],
           "request": {
             "auth": { "type": "noauth" },
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/guided/programs/break-the-stress-hormone-health-triangle",
-              "host": ["{{baseUrl}}"],
-              "path": ["guided", "programs", "break-the-stress-hormone-health-triangle"]
-            }
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programSlug}}", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programSlug}}"] }
           }
         }
       ]
     },
 
     {
-      "name": "Guided Content Mgmt (Admin)",
+      "name": "Step 6 — User: Place Order",
+      "description": "Requires a published program. durationId is auto-captured from Step 5.1.",
       "item": [
         {
-          "name": "Create Domain",
+          "name": "6.1 Create Coupon for Testing (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "if (j.couponId) pm.collectionVariables.set('couponId', j.couponId);",
+            "else if (j.id) pm.collectionVariables.set('couponId', j.id);",
+            "console.log('Coupon TEST10 created');"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"code\": \"TEST10\",\n  \"discountType\": \"Percentage\",\n  \"discountValue\": 10,\n  \"maxUses\": 100\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/coupons", "host": ["{{baseUrl}}"], "path": ["admin", "coupons"] }
+          }
+        },
+        {
+          "name": "6.2 Initiate Order (no coupon)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('orderId', j.orderId);",
+            "console.log('Order created:', j.orderId, '| Gateway:', j.gateway);"
+          ]}}],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Guided 1:1 Care\",\n  \"description\": \"Expert-led one-to-one programs for women's wellness\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/guided/domains", "host": ["{{baseUrl}}"], "path": ["guided", "domains"] }
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"durationId\": \"{{durationId}}\",\n  \"idempotencyKey\": \"{{$guid}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/orders/initiate", "host": ["{{baseUrl}}"], "path": ["orders", "initiate"] }
           }
         },
         {
-          "name": "Create Category",
+          "name": "6.3 Initiate Order (with coupon)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+            "const j = pm.response.json();",
+            "pm.collectionVariables.set('orderId', j.orderId);",
+            "console.log('Order with coupon:', j.orderId, '| Amount:', j.amount);"
+          ]}}],
           "request": {
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"domainId\": \"PASTE_DOMAIN_ID\",\n  \"name\": \"Hormonal Health Support\",\n  \"slug\": \"hormonal-health-support\",\n  \"heroTitle\": \"Get Guided Hormonal Care\",\n  \"heroSubtext\": \"Expert support for PCOS, thyroid, and hormonal balance\",\n  \"ctaLabel\": \"Book Your Program\",\n  \"ctaTo\": \"/guided/hormonal-health-support\",\n  \"pageHeader\": \"Our Hormonal Health Programs\",\n  \"imageUrl\": \"https://assets.femved.com/categories/hormonal-health.jpg\",\n  \"whatsIncluded\": [\"Weekly 1:1 sessions\", \"Personalised protocol\", \"24/7 messaging support\"],\n  \"keyAreas\": [\"PCOS\", \"Thyroid\", \"Perimenopause\", \"PMS\"]\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/guided/categories", "host": ["{{baseUrl}}"], "path": ["guided", "categories"] }
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"durationId\": \"{{durationId}}\",\n  \"couponCode\": \"{{couponCode}}\",\n  \"idempotencyKey\": \"{{$guid}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/orders/initiate", "host": ["{{baseUrl}}"], "path": ["orders", "initiate"] }
           }
         },
         {
-          "name": "Update Category",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"heroTitle\": \"Updated Hero Title\",\n  \"heroSubtext\": \"Updated subtext\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/guided/categories/PASTE_CATEGORY_ID",
-              "host": ["{{baseUrl}}"],
-              "path": ["guided", "categories", "PASTE_CATEGORY_ID"]
-            }
-          }
-        },
-        {
-          "name": "Create Program (Expert)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"PASTE_CATEGORY_ID\",\n  \"name\": \"Break the Stress–Hormone–Health Triangle\",\n  \"slug\": \"break-the-stress-hormone-health-triangle\",\n  \"gridDescription\": \"A 6-week program to reset your stress response and rebalance your hormones\",\n  \"overview\": \"Full program overview text here...\",\n  \"gridImageUrl\": \"https://assets.femved.com/programs/stress-triangle.jpg\",\n  \"whatYouGet\": [\"Weekly video calls\", \"Personalised nutrition plan\", \"Supplement guide\"],\n  \"whoIsThisFor\": [\"Women with PCOS\", \"Women experiencing stress-related hormonal imbalance\"],\n  \"tags\": [\"stress\", \"hormones\", \"pcos\"],\n  \"durations\": [\n    {\n      \"label\": \"4 weeks\",\n      \"prices\": [\n        { \"locationCode\": \"GB\", \"amount\": 280.00, \"currency\": \"GBP\" },\n        { \"locationCode\": \"US\", \"amount\": 350.00, \"currency\": \"USD\" },\n        { \"locationCode\": \"IN\", \"amount\": 24000.00, \"currency\": \"INR\" }\n      ]\n    },\n    {\n      \"label\": \"6 weeks\",\n      \"prices\": [\n        { \"locationCode\": \"GB\", \"amount\": 380.00, \"currency\": \"GBP\" },\n        { \"locationCode\": \"US\", \"amount\": 480.00, \"currency\": \"USD\" },\n        { \"locationCode\": \"IN\", \"amount\": 33000.00, \"currency\": \"INR\" }\n      ]\n    }\n  ]\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/guided/programs", "host": ["{{baseUrl}}"], "path": ["guided", "programs"] }
-          }
-        },
-        {
-          "name": "Update Program",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"gridDescription\": \"Updated description\",\n  \"overview\": \"Updated overview\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/guided/programs/{{programId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["guided", "programs", "{{programId}}"]
-            }
-          }
-        },
-        {
-          "name": "Submit Program for Review",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/guided/programs/{{programId}}/submit",
-              "host": ["{{baseUrl}}"],
-              "path": ["guided", "programs", "{{programId}}", "submit"]
-            }
-          }
-        },
-        {
-          "name": "Publish Program (Admin)",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/guided/programs/{{programId}}/publish",
-              "host": ["{{baseUrl}}"],
-              "path": ["guided", "programs", "{{programId}}", "publish"]
-            }
-          }
-        },
-        {
-          "name": "Archive Program (Admin)",
-          "request": {
-            "method": "POST",
-            "url": {
-              "raw": "{{baseUrl}}/guided/programs/{{programId}}/archive",
-              "host": ["{{baseUrl}}"],
-              "path": ["guided", "programs", "{{programId}}", "archive"]
-            }
-          }
-        }
-      ]
-    },
-
-    {
-      "name": "Orders & Payments",
-      "item": [
-        {
-          "name": "Initiate Order (India — CashFree)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 201) {",
-                "  const body = pm.response.json();",
-                "  pm.collectionVariables.set('orderId', body.orderId);",
-                "  pm.test('Returns 201', () => pm.response.to.have.status(201));",
-                "  pm.test('Gateway is CASHFREE', () => pm.expect(body.gateway).to.eql('CASHFREE'));",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"durationId\": \"PASTE_DURATION_ID\",\n  \"couponCode\": null,\n  \"idempotencyKey\": \"{{$guid}}\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/orders/initiate", "host": ["{{baseUrl}}"], "path": ["orders", "initiate"] },
-            "description": "Use this when logged in as an India user (countryIsoCode = IN). Returns CashFree paymentSessionId."
-          }
-        },
-        {
-          "name": "Initiate Order (UK — PayPal)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 201) {",
-                "  const body = pm.response.json();",
-                "  pm.collectionVariables.set('orderId', body.orderId);",
-                "  pm.test('Returns 201', () => pm.response.to.have.status(201));",
-                "  pm.test('Gateway is PAYPAL', () => pm.expect(body.gateway).to.eql('PAYPAL'));",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"durationId\": \"PASTE_DURATION_ID\",\n  \"couponCode\": \"WELCOME20\",\n  \"idempotencyKey\": \"{{$guid}}\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/orders/initiate", "host": ["{{baseUrl}}"], "path": ["orders", "initiate"] },
-            "description": "Use this when logged in as a UK/US user (countryIsoCode = GB/US). Returns PayPal approvalUrl."
-          }
-        },
-        {
-          "name": "Get Order by ID",
+          "name": "6.4 GET Order by ID",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]));"
+          ]}}],
           "request": {
             "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/orders/{{orderId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "{{orderId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/orders/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["orders", "{{orderId}}"] }
           }
         },
         {
-          "name": "Get My Orders",
+          "name": "6.5 GET My Orders",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('My orders:', pm.response.json().length);"
+          ]}}],
           "request": {
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/orders/my", "host": ["{{baseUrl}}"], "path": ["orders", "my"] }
           }
-        },
-        {
-          "name": "Initiate Refund (Admin)",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Customer requested refund within 7-day window\",\n  \"amount\": null\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/orders/{{orderId}}/refund",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "{{orderId}}", "refund"]
-            }
-          }
-        },
-        {
-          "name": "CashFree Webhook (simulate)",
-          "request": {
-            "auth": { "type": "noauth" },
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-webhook-signature", "value": "SIGNATURE_FROM_CASHFREE" },
-              { "key": "x-webhook-timestamp", "value": "1700000000" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"data\": {\n    \"order\": {\n      \"order_id\": \"cf_CASHFREE_ORDER_ID\",\n      \"order_status\": \"PAID\"\n    },\n    \"payment\": {\n      \"cf_payment_id\": \"1234567890\",\n      \"payment_status\": \"SUCCESS\"\n    }\n  },\n  \"event_time\": \"2025-01-15T10:30:00+05:30\",\n  \"type\": \"PAYMENT_SUCCESS_WEBHOOK\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/payments/cashfree/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "cashfree", "webhook"] }
-          }
-        },
-        {
-          "name": "PayPal Webhook (simulate)",
-          "request": {
-            "auth": { "type": "noauth" },
-            "method": "POST",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "PAYPAL-TRANSMISSION-ID", "value": "PAYPAL_TRANSMISSION_ID" },
-              { "key": "PAYPAL-TRANSMISSION-TIME", "value": "2025-01-15T10:30:00Z" },
-              { "key": "PAYPAL-TRANSMISSION-SIG", "value": "PAYPAL_SIGNATURE" },
-              { "key": "PAYPAL-CERT-URL", "value": "https://api.sandbox.paypal.com/v1/notifications/certs/CERT_ID" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"id\": \"EVT-123456789\",\n  \"event_type\": \"CHECKOUT.ORDER.APPROVED\",\n  \"resource\": {\n    \"id\": \"PAYPAL_ORDER_ID\",\n    \"status\": \"APPROVED\"\n  },\n  \"create_time\": \"2025-01-15T10:30:00Z\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/payments/paypal/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "paypal", "webhook"] }
-          }
         }
       ]
     },
 
     {
-      "name": "User Dashboard",
+      "name": "Step 7 — User: Profile & Program Access",
       "item": [
         {
-          "name": "Get My Profile",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Returns 200', () => pm.response.to.have.status(200));",
-                "const body = pm.response.json();",
-                "pm.test('Has email', () => pm.expect(body.email).to.be.a('string'));"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "7.1 GET My Profile",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Profile email:', pm.response.json().email);"
+          ]}}],
           "request": {
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
           }
         },
         {
-          "name": "Update My Profile",
+          "name": "7.2 UPDATE My Profile",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
           "request": {
             "method": "PUT",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"countryCode\": \"+44\",\n  \"mobileNumber\": \"7911999888\",\n  \"whatsAppOptIn\": true\n}"
-            },
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"firstName\": \"Test Updated\",\n  \"lastName\": \"User\",\n  \"countryCode\": \"+44\",\n  \"mobileNumber\": \"7700900099\",\n  \"whatsAppOptIn\": true\n}" },
             "url": { "raw": "{{baseUrl}}/users/me", "host": ["{{baseUrl}}"], "path": ["users", "me"] }
           }
         },
         {
-          "name": "Get My Program Access",
+          "name": "7.3 GET My Program Access",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "if (j.length > 0) { pm.collectionVariables.set('accessId', j[0].accessId); console.log('accessId captured:', j[0].accessId); }",
+            "else console.log('No program access yet — order needs to be paid via webhook');"
+          ]}}],
           "request": {
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/users/me/program-access", "host": ["{{baseUrl}}"], "path": ["users", "me", "program-access"] }
           }
         },
         {
-          "name": "Request GDPR Deletion",
+          "name": "7.4 Submit GDPR Deletion Request",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 202 or 409', () => pm.expect(pm.response.code).to.be.oneOf([202, 409]));"
+          ]}}],
           "request": {
             "method": "POST",
+            "header": [],
             "url": { "raw": "{{baseUrl}}/users/me/gdpr-deletion-request", "host": ["{{baseUrl}}"], "path": ["users", "me", "gdpr-deletion-request"] }
           }
         }
@@ -505,337 +489,302 @@
     },
 
     {
-      "name": "Expert Dashboard",
+      "name": "Step 8 — Expert Dashboard",
       "item": [
         {
-          "name": "Get My Expert Profile",
+          "name": "8.1 GET My Expert Profile",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/experts/me", "host": ["{{baseUrl}}"], "path": ["experts", "me"] }
           }
         },
         {
-          "name": "Get My Programs",
+          "name": "8.2 GET My Programs",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Programs:', pm.response.json().length);"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/experts/me/programs", "host": ["{{baseUrl}}"], "path": ["experts", "me", "programs"] }
           }
         },
         {
-          "name": "Get My Enrollments",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 200) {",
-                "  const body = pm.response.json();",
-                "  if (body.length > 0) {",
-                "    pm.collectionVariables.set('accessId', body[0].accessId);",
-                "  }",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "8.3 GET My Enrollments",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "if (j.length > 0) { pm.collectionVariables.set('accessId', j[0].accessId); }",
+            "console.log('Enrollments:', j.length);"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/experts/me/enrollments", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments"] }
           }
         },
         {
-          "name": "Send Progress Update",
+          "name": "8.4 Send Progress Update to Enrolled User",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204 or 404', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"message\": \"Great progress this week! Your cortisol markers are showing improvement. Please continue with the morning routine we discussed and remember to log your sleep.\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/progress-update",
-              "host": ["{{baseUrl}}"],
-              "path": ["experts", "me", "enrollments", "{{accessId}}", "progress-update"]
-            }
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"updateNote\": \"Great progress this week! Keep following the nutrition plan.\",\n  \"sendEmail\": true\n}" },
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/progress-update", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments", "{{accessId}}", "progress-update"] }
           }
         }
       ]
     },
 
     {
-      "name": "Admin",
+      "name": "Step 9 — Admin: User & Expert Management",
       "item": [
         {
-          "name": "Get Summary",
+          "name": "9.1 GET Admin Summary",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Summary:', JSON.stringify(pm.response.json()));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/admin/summary", "host": ["{{baseUrl}}"], "path": ["admin", "summary"] }
           }
         },
         {
-          "name": "Get All Users",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 200) {",
-                "  const body = pm.response.json();",
-                "  if (body.length > 0) {",
-                "    pm.collectionVariables.set('userId', body[0].userId);",
-                "  }",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "9.2 GET All Users",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Total users:', pm.response.json().length);"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/admin/users", "host": ["{{baseUrl}}"], "path": ["admin", "users"] }
           }
         },
         {
-          "name": "Activate User",
+          "name": "9.3 Deactivate User",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "PUT",
-            "url": {
-              "raw": "{{baseUrl}}/admin/users/{{userId}}/activate",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", "{{userId}}", "activate"]
-            }
+            "url": { "raw": "{{baseUrl}}/admin/users/{{userId}}/deactivate", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{userId}}", "deactivate"] }
           }
         },
         {
-          "name": "Deactivate User",
+          "name": "9.4 Activate User",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "PUT",
-            "url": {
-              "raw": "{{baseUrl}}/admin/users/{{userId}}/deactivate",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", "{{userId}}", "deactivate"]
-            }
+            "url": { "raw": "{{baseUrl}}/admin/users/{{userId}}/activate", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{userId}}", "activate"] }
           }
         },
         {
-          "name": "Soft-Delete User",
+          "name": "9.5 Soft-Delete User",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "DELETE",
-            "url": {
-              "raw": "{{baseUrl}}/admin/users/{{userId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "users", "{{userId}}"]
-            }
+            "url": { "raw": "{{baseUrl}}/admin/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["admin", "users", "{{userId}}"] }
           }
         },
         {
-          "name": "Get All Experts",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 200) {",
-                "  const body = pm.response.json();",
-                "  if (body.length > 0) {",
-                "    pm.collectionVariables.set('expertId', body[0].expertId);",
-                "  }",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
+          "name": "9.6 GET All Experts",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Total experts:', pm.response.json().length);"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/admin/experts", "host": ["{{baseUrl}}"], "path": ["admin", "experts"] }
           }
         },
         {
-          "name": "Activate Expert",
+          "name": "9.7 Activate Expert",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "PUT",
-            "url": {
-              "raw": "{{baseUrl}}/admin/experts/{{expertId}}/activate",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "experts", "{{expertId}}", "activate"]
-            }
+            "url": { "raw": "{{baseUrl}}/admin/experts/{{expertToken}}/activate", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "PASTE_EXPERT_ID_HERE", "activate"] }
           }
         },
         {
-          "name": "Deactivate Expert",
+          "name": "9.8 Deactivate Expert",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
           "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "PUT",
-            "url": {
-              "raw": "{{baseUrl}}/admin/experts/{{expertId}}/deactivate",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "experts", "{{expertId}}", "deactivate"]
-            }
-          }
-        },
-        {
-          "name": "Get All Coupons",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 200) {",
-                "  const body = pm.response.json();",
-                "  if (body.length > 0) {",
-                "    pm.collectionVariables.set('couponId', body[0].couponId);",
-                "  }",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
-          "request": {
-            "method": "GET",
-            "url": { "raw": "{{baseUrl}}/admin/coupons", "host": ["{{baseUrl}}"], "path": ["admin", "coupons"] }
-          }
-        },
-        {
-          "name": "Create Coupon",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 201) {",
-                "  const body = pm.response.json();",
-                "  pm.collectionVariables.set('couponId', body.couponId);",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"code\": \"WELCOME20\",\n  \"discountType\": \"Percentage\",\n  \"discountValue\": 20,\n  \"maxUses\": 100,\n  \"validFrom\": null,\n  \"validUntil\": \"2027-12-31T23:59:59Z\"\n}"
-            },
-            "url": { "raw": "{{baseUrl}}/admin/coupons", "host": ["{{baseUrl}}"], "path": ["admin", "coupons"] }
-          }
-        },
-        {
-          "name": "Update Coupon",
-          "request": {
-            "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"discountValue\": 25,\n  \"maxUses\": 200,\n  \"clearMaxUses\": false,\n  \"validUntil\": \"2028-06-30T23:59:59Z\",\n  \"clearValidFrom\": false,\n  \"clearValidUntil\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/admin/coupons/{{couponId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "coupons", "{{couponId}}"]
-            }
-          }
-        },
-        {
-          "name": "Deactivate Coupon",
-          "request": {
-            "method": "PUT",
-            "url": {
-              "raw": "{{baseUrl}}/admin/coupons/{{couponId}}/deactivate",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "coupons", "{{couponId}}", "deactivate"]
-            }
-          }
-        },
-        {
-          "name": "Get All Orders",
-          "request": {
-            "method": "GET",
-            "url": { "raw": "{{baseUrl}}/admin/orders", "host": ["{{baseUrl}}"], "path": ["admin", "orders"] }
-          }
-        },
-        {
-          "name": "Get GDPR Requests (Pending)",
-          "event": [{
-            "listen": "test",
-            "script": {
-              "exec": [
-                "if (pm.response.code === 200) {",
-                "  const body = pm.response.json();",
-                "  if (body.length > 0) {",
-                "    pm.collectionVariables.set('gdprRequestId', body[0].requestId);",
-                "  }",
-                "}"
-              ],
-              "type": "text/javascript"
-            }
-          }],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/admin/gdpr-requests?status=Pending",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "gdpr-requests"],
-              "query": [{ "key": "status", "value": "Pending" }]
-            }
-          }
-        },
-        {
-          "name": "Process GDPR Request — Complete",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"Complete\",\n  \"rejectionReason\": null\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/admin/gdpr-requests/{{gdprRequestId}}/process",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "gdpr-requests", "{{gdprRequestId}}", "process"]
-            }
-          }
-        },
-        {
-          "name": "Process GDPR Request — Reject",
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"action\": \"Reject\",\n  \"rejectionReason\": \"Active subscription exists. User must cancel before deletion can be processed.\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/admin/gdpr-requests/{{gdprRequestId}}/process",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "gdpr-requests", "{{gdprRequestId}}", "process"]
-            }
-          }
-        },
-        {
-          "name": "Get Audit Log",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/admin/audit-log?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["admin", "audit-log"],
-              "query": [{ "key": "limit", "value": "50" }]
-            }
+            "url": { "raw": "{{baseUrl}}/admin/experts/PASTE_EXPERT_ID_HERE/deactivate", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "PASTE_EXPERT_ID_HERE", "deactivate"] }
           }
         }
       ]
     },
 
     {
-      "name": "System",
+      "name": "Step 10 — Admin: Coupons",
       "item": [
         {
-          "name": "Health Check",
+          "name": "10.1 GET All Coupons",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Coupons:', pm.response.json().length);"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/coupons", "host": ["{{baseUrl}}"], "path": ["admin", "coupons"] }
+          }
+        },
+        {
+          "name": "10.2 Update Coupon",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"discountValue\": 15,\n  \"maxUses\": 200\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/coupons/{{couponId}}", "host": ["{{baseUrl}}"], "path": ["admin", "coupons", "{{couponId}}"] }
+          }
+        },
+        {
+          "name": "10.3 Deactivate Coupon",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/admin/coupons/{{couponId}}/deactivate", "host": ["{{baseUrl}}"], "path": ["admin", "coupons", "{{couponId}}", "deactivate"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Step 11 — Admin: Orders, Refunds & Reports",
+      "item": [
+        {
+          "name": "11.1 GET All Orders",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Total orders:', pm.response.json().length);"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/orders", "host": ["{{baseUrl}}"], "path": ["admin", "orders"] }
+          }
+        },
+        {
+          "name": "11.2 Initiate Refund (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204 or 422 or 404', () => pm.expect(pm.response.code).to.be.oneOf([204, 422, 404]));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"refundAmount\": 50.00,\n  \"reason\": \"Customer requested refund\"\n}" },
+            "url": { "raw": "{{baseUrl}}/orders/{{orderId}}/refund", "host": ["{{baseUrl}}"], "path": ["orders", "{{orderId}}", "refund"] }
+          }
+        },
+        {
+          "name": "11.3 GET Audit Log",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "console.log('Audit entries:', pm.response.json().length);"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/audit-log?limit=50", "host": ["{{baseUrl}}"], "path": ["admin", "audit-log"], "query": [{ "key": "limit", "value": "50" }] }
+          }
+        },
+        {
+          "name": "11.4 GET GDPR Requests (Pending)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "if (j.length > 0) { pm.collectionVariables.set('gdprRequestId', j[0].id); console.log('gdprRequestId captured:', j[0].id); }"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/gdpr-requests?status=Pending", "host": ["{{baseUrl}}"], "path": ["admin", "gdpr-requests"], "query": [{ "key": "status", "value": "Pending" }] }
+          }
+        },
+        {
+          "name": "11.5 Process GDPR Request",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 204 or 404', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"action\": \"Complete\"\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/gdpr-requests/{{gdprRequestId}}/process", "host": ["{{baseUrl}}"], "path": ["admin", "gdpr-requests", "{{gdprRequestId}}", "process"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Webhooks (Gateway-Triggered — Manual Testing Only)",
+      "description": "These are called by payment gateways, not by the frontend. Signatures must be real to pass verification.",
+      "item": [
+        {
+          "name": "CashFree Webhook (example body)",
           "request": {
             "auth": { "type": "noauth" },
-            "method": "GET",
-            "description": "Note: health check is at /health (not under /api/v1). Change the URL to http://localhost:5001/health manually.",
-            "url": {
-              "raw": "http://localhost:5001/health",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "5001",
-              "path": ["health"]
-            }
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-webhook-signature", "value": "REPLACE_WITH_REAL_HMAC_SIGNATURE" },
+              { "key": "x-webhook-timestamp", "value": "1234567890" }
+            ],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"data\": {\n    \"order\": {\n      \"order_id\": \"{{orderId}}\",\n      \"order_amount\": 320.00,\n      \"order_currency\": \"INR\"\n    },\n    \"payment\": {\n      \"cf_payment_id\": \"cf_test_123\",\n      \"payment_status\": \"SUCCESS\",\n      \"payment_amount\": 320.00\n    }\n  },\n  \"type\": \"PAYMENT_SUCCESS_WEBHOOK\"\n}" },
+            "url": { "raw": "{{baseUrl}}/payments/cashfree/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "cashfree", "webhook"] }
+          }
+        },
+        {
+          "name": "PayPal Webhook (example body)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "paypal-auth-algo", "value": "SHA256withRSA" },
+              { "key": "paypal-cert-url", "value": "https://api.sandbox.paypal.com/v1/notifications/certs/CERT-xxx" },
+              { "key": "paypal-transmission-id", "value": "REPLACE_WITH_REAL_ID" },
+              { "key": "paypal-transmission-sig", "value": "REPLACE_WITH_REAL_SIG" },
+              { "key": "paypal-transmission-time", "value": "2026-01-01T00:00:00Z" }
+            ],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"id\": \"WH-xxx\",\n  \"event_type\": \"CHECKOUT.ORDER.APPROVED\",\n  \"resource\": {\n    \"id\": \"PAYPAL_ORDER_ID\",\n    \"custom_id\": \"{{orderId}}\",\n    \"status\": \"COMPLETED\"\n  }\n}" },
+            "url": { "raw": "{{baseUrl}}/payments/paypal/webhook", "host": ["{{baseUrl}}"], "path": ["payments", "paypal", "webhook"] }
           }
         }
       ]
