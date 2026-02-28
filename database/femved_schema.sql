@@ -257,7 +257,22 @@ CREATE TABLE program_tags (
 CREATE INDEX idx_program_tags_program_id ON program_tags (program_id);
 CREATE INDEX idx_program_tags_tag        ON program_tags (tag);
 
--- ─── 14. PROGRAM TESTIMONIALS ────────────────────────────────────────────────
+-- ─── 14. PROGRAM DETAIL SECTIONS ─────────────────────────────────────────────
+-- Heading + description pairs shown on the program detail page (e.g. "Reset Stress Patterns")
+CREATE TABLE program_detail_sections (
+    id          UUID         NOT NULL DEFAULT gen_random_uuid(),
+    program_id  UUID         NOT NULL,
+    heading     VARCHAR(500) NOT NULL,
+    description TEXT         NOT NULL,
+    sort_order  INT          NOT NULL DEFAULT 0,
+
+    CONSTRAINT pk_program_detail_sections PRIMARY KEY (id),
+    CONSTRAINT fk_program_detail_sections_program FOREIGN KEY (program_id) REFERENCES programs (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_program_detail_sections_program_id ON program_detail_sections (program_id);
+
+-- ─── 15. PROGRAM TESTIMONIALS ────────────────────────────────────────────────
 CREATE TABLE program_testimonials (
     id              UUID         NOT NULL DEFAULT gen_random_uuid(),
     program_id      UUID         NOT NULL,

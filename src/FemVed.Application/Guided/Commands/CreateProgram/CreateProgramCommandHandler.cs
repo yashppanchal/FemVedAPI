@@ -22,6 +22,7 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
     private readonly IRepository<ProgramWhatYouGet> _whatYouGet;
     private readonly IRepository<ProgramWhoIsThisFor> _whoIsThisFor;
     private readonly IRepository<ProgramTag> _tags;
+    private readonly IRepository<ProgramDetailSection> _detailSections;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<CreateProgramCommandHandler> _logger;
 
@@ -35,6 +36,7 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
         IRepository<ProgramWhatYouGet> whatYouGet,
         IRepository<ProgramWhoIsThisFor> whoIsThisFor,
         IRepository<ProgramTag> tags,
+        IRepository<ProgramDetailSection> detailSections,
         IUnitOfWork uow,
         ILogger<CreateProgramCommandHandler> logger)
     {
@@ -46,6 +48,7 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
         _whatYouGet = whatYouGet;
         _whoIsThisFor = whoIsThisFor;
         _tags = tags;
+        _detailSections = detailSections;
         _uow = uow;
         _logger = logger;
     }
@@ -147,6 +150,15 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
             {
                 Id = Guid.NewGuid(), ProgramId = program.Id,
                 Tag = tag.Trim().ToLowerInvariant()
+            });
+
+        foreach (var section in request.DetailSections)
+            await _detailSections.AddAsync(new ProgramDetailSection
+            {
+                Id = Guid.NewGuid(), ProgramId = program.Id,
+                Heading = section.Heading.Trim(),
+                Description = section.Description.Trim(),
+                SortOrder = section.SortOrder
             });
 
         await _uow.SaveChangesAsync(cancellationToken);

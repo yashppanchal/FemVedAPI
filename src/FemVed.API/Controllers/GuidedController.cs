@@ -223,7 +223,8 @@ public sealed class GuidedController : ControllerBase
                 request.Durations,
                 request.WhatYouGet,
                 request.WhoIsThisFor,
-                request.Tags),
+                request.Tags,
+                request.DetailSections),
             cancellationToken);
         return CreatedAtAction(nameof(GetProgram), new { slug = request.Slug }, id);
     }
@@ -260,7 +261,8 @@ public sealed class GuidedController : ControllerBase
                 request.GridDescription,
                 request.GridImageUrl,
                 request.Overview,
-                request.SortOrder),
+                request.SortOrder,
+                request.DetailSections),
             cancellationToken);
         return NoContent();
     }
@@ -416,7 +418,8 @@ public record CreateProgramRequest(
     List<DurationInput> Durations,
     List<string> WhatYouGet,
     List<string> WhoIsThisFor,
-    List<string> Tags);
+    List<string> Tags,
+    List<DetailSectionInput> DetailSections);
 
 /// <summary>HTTP request body for PUT /api/v1/guided/programs/{id}. All fields optional.</summary>
 public record UpdateProgramRequest(
@@ -424,4 +427,5 @@ public record UpdateProgramRequest(
     string? GridDescription,
     string? GridImageUrl,
     string? Overview,
-    int? SortOrder);
+    int? SortOrder,
+    List<DetailSectionInput>? DetailSections);

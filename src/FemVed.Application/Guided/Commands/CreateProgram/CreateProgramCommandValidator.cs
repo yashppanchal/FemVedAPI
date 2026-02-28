@@ -27,6 +27,14 @@ public sealed class CreateProgramCommandValidator : AbstractValidator<CreateProg
         RuleFor(x => x.Overview)
             .NotEmpty().WithMessage("Overview is required.");
 
+        RuleForEach(x => x.DetailSections).ChildRules(section =>
+        {
+            section.RuleFor(s => s.Heading)
+                .NotEmpty().WithMessage("Section heading is required.");
+            section.RuleFor(s => s.Description)
+                .NotEmpty().WithMessage("Section description is required.");
+        });
+
         RuleFor(x => x.Durations)
             .NotEmpty().WithMessage("At least one duration is required.");
 

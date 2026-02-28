@@ -1,3 +1,4 @@
+using FemVed.Application.Guided.Commands.CreateProgram;
 using MediatR;
 
 namespace FemVed.Application.Guided.Commands.UpdateProgram;
@@ -14,6 +15,7 @@ namespace FemVed.Application.Guided.Commands.UpdateProgram;
 /// <param name="GridImageUrl">New grid image URL (optional).</param>
 /// <param name="Overview">New overview text (optional).</param>
 /// <param name="SortOrder">New sort order (optional).</param>
+/// <param name="DetailSections">Replacement list of heading + description sections. When non-null, all existing sections are replaced. Null = leave sections unchanged.</param>
 public record UpdateProgramCommand(
     Guid ProgramId,
     Guid RequestingUserId,
@@ -22,4 +24,5 @@ public record UpdateProgramCommand(
     string? GridDescription,
     string? GridImageUrl,
     string? Overview,
-    int? SortOrder) : IRequest;
+    int? SortOrder,
+    List<DetailSectionInput>? DetailSections) : IRequest;

@@ -63,6 +63,9 @@ public class AppDbContext : DbContext
     /// <summary>Location-specific prices per duration.</summary>
     public DbSet<DurationPrice> DurationPrices => Set<DurationPrice>();
 
+    /// <summary>Heading + description sections on the program detail page.</summary>
+    public DbSet<ProgramDetailSection> ProgramDetailSections => Set<ProgramDetailSection>();
+
     /// <summary>Discount coupons.</summary>
     public DbSet<Coupon> Coupons => Set<Coupon>();
 

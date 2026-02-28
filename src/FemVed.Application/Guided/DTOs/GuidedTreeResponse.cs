@@ -86,7 +86,14 @@ public record ProgramDurationDto(
 /// <param name="Overview">Full program overview text.</param>
 /// <param name="WhatYouGet">Benefit bullet points.</param>
 /// <param name="WhoIsThisFor">Target audience bullet points.</param>
+/// <param name="DetailSections">Ordered heading + description sections on the program detail page.</param>
 public record ProgramPageDisplayDetailsDto(
     string Overview,
     List<string> WhatYouGet,
-    List<string> WhoIsThisFor);
+    List<string> WhoIsThisFor,
+    List<ProgramDetailSectionDto> DetailSections);
+
+/// <summary>A single heading + description section on the program detail page.</summary>
+/// <param name="Heading">Section title, e.g. "Reset Stress Patterns, Restore Hormonal Balance".</param>
+/// <param name="Description">Section body text shown beneath the heading.</param>
+public record ProgramDetailSectionDto(string Heading, string Description);

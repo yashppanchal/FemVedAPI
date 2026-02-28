@@ -285,6 +285,7 @@ WhatsApp templates (Twilio, pre-approved by Meta before launch):
 - `program_what_you_get` — what's included bullet list on program page
 - `program_who_is_this_for` — target audience on program page
 - `program_tags` — filter tags (stress, hormones, pcos, gut-health, etc.)
+- `program_detail_sections` — heading + description pairs shown on the program detail page (e.g. "Reset Stress Patterns")
 - `program_testimonials` — reviews shown on program pages and homepage
 - `program_durations` — duration options per program (4 weeks, 6 weeks, 8 weeks)
 - `duration_prices` — location-specific pricing per duration (IN/GB/US)
@@ -346,7 +347,13 @@ The React frontend binds directly to this shape. **Field names must match exactl
               "programPageDisplayDetails": {
                 "overview": "string",
                 "whatYouGet": ["string item 1"],
-                "whoIsThisFor": ["string item 1"]
+                "whoIsThisFor": ["string item 1"],
+                "detailSections": [
+                  {
+                    "heading": "Reset Stress Patterns",
+                    "description": "In this 6-week guided program..."
+                  }
+                ]
               }
             }
           ]

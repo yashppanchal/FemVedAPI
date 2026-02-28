@@ -2,6 +2,12 @@ using MediatR;
 
 namespace FemVed.Application.Guided.Commands.CreateProgram;
 
+/// <summary>Input model for a program detail section (heading + description).</summary>
+/// <param name="Heading">Section title shown on the detail page.</param>
+/// <param name="Description">Body text beneath the heading.</param>
+/// <param name="SortOrder">Display ordering (ascending).</param>
+public record DetailSectionInput(string Heading, string Description, int SortOrder);
+
 /// <summary>Input model for a duration option when creating a program.</summary>
 /// <param name="Label">Human-readable label, e.g. "6 weeks".</param>
 /// <param name="Weeks">Number of weeks (used for data integrity).</param>
@@ -32,6 +38,7 @@ public record DurationPriceInput(string LocationCode, decimal Amount, string Cur
 /// <param name="WhatYouGet">Benefit bullet points.</param>
 /// <param name="WhoIsThisFor">Target audience bullet points.</param>
 /// <param name="Tags">Filter tag values, e.g. ["stress", "hormones"].</param>
+/// <param name="DetailSections">Heading + description sections for the program detail page.</param>
 public record CreateProgramCommand(
     Guid RequestingUserId,
     Guid CategoryId,
@@ -44,4 +51,5 @@ public record CreateProgramCommand(
     List<DurationInput> Durations,
     List<string> WhatYouGet,
     List<string> WhoIsThisFor,
-    List<string> Tags) : IRequest<Guid>;
+    List<string> Tags,
+    List<DetailSectionInput> DetailSections) : IRequest<Guid>;

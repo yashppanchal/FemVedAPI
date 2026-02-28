@@ -78,4 +78,7 @@ public class Program
 
     /// <summary>Duration options (4 weeks, 6 weeks, etc.) with their location-specific prices.</summary>
     public ICollection<ProgramDuration> Durations { get; set; } = new List<ProgramDuration>();
+
+    /// <summary>Heading + description sections shown on the program detail page.</summary>
+    public ICollection<ProgramDetailSection> DetailSections { get; set; } = new List<ProgramDetailSection>();
 }

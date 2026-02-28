@@ -1,4 +1,5 @@
 using FemVed.Application.Interfaces;
+using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
 using MediatR;
@@ -9,11 +10,13 @@ namespace FemVed.Application.Guided.Commands.UpdateProgram;
 /// <summary>
 /// Handles <see cref="UpdateProgramCommand"/>.
 /// Applies partial updates. Experts can only edit programs they own in DRAFT or PENDING_REVIEW status.
+/// When <c>DetailSections</c> is non-null, all existing sections are deleted and replaced.
 /// </summary>
 public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramCommand>
 {
     private readonly IRepository<Domain.Entities.Program> _programs;
     private readonly IRepository<Domain.Entities.Expert> _experts;
+    private readonly IRepository<ProgramDetailSection> _detailSections;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<UpdateProgramCommandHandler> _logger;
 
@@ -21,11 +24,13 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
     public UpdateProgramCommandHandler(
         IRepository<Domain.Entities.Program> programs,
         IRepository<Domain.Entities.Expert> experts,
+        IRepository<ProgramDetailSection> detailSections,
         IUnitOfWork uow,
         ILogger<UpdateProgramCommandHandler> logger)
     {
         _programs = programs;
         _experts = experts;
+        _detailSections = detailSections;
         _uow = uow;
         _logger = logger;
     }
@@ -66,6 +71,25 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         if (request.SortOrder is not null) program.SortOrder = request.SortOrder.Value;
         program.UpdatedAt = DateTimeOffset.UtcNow;
         _programs.Update(program);
+
+        if (request.DetailSections is not null)
+        {
+            var existing = await _detailSections.GetAllAsync(
+                s => s.ProgramId == request.ProgramId,
+                cancellationToken);
+
+            foreach (var old in existing)
+                _detailSections.Remove(old);
+
+            foreach (var section in request.DetailSections)
+                await _detailSections.AddAsync(new ProgramDetailSection
+                {
+                    Id = Guid.NewGuid(), ProgramId = request.ProgramId,
+                    Heading = section.Heading.Trim(),
+                    Description = section.Description.Trim(),
+                    SortOrder = section.SortOrder
+                });
+        }
 
         await _uow.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Program {ProgramId} updated successfully", request.ProgramId);

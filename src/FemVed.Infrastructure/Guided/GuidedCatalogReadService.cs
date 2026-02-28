@@ -75,6 +75,13 @@ public sealed class GuidedCatalogReadService : IGuidedCatalogReadService
                         .Where(dur => dur.IsActive)
                         .OrderBy(dur => dur.SortOrder))
                         .ThenInclude(dur => dur.Prices.Where(pr => pr.IsActive))
+            .Include(d => d.Categories
+                .Where(c => c.IsActive && c.ParentId == null)
+                .OrderBy(c => c.SortOrder))
+                .ThenInclude(c => c.Programs
+                    .Where(p => p.Status == ProgramStatus.Published && !p.IsDeleted && p.IsActive)
+                    .OrderBy(p => p.SortOrder))
+                    .ThenInclude(p => p.DetailSections.OrderBy(s => s.SortOrder))
             .ToListAsync(cancellationToken);
 
         var response = new GuidedTreeResponse(
@@ -119,6 +126,10 @@ public sealed class GuidedCatalogReadService : IGuidedCatalogReadService
                     .Where(dur => dur.IsActive)
                     .OrderBy(dur => dur.SortOrder))
                     .ThenInclude(dur => dur.Prices.Where(pr => pr.IsActive))
+            .Include(c => c.Programs
+                .Where(p => p.Status == ProgramStatus.Published && !p.IsDeleted && p.IsActive)
+                .OrderBy(p => p.SortOrder))
+                .ThenInclude(p => p.DetailSections.OrderBy(s => s.SortOrder))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (category is null)
@@ -149,6 +160,7 @@ public sealed class GuidedCatalogReadService : IGuidedCatalogReadService
                 .Where(dur => dur.IsActive)
                 .OrderBy(dur => dur.SortOrder))
                 .ThenInclude(dur => dur.Prices.Where(pr => pr.IsActive))
+            .Include(p => p.DetailSections.OrderBy(s => s.SortOrder))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (program is null)
@@ -213,6 +225,9 @@ public sealed class GuidedCatalogReadService : IGuidedCatalogReadService
                     .ToList(),
                 WhoIsThisFor: program.WhoIsThisFor
                     .Select(w => w.ItemText)
+                    .ToList(),
+                DetailSections: program.DetailSections
+                    .Select(s => new ProgramDetailSectionDto(s.Heading, s.Description))
                     .ToList()));
 
     /// <summary>
