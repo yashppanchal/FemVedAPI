@@ -42,18 +42,19 @@ public sealed class GetMyExpertProfileQueryHandler : IRequestHandler<GetMyExpert
         _logger.LogInformation("GetMyExpertProfile: loaded expert {ExpertId}", expert.Id);
 
         return new ExpertProfileDto(
-            ExpertId:        expert.Id,
-            UserId:          expert.UserId,
-            DisplayName:     expert.DisplayName,
-            Title:           expert.Title,
-            Bio:             expert.Bio,
-            ShortBio:        expert.ShortBio,
-            ProfileImageUrl: expert.ProfileImageUrl,
-            Specialisations: expert.Specialisations,
-            YearsExperience: expert.YearsExperience,
-            Credentials:     expert.Credentials,
-            LocationCountry: expert.LocationCountry,
-            IsActive:        expert.IsActive,
-            CreatedAt:       expert.CreatedAt);
+            ExpertId:           expert.Id,
+            UserId:             expert.UserId,
+            DisplayName:        expert.DisplayName,
+            Title:              expert.Title,
+            Bio:                expert.Bio,
+            GridDescription:    expert.GridDescription,
+            DetailedDescription:expert.DetailedDescription,
+            ProfileImageUrl:    expert.ProfileImageUrl,
+            Specialisations:    expert.Specialisations,
+            YearsExperience:    expert.YearsExperience,
+            Credentials:        expert.Credentials,
+            LocationCountry:    expert.LocationCountry,
+            IsActive:           expert.IsActive,
+            CreatedAt:          expert.CreatedAt);
     }
 }

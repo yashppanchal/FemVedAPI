@@ -280,7 +280,7 @@ WhatsApp templates (Twilio, pre-approved by Meta before launch):
 - `guided_categories` — category pages (supports subcategories via parent_id)
 - `category_whats_included` — bullet list on category hero page
 - `category_key_areas` — key support areas listed on category page
-- `experts` — expert profiles linked to user accounts
+- `experts` — expert profiles linked to user accounts. Key columns: `expert_grid_description` (short bio for grid cards, max 500, was `short_bio`), `expert_detailed_description` (detailed bio for program detail page, nullable TEXT)
 - `programs` — individual programs per category per expert
 - `program_what_you_get` — what's included bullet list on program page
 - `program_who_is_this_for` — target audience on program page
@@ -334,7 +334,8 @@ The React frontend binds directly to this shape. **Field names must match exactl
               "expertId": "uuid",
               "expertName": "Dr. Prathima Nagesh",
               "expertTitle": "Ayurvedic Physician & Women's Health Specialist",
-              "expertDescription": "string short bio",
+              "expertGridDescription": "string short bio for grid card (max 500 chars)",
+              "expertDetailedDescription": "string detailed bio for program detail page (nullable)",
               "programDurations": [
                 {
                   "durationId": "uuid",

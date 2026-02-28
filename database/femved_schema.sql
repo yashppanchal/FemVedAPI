@@ -163,8 +163,9 @@ CREATE TABLE experts (
     user_id              UUID         NOT NULL,
     display_name         VARCHAR(200) NOT NULL,
     title                VARCHAR(200) NOT NULL,     -- e.g. "Naturopath & Herbalist"
-    bio                  TEXT         NOT NULL,
-    short_bio            VARCHAR(500) NULL,
+    bio                       TEXT         NOT NULL,
+    expert_grid_description   VARCHAR(500) NULL,         -- Short bio for program grid cards (was short_bio)
+    expert_detailed_description TEXT       NULL,         -- Detailed bio for program detail pages
     profile_image_url    TEXT         NULL,
     specialisations      TEXT[]       NULL,          -- PostgreSQL array
     years_experience     SMALLINT     NULL,
@@ -621,7 +622,7 @@ INSERT INTO users (id, email, password_hash, role_id, first_name, last_name, cou
      2, 'Kimberly', 'Parsons', 'GB', '+44', TRUE, TRUE);
 
 -- ─── SEED: EXPERT PROFILES ───────────────────────────────────────────────────
-INSERT INTO experts (id, user_id, display_name, title, bio, short_bio, specialisations, years_experience, credentials, location_country) VALUES
+INSERT INTO experts (id, user_id, display_name, title, bio, expert_grid_description, expert_detailed_description, specialisations, years_experience, credentials, location_country) VALUES
     (
         '44444444-0000-0000-0000-000000000001',
         '33333333-0000-0000-0000-000000000001',
@@ -629,6 +630,7 @@ INSERT INTO experts (id, user_id, display_name, title, bio, short_bio, specialis
         'Ayurvedic Physician & Women''s Health Specialist',
         'Dr. Prathima is a distinguished BAMS, MD Ayurvedic physician with over 25 years of clinical experience, specialising in women''s health and holistic well-being. A trained Clinical Researcher (GCSRT) from Harvard Medical School, she blends classical Ayurvedic wisdom with evidence-informed clinical practice. Over the years, she has successfully supported women through complex health challenges including menstrual disorders, hormonal imbalances, fertility concerns, and chronic lifestyle-related conditions.',
         'BAMS, MD Ayurvedic physician with 25+ years of experience in women''s hormonal health and Ayurvedic medicine.',
+        NULL,
         ARRAY['Hormonal Health','Ayurveda','Women''s Wellness','Perimenopause','PCOS','Fertility'],
         25,
         ARRAY['BAMS','MD Ayurveda','GCSRT - Harvard Medical School'],
@@ -641,6 +643,7 @@ INSERT INTO experts (id, user_id, display_name, title, bio, short_bio, specialis
         'Naturopath, Herbalist & Author',
         'Kimberly Parsons is the founder of Naturalli.me, an all-natural clinic focused on women''s hormonal health. Australian-born and trained, she holds a Bachelor of Health Science in Naturopathy and brings over 20 years of experience supporting women through herbal medicine, nutrition, and lifestyle care. She is the internationally best-selling author of The Yoga Kitchen series and creator of the Naturalli 28Days app. Kimberly has led wellness retreats around the world, sharing her philosophy of healing through food, herbs, and rhythm-based living.',
         'Naturopath and herbalist with 20+ years experience. Best-selling author of The Yoga Kitchen series. Founder of Naturalli.me.',
+        NULL,
         ARRAY['Naturopathy','Herbal Medicine','PCOS','Hormonal Health','Metabolism','Menopause'],
         20,
         ARRAY['Bachelor of Health Science in Naturopathy'],

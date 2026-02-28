@@ -21,8 +21,11 @@ public class Expert
     /// <summary>Full biography shown on the program detail page.</summary>
     public string Bio { get; set; } = string.Empty;
 
-    /// <summary>Short bio (max 500 chars) used in program grid cards.</summary>
-    public string? ShortBio { get; set; }
+    /// <summary>Short bio (max 500 chars) used in program grid cards — mapped to <c>expertGridDescription</c> in the API response.</summary>
+    public string? GridDescription { get; set; }
+
+    /// <summary>Detailed expert description shown on the program detail page — mapped to <c>expertDetailedDescription</c> in the API response.</summary>
+    public string? DetailedDescription { get; set; }
 
     /// <summary>Profile photo URL (hosted on Cloudflare R2).</summary>
     public string? ProfileImageUrl { get; set; }

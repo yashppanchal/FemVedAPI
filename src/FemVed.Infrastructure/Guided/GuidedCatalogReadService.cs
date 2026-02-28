@@ -198,7 +198,8 @@ public sealed class GuidedCatalogReadService : IGuidedCatalogReadService
             ExpertId: program.Expert.Id,
             ExpertName: program.Expert.DisplayName,
             ExpertTitle: program.Expert.Title,
-            ExpertDescription: program.Expert.ShortBio,
+            ExpertGridDescription: program.Expert.GridDescription,
+            ExpertDetailedDescription: program.Expert.DetailedDescription,
             ProgramDurations: program.Durations
                 .Select(d => new ProgramDurationDto(
                     DurationId: d.Id,

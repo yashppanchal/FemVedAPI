@@ -20,7 +20,8 @@ internal sealed class ExpertConfiguration : IEntityTypeConfiguration<Expert>
         builder.Property(e => e.DisplayName).HasColumnName("display_name").HasMaxLength(200).IsRequired();
         builder.Property(e => e.Title).HasColumnName("title").HasMaxLength(200).IsRequired();
         builder.Property(e => e.Bio).HasColumnName("bio").IsRequired();
-        builder.Property(e => e.ShortBio).HasColumnName("short_bio").HasMaxLength(500);
+        builder.Property(e => e.GridDescription).HasColumnName("expert_grid_description").HasMaxLength(500);
+        builder.Property(e => e.DetailedDescription).HasColumnName("expert_detailed_description");
         builder.Property(e => e.ProfileImageUrl).HasColumnName("profile_image_url");
         builder.Property(e => e.Specialisations).HasColumnName("specialisations").HasColumnType("text[]");
         builder.Property(e => e.YearsExperience).HasColumnName("years_experience").HasColumnType("smallint");
@@ -47,7 +48,8 @@ internal sealed class ExpertConfiguration : IEntityTypeConfiguration<Expert>
                 DisplayName = "Dr. Prathima Nagesh",
                 Title = "Ayurvedic Physician & Women's Health Specialist",
                 Bio = "Dr. Prathima is a distinguished BAMS, MD Ayurvedic physician with over 25 years of clinical experience, specialising in women's health and holistic well-being. A trained Clinical Researcher (GCSRT) from Harvard Medical School, she blends classical Ayurvedic wisdom with evidence-informed clinical practice. Over the years, she has successfully supported women through complex health challenges including menstrual disorders, hormonal imbalances, fertility concerns, and chronic lifestyle-related conditions.",
-                ShortBio = "BAMS, MD Ayurvedic physician with 25+ years of experience in women's hormonal health and Ayurvedic medicine.",
+                GridDescription = "BAMS, MD Ayurvedic physician with 25+ years of experience in women's hormonal health and Ayurvedic medicine.",
+                DetailedDescription = null,
                 Specialisations = new[] { "Hormonal Health", "Ayurveda", "Women's Wellness", "Perimenopause", "PCOS", "Fertility" },
                 YearsExperience = 25,
                 Credentials = new[] { "BAMS", "MD Ayurveda", "GCSRT - Harvard Medical School" },
@@ -61,7 +63,8 @@ internal sealed class ExpertConfiguration : IEntityTypeConfiguration<Expert>
                 DisplayName = "Kimberly Parsons",
                 Title = "Naturopath, Herbalist & Author",
                 Bio = "Kimberly Parsons is the founder of Naturalli.me, an all-natural clinic focused on women's hormonal health. Australian-born and trained, she holds a Bachelor of Health Science in Naturopathy and brings over 20 years of experience supporting women through herbal medicine, nutrition, and lifestyle care. She is the internationally best-selling author of The Yoga Kitchen series and creator of the Naturalli 28Days app. Kimberly has led wellness retreats around the world, sharing her philosophy of healing through food, herbs, and rhythm-based living.",
-                ShortBio = "Naturopath and herbalist with 20+ years experience. Best-selling author of The Yoga Kitchen series. Founder of Naturalli.me.",
+                GridDescription = "Naturopath and herbalist with 20+ years experience. Best-selling author of The Yoga Kitchen series. Founder of Naturalli.me.",
+                DetailedDescription = null,
                 Specialisations = new[] { "Naturopathy", "Herbal Medicine", "PCOS", "Hormonal Health", "Metabolism", "Menopause" },
                 YearsExperience = 20,
                 Credentials = new[] { "Bachelor of Health Science in Naturopathy" },
