@@ -116,6 +116,9 @@ public sealed class InitiateOrderCommandHandler
                 throw new DomainException($"Coupon '{request.CouponCode}' has expired.");
             if (coupon.MaxUses.HasValue && coupon.UsedCount >= coupon.MaxUses)
                 throw new DomainException($"Coupon '{request.CouponCode}' has reached its maximum use limit.");
+            if (coupon.MinOrderAmount.HasValue && price.Amount < coupon.MinOrderAmount.Value)
+                throw new DomainException(
+                    $"Coupon '{request.CouponCode}' requires a minimum order amount of {coupon.MinOrderAmount.Value:0.00} {price.CurrencyCode}.");
 
             discountAmount = coupon.DiscountType == DiscountType.Percentage
                 ? Math.Round(price.Amount * coupon.DiscountValue / 100, 2)

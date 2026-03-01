@@ -20,6 +20,9 @@ public class Coupon
     /// <summary>The discount value — percentage (0–100) or flat amount in the user's currency.</summary>
     public decimal DiscountValue { get; set; }
 
+    /// <summary>Minimum order amount (before discount) required to use this coupon. Null = no minimum.</summary>
+    public decimal? MinOrderAmount { get; set; }
+
     /// <summary>Maximum number of times this coupon can be used. Null = unlimited.</summary>
     public int? MaxUses { get; set; }
 

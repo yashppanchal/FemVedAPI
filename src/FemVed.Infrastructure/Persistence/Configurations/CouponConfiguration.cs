@@ -21,6 +21,7 @@ internal sealed class CouponConfiguration : IEntityTypeConfiguration<Coupon>
             .HasMaxLength(20)
             .HasConversion(v => v.ToString().ToUpperInvariant(), v => Enum.Parse<DiscountType>(v, true));
         builder.Property(c => c.DiscountValue).HasColumnName("discount_value").HasColumnType("decimal(10,2)").IsRequired();
+        builder.Property(c => c.MinOrderAmount).HasColumnName("min_order_amount").HasColumnType("decimal(12,2)");
         builder.Property(c => c.MaxUses).HasColumnName("max_uses");
         builder.Property(c => c.UsedCount).HasColumnName("used_count").HasDefaultValue(0);
         builder.Property(c => c.ValidFrom).HasColumnName("valid_from");

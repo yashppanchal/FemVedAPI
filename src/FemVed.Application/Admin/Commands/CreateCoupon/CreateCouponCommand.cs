@@ -11,6 +11,7 @@ public record CreateCouponCommand(
     string Code,
     DiscountType DiscountType,
     decimal DiscountValue,
+    decimal? MinOrderAmount,
     int? MaxUses,
     DateTimeOffset? ValidFrom,
     DateTimeOffset? ValidUntil) : IRequest<CouponDto>;

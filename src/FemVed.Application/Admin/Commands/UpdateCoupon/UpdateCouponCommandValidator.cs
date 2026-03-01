@@ -31,6 +31,12 @@ public sealed class UpdateCouponCommandValidator : AbstractValidator<UpdateCoupo
                 .LessThanOrEqualTo(100).WithMessage("Percentage discount cannot exceed 100.");
         });
 
+        When(x => x.MinOrderAmount.HasValue, () =>
+        {
+            RuleFor(x => x.MinOrderAmount!.Value)
+                .GreaterThan(0).WithMessage("MinOrderAmount must be greater than zero if provided.");
+        });
+
         When(x => x.MaxUses.HasValue, () =>
         {
             RuleFor(x => x.MaxUses!.Value)

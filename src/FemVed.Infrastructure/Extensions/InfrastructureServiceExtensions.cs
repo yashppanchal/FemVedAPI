@@ -74,10 +74,13 @@ public static class InfrastructureServiceExtensions
             opts.AuthToken    = configuration["TWILIO_AUTH_TOKEN"]      ?? string.Empty;
             opts.WhatsAppFrom = configuration["TWILIO_WHATSAPP_FROM"]  ?? string.Empty;
             opts.IsEnabled    = string.Equals(configuration["WHATSAPP_ENABLED"], "true", StringComparison.OrdinalIgnoreCase);
+            opts.SmsFrom      = configuration["TWILIO_SMS_FROM"]       ?? string.Empty;
+            opts.SmsEnabled   = string.Equals(configuration["SMS_ENABLED"], "true", StringComparison.OrdinalIgnoreCase);
         });
 
         services.AddScoped<IEmailService, SendGridEmailService>();
         services.AddScoped<IWhatsAppService, TwilioWhatsAppService>();
+        services.AddScoped<ISmsService, TwilioSmsService>();
 
         // Guided catalog read service (complex EF Core projections)
         services.AddScoped<IGuidedCatalogReadService, GuidedCatalogReadService>();

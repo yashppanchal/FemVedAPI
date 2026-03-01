@@ -3,12 +3,14 @@ using FemVed.Application.Admin.Commands.ActivateExpert;
 using FemVed.Application.Admin.Commands.ActivateUser;
 using FemVed.Application.Admin.Commands.ChangeUserRole;
 using FemVed.Application.Admin.Commands.CreateCoupon;
+using FemVed.Application.Admin.Commands.CreateExpert;
 using FemVed.Application.Admin.Commands.DeactivateCoupon;
 using FemVed.Application.Admin.Commands.DeactivateExpert;
 using FemVed.Application.Admin.Commands.DeactivateUser;
 using FemVed.Application.Admin.Commands.DeleteUser;
 using FemVed.Application.Admin.Commands.ProcessGdprRequest;
 using FemVed.Application.Admin.Commands.UpdateCoupon;
+using FemVed.Application.Admin.Commands.UpdateExpert;
 using FemVed.Application.Admin.DTOs;
 using FemVed.Application.Admin.Queries.GetAdminSummary;
 using FemVed.Application.Admin.Queries.GetAllCoupons;
@@ -216,6 +218,84 @@ public sealed class AdminController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Creates an expert profile for an existing user account.
+    /// The user must already exist (registered). The profile is set active immediately.
+    /// </summary>
+    /// <param name="request">Expert profile details.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>201 Created with the new expert profile ID.</returns>
+    [HttpPost("experts")]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CreateExpert(
+        [FromBody] CreateExpertRequest request,
+        CancellationToken cancellationToken)
+    {
+        var id = await _mediator.Send(
+            new CreateExpertCommand(
+                request.UserId,
+                request.DisplayName,
+                request.Title,
+                request.Bio,
+                request.GridDescription,
+                request.DetailedDescription,
+                request.ProfileImageUrl,
+                request.GridImageUrl,
+                request.Specialisations,
+                request.YearsExperience,
+                request.Credentials,
+                request.LocationCountry,
+                GetCurrentUserId(),
+                GetIpAddress()),
+            cancellationToken);
+        return CreatedAtAction(nameof(GetAllExperts), new { }, id);
+    }
+
+    /// <summary>
+    /// Updates an existing expert profile. All fields are optional.
+    /// Only non-null fields in the request body are applied.
+    /// </summary>
+    /// <param name="expertId">Target expert profile ID.</param>
+    /// <param name="request">Fields to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success.</returns>
+    [HttpPut("experts/{expertId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateExpert(
+        Guid expertId,
+        [FromBody] UpdateExpertRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new UpdateExpertCommand(
+                expertId,
+                request.DisplayName,
+                request.Title,
+                request.Bio,
+                request.GridDescription,
+                request.DetailedDescription,
+                request.ProfileImageUrl,
+                request.GridImageUrl,
+                request.Specialisations,
+                request.YearsExperience,
+                request.Credentials,
+                request.LocationCountry,
+                GetCurrentUserId(),
+                GetIpAddress()),
+            cancellationToken);
+        return NoContent();
+    }
+
     // ── Coupons ────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -256,6 +336,7 @@ public sealed class AdminController : ControllerBase
                 request.Code,
                 request.DiscountType,
                 request.DiscountValue,
+                request.MinOrderAmount,
                 request.MaxUses,
                 request.ValidFrom,
                 request.ValidUntil),
@@ -291,6 +372,8 @@ public sealed class AdminController : ControllerBase
                 request.Code,
                 request.DiscountType,
                 request.DiscountValue,
+                request.MinOrderAmount,
+                request.ClearMinOrderAmount,
                 request.MaxUses,
                 request.ClearMaxUses,
                 request.ValidFrom,
@@ -434,6 +517,8 @@ public record CreateCouponRequest(
     DiscountType DiscountType,
     /// <summary>Discount value: percentage (0–100) or flat amount.</summary>
     decimal DiscountValue,
+    /// <summary>Minimum order amount (before discount) required. Null = no minimum.</summary>
+    decimal? MinOrderAmount,
     /// <summary>Maximum number of redemptions. Null = unlimited.</summary>
     int? MaxUses,
     /// <summary>UTC start of validity window. Null = valid immediately.</summary>
@@ -449,6 +534,10 @@ public record UpdateCouponRequest(
     DiscountType? DiscountType,
     /// <summary>New discount value. Null = no change.</summary>
     decimal? DiscountValue,
+    /// <summary>New minimum order amount. Null = no change (unless ClearMinOrderAmount = true).</summary>
+    decimal? MinOrderAmount,
+    /// <summary>Set to true to explicitly clear MinOrderAmount (set to null).</summary>
+    bool ClearMinOrderAmount,
     /// <summary>New max uses value. Null = no change (unless ClearMaxUses = true).</summary>
     int? MaxUses,
     /// <summary>Set to true to explicitly clear MaxUses (set to null).</summary>
@@ -468,6 +557,58 @@ public record ChangeUserRoleRequest(
     Guid UserId,
     /// <summary>New role ID: 1 = Admin, 2 = Expert (Coach), 3 = User.</summary>
     short RoleId);
+
+/// <summary>HTTP request body for POST /api/v1/admin/experts.</summary>
+public record CreateExpertRequest(
+    /// <summary>ID of the existing user account to link as expert.</summary>
+    Guid UserId,
+    /// <summary>Public display name, e.g. "Dr. Prathima Nagesh".</summary>
+    string DisplayName,
+    /// <summary>Professional title, e.g. "Ayurvedic Physician".</summary>
+    string Title,
+    /// <summary>Full biography displayed on the program page.</summary>
+    string Bio,
+    /// <summary>Short bio for program grid cards (max 500 chars). Optional.</summary>
+    string? GridDescription,
+    /// <summary>Detailed long-form description. Optional.</summary>
+    string? DetailedDescription,
+    /// <summary>Profile photo URL. Optional.</summary>
+    string? ProfileImageUrl,
+    /// <summary>Grid card image URL. Optional.</summary>
+    string? GridImageUrl,
+    /// <summary>Areas of specialisation, e.g. ["Hormonal Health", "PCOS"]. Optional.</summary>
+    List<string>? Specialisations,
+    /// <summary>Years of clinical experience. Optional.</summary>
+    short? YearsExperience,
+    /// <summary>Degrees and certifications, e.g. ["BAMS", "MD Ayurveda"]. Optional.</summary>
+    List<string>? Credentials,
+    /// <summary>Country where the expert is based. Optional.</summary>
+    string? LocationCountry);
+
+/// <summary>HTTP request body for PUT /api/v1/admin/experts/{expertId}. All fields optional.</summary>
+public record UpdateExpertRequest(
+    /// <summary>New display name. Null = no change.</summary>
+    string? DisplayName,
+    /// <summary>New title. Null = no change.</summary>
+    string? Title,
+    /// <summary>New biography. Null = no change.</summary>
+    string? Bio,
+    /// <summary>New short grid description. Null = no change.</summary>
+    string? GridDescription,
+    /// <summary>New detailed description. Null = no change.</summary>
+    string? DetailedDescription,
+    /// <summary>New profile photo URL. Null = no change.</summary>
+    string? ProfileImageUrl,
+    /// <summary>New grid card image URL. Null = no change.</summary>
+    string? GridImageUrl,
+    /// <summary>Replaces all specialisations. Null = no change.</summary>
+    List<string>? Specialisations,
+    /// <summary>New years of experience. Null = no change.</summary>
+    short? YearsExperience,
+    /// <summary>Replaces all credentials. Null = no change.</summary>
+    List<string>? Credentials,
+    /// <summary>New country. Null = no change.</summary>
+    string? LocationCountry);
 
 /// <summary>HTTP request body for POST /api/v1/admin/gdpr-requests/{requestId}/process.</summary>
 public record ProcessGdprRequestBody(

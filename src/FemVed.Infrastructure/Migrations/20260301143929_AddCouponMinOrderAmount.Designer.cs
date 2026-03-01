@@ -3,6 +3,7 @@ using System;
 using FemVed.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FemVed.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260301143929_AddCouponMinOrderAmount")]
+    partial class AddCouponMinOrderAmount
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -844,12 +847,6 @@ namespace FemVed.Infrastructure.Migrations
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
 
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_deleted");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -909,7 +906,6 @@ namespace FemVed.Infrastructure.Migrations
                             HeroSubtext = "When hormonal changes feel overwhelming and online advice leaves you confused, you deserve guidance you can trust. Get one-to-one support from experienced practitioners and create a personalised wellness plan that fits your life, accessible from anywhere.",
                             HeroTitle = "Get Guided Hormonal Care",
                             IsActive = true,
-                            IsDeleted = false,
                             Name = "Hormonal Health Support",
                             PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
                             Slug = "hormonal-health-support",
@@ -927,7 +923,6 @@ namespace FemVed.Infrastructure.Migrations
                             HeroSubtext = "When constant advice and quick fixes leave you feeling overwhelmed, the right guidance helps you slow down. Get one-to-one support from experienced counsellors and spiritual practitioners to find emotional clarity and inner balance, from the comfort of your home.",
                             HeroTitle = "Begin Your Personal Mind Support",
                             IsActive = true,
-                            IsDeleted = false,
                             Name = "Mental and Spiritual Wellbeing",
                             PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
                             Slug = "mental-spiritual-wellbeing",
@@ -945,7 +940,6 @@ namespace FemVed.Infrastructure.Migrations
                             HeroSubtext = "When longevity trends and conflicting wellness advice leave you confused, the right guidance brings clarity. Work one-to-one with experienced experts to create a personalised longevity plan rooted in science, lifestyle, and prevention, accessible from home.",
                             HeroTitle = "Plan Your Long-Term Health",
                             IsActive = true,
-                            IsDeleted = false,
                             Name = "Longevity and Healthy Ageing",
                             PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
                             Slug = "longevity-healthy-ageing",
@@ -963,7 +957,6 @@ namespace FemVed.Infrastructure.Migrations
                             HeroSubtext = "When online fitness advice leaves you unsure what your body truly needs, personalised guidance makes the difference. Get one-to-one support to build a fitness plan that respects your strength, recovery, and rhythm, from the comfort of your home.",
                             HeroTitle = "Book Your Personal Wellness Program",
                             IsActive = true,
-                            IsDeleted = false,
                             Name = "Fitness and Personal Care Support",
                             PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
                             Slug = "fitness-personal-care",
@@ -991,12 +984,6 @@ namespace FemVed.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1036,7 +1023,6 @@ namespace FemVed.Infrastructure.Migrations
                             Id = new Guid("11111111-0000-0000-0000-000000000001"),
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             IsActive = true,
-                            IsDeleted = false,
                             Name = "Guided 1:1 Care",
                             Slug = "guided-1-1-care",
                             SortOrder = 1,

@@ -48,6 +48,9 @@ public class GuidedCategory
     /// <summary>Whether the category is visible in the catalog.</summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Soft-delete flag. Never hard-delete categories.</summary>
+    public bool IsDeleted { get; set; }
+
     /// <summary>UTC creation timestamp.</summary>
     public DateTimeOffset CreatedAt { get; set; }
 

@@ -29,17 +29,18 @@ public sealed class GetAllCouponsQueryHandler : IRequestHandler<GetAllCouponsQue
         var result = coupons
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new CouponDto(
-                CouponId:      c.Id,
-                Code:          c.Code,
-                DiscountType:  c.DiscountType.ToString(),
-                DiscountValue: c.DiscountValue,
-                MaxUses:       c.MaxUses,
-                UsedCount:     c.UsedCount,
-                ValidFrom:     c.ValidFrom,
-                ValidUntil:    c.ValidUntil,
-                IsActive:      c.IsActive,
-                CreatedAt:     c.CreatedAt,
-                UpdatedAt:     c.UpdatedAt))
+                CouponId:        c.Id,
+                Code:            c.Code,
+                DiscountType:    c.DiscountType.ToString(),
+                DiscountValue:   c.DiscountValue,
+                MinOrderAmount:  c.MinOrderAmount,
+                MaxUses:         c.MaxUses,
+                UsedCount:       c.UsedCount,
+                ValidFrom:       c.ValidFrom,
+                ValidUntil:      c.ValidUntil,
+                IsActive:        c.IsActive,
+                CreatedAt:       c.CreatedAt,
+                UpdatedAt:       c.UpdatedAt))
             .ToList();
 
         _logger.LogInformation("GetAllCoupons: returned {Count} coupons", result.Count);

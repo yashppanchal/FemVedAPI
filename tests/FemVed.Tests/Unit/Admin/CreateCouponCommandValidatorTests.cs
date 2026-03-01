@@ -9,14 +9,15 @@ public class CreateCouponCommandValidatorTests
     private readonly CreateCouponCommandValidator _sut = new();
 
     private static CreateCouponCommand ValidCommand() => new(
-        AdminUserId:   Guid.NewGuid(),
-        IpAddress:     "127.0.0.1",
-        Code:          "WELCOME20",
-        DiscountType:  DiscountType.Percentage,
-        DiscountValue: 20m,
-        MaxUses:       null,
-        ValidFrom:     null,
-        ValidUntil:    null);
+        AdminUserId:    Guid.NewGuid(),
+        IpAddress:      "127.0.0.1",
+        Code:           "WELCOME20",
+        DiscountType:   DiscountType.Percentage,
+        DiscountValue:  20m,
+        MinOrderAmount: null,
+        MaxUses:        null,
+        ValidFrom:      null,
+        ValidUntil:     null);
 
     [Fact]
     public void Should_Pass_When_AllFields_Valid()

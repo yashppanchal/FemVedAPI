@@ -23,6 +23,10 @@ public sealed class CreateCouponCommandValidator : AbstractValidator<CreateCoupo
                 .LessThanOrEqualTo(100).WithMessage("Percentage discount cannot exceed 100.");
         });
 
+        RuleFor(x => x.MinOrderAmount)
+            .GreaterThan(0).When(x => x.MinOrderAmount.HasValue)
+            .WithMessage("MinOrderAmount must be greater than zero if provided.");
+
         RuleFor(x => x.MaxUses)
             .GreaterThan(0).When(x => x.MaxUses.HasValue)
             .WithMessage("MaxUses must be greater than zero if provided.");

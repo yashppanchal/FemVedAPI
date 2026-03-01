@@ -124,6 +124,8 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
             await _uow.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Order {OrderId} marked as Failed — event: {EventType}", orderId, eventType);
+
+            await _publisher.Publish(new OrderFailedEvent(order.Id, order.UserId), cancellationToken);
         }
         else
         {

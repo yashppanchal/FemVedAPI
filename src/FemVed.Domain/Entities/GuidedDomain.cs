@@ -18,6 +18,9 @@ public class GuidedDomain
     /// <summary>Whether this domain is visible in the catalog.</summary>
     public bool IsActive { get; set; } = true;
 
+    /// <summary>Soft-delete flag. Never hard-delete domains.</summary>
+    public bool IsDeleted { get; set; }
+
     /// <summary>Display ordering (ascending).</summary>
     public int SortOrder { get; set; }
 

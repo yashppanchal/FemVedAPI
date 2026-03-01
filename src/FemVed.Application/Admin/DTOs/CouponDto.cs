@@ -5,6 +5,7 @@ namespace FemVed.Application.Admin.DTOs;
 /// <param name="Code">Uppercase coupon code, e.g. "WELCOME20".</param>
 /// <param name="DiscountType">Discount calculation method: "Percentage" or "Flat".</param>
 /// <param name="DiscountValue">Discount amount — percentage (0–100) or flat currency value.</param>
+/// <param name="MinOrderAmount">Minimum order amount required to apply this coupon. Null = no minimum.</param>
 /// <param name="MaxUses">Maximum redemptions allowed. Null = unlimited.</param>
 /// <param name="UsedCount">Current redemption count.</param>
 /// <param name="ValidFrom">UTC start of validity window. Null = valid immediately.</param>
@@ -17,6 +18,7 @@ public record CouponDto(
     string Code,
     string DiscountType,
     decimal DiscountValue,
+    decimal? MinOrderAmount,
     int? MaxUses,
     int UsedCount,
     DateTimeOffset? ValidFrom,

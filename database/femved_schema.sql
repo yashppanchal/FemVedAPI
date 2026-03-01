@@ -95,6 +95,7 @@ CREATE TABLE guided_domains (
     name        VARCHAR(200) NOT NULL,
     slug        VARCHAR(200) NOT NULL,
     is_active   BOOLEAN      NOT NULL DEFAULT TRUE,
+    is_deleted  BOOLEAN      NOT NULL DEFAULT FALSE,
     sort_order  INT          NOT NULL DEFAULT 0,
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -119,6 +120,7 @@ CREATE TABLE guided_categories (
     image_url       TEXT         NULL,
     sort_order      INT          NOT NULL DEFAULT 0,
     is_active       BOOLEAN      NOT NULL DEFAULT TRUE,
+    is_deleted      BOOLEAN      NOT NULL DEFAULT FALSE,
     created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
 
@@ -335,6 +337,7 @@ CREATE TABLE coupons (
     code            VARCHAR(50)   NOT NULL,
     discount_type   VARCHAR(20)   NOT NULL,    -- PERCENTAGE | FLAT
     discount_value  DECIMAL(10,2) NOT NULL,
+    min_order_amount DECIMAL(12,2) NULL,         -- NULL = no minimum order requirement
     max_uses        INT           NULL,         -- NULL = unlimited
     used_count      INT           NOT NULL DEFAULT 0,
     valid_from      TIMESTAMPTZ   NULL,

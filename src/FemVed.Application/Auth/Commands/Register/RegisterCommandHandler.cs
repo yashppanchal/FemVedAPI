@@ -105,11 +105,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _refreshTokens.AddAsync(refreshToken);
         await _uow.SaveChangesAsync(cancellationToken);
 
-        // Re-load user with Role navigation for role name
-        var savedUser = await _users.FirstOrDefaultAsync(u => u.Id == user.Id, cancellationToken)
-            ?? throw new NotFoundException(nameof(User), user.Id);
-
-        var accessToken = _jwt.GenerateAccessToken(savedUser);
+        var accessToken = _jwt.GenerateAccessToken(user);
         var expiryMinutes = int.Parse(_config["JWT_ACCESS_EXPIRY_MINUTES"] ?? "15");
         var accessExpiry = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes);
 
@@ -142,7 +138,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
             accessToken,
             rawRefresh,
             accessExpiry,
-            new AuthUserDto(savedUser.Id, savedUser.Email, savedUser.FirstName, savedUser.LastName, savedUser.RoleId));
+            new AuthUserDto(user.Id, user.Email, user.FirstName, user.LastName, user.RoleId));
     }
 
     private static string HashToken(string token)

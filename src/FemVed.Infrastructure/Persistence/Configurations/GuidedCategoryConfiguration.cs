@@ -30,6 +30,7 @@ internal sealed class GuidedCategoryConfiguration : IEntityTypeConfiguration<Gui
         builder.Property(c => c.ImageUrl).HasColumnName("image_url");
         builder.Property(c => c.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
         builder.Property(c => c.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        builder.Property(c => c.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
         builder.Property(c => c.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(c => c.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
 
@@ -56,7 +57,7 @@ internal sealed class GuidedCategoryConfiguration : IEntityTypeConfiguration<Gui
                 HeroSubtext = "When hormonal changes feel overwhelming and online advice leaves you confused, you deserve guidance you can trust. Get one-to-one support from experienced practitioners and create a personalised wellness plan that fits your life, accessible from anywhere.",
                 CtaLabel = "Book Your Program", CtaLink = "/guided/hormonal-health-support",
                 PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
-                SortOrder = 1, IsActive = true, CreatedAt = Seeded, UpdatedAt = Seeded
+                SortOrder = 1, IsActive = true, IsDeleted = false, CreatedAt = Seeded, UpdatedAt = Seeded
             },
             new GuidedCategory
             {
@@ -66,7 +67,7 @@ internal sealed class GuidedCategoryConfiguration : IEntityTypeConfiguration<Gui
                 HeroSubtext = "When constant advice and quick fixes leave you feeling overwhelmed, the right guidance helps you slow down. Get one-to-one support from experienced counsellors and spiritual practitioners to find emotional clarity and inner balance, from the comfort of your home.",
                 CtaLabel = "Book Your Program", CtaLink = "/guided/mental-spiritual-wellbeing",
                 PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
-                SortOrder = 2, IsActive = true, CreatedAt = Seeded, UpdatedAt = Seeded
+                SortOrder = 2, IsActive = true, IsDeleted = false, CreatedAt = Seeded, UpdatedAt = Seeded
             },
             new GuidedCategory
             {
@@ -76,7 +77,7 @@ internal sealed class GuidedCategoryConfiguration : IEntityTypeConfiguration<Gui
                 HeroSubtext = "When longevity trends and conflicting wellness advice leave you confused, the right guidance brings clarity. Work one-to-one with experienced experts to create a personalised longevity plan rooted in science, lifestyle, and prevention, accessible from home.",
                 CtaLabel = "Book Your Program", CtaLink = "/guided/longevity-healthy-ageing",
                 PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
-                SortOrder = 3, IsActive = true, CreatedAt = Seeded, UpdatedAt = Seeded
+                SortOrder = 3, IsActive = true, IsDeleted = false, CreatedAt = Seeded, UpdatedAt = Seeded
             },
             new GuidedCategory
             {
@@ -86,7 +87,7 @@ internal sealed class GuidedCategoryConfiguration : IEntityTypeConfiguration<Gui
                 HeroSubtext = "When online fitness advice leaves you unsure what your body truly needs, personalised guidance makes the difference. Get one-to-one support to build a fitness plan that respects your strength, recovery, and rhythm, from the comfort of your home.",
                 CtaLabel = "Book Your Program", CtaLink = "/guided/fitness-personal-care",
                 PageHeader = "Choose and book the guided journey that best fits your needs, goals, and life right now.",
-                SortOrder = 4, IsActive = true, CreatedAt = Seeded, UpdatedAt = Seeded
+                SortOrder = 4, IsActive = true, IsDeleted = false, CreatedAt = Seeded, UpdatedAt = Seeded
             }
         );
     }

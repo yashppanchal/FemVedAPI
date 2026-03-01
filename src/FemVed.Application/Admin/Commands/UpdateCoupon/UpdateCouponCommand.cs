@@ -12,6 +12,8 @@ public record UpdateCouponCommand(
     string? Code,
     DiscountType? DiscountType,
     decimal? DiscountValue,
+    decimal? MinOrderAmount,
+    bool ClearMinOrderAmount,
     int? MaxUses,
     bool ClearMaxUses,
     DateTimeOffset? ValidFrom,

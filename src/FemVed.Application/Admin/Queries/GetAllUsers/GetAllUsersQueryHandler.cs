@@ -1,6 +1,7 @@
 using FemVed.Application.Admin.DTOs;
 using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
+using FemVed.Domain.Enums;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -34,7 +35,7 @@ public sealed class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, 
                 FirstName:       u.FirstName,
                 LastName:        u.LastName,
                 RoleId:          u.RoleId,
-                RoleName:        u.Role?.Name ?? u.RoleId switch { 1 => "Admin", 2 => "Expert", _ => "User" },
+                RoleName:        ((UserRole)u.RoleId).ToString(),
                 CountryIsoCode:  u.CountryIsoCode,
                 FullMobile:      u.FullMobile,
                 IsEmailVerified: u.IsEmailVerified,

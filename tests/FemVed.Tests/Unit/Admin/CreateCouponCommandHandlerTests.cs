@@ -19,14 +19,15 @@ public class CreateCouponCommandHandlerTests
             NullLogger<CreateCouponCommandHandler>.Instance);
 
     private static CreateCouponCommand ValidCommand() => new(
-        AdminUserId:   Guid.NewGuid(),
-        IpAddress:     "127.0.0.1",
-        Code:          "SAVE20",
-        DiscountType:  DiscountType.Percentage,
-        DiscountValue: 20m,
-        MaxUses:       null,
-        ValidFrom:     null,
-        ValidUntil:    null);
+        AdminUserId:    Guid.NewGuid(),
+        IpAddress:      "127.0.0.1",
+        Code:           "SAVE20",
+        DiscountType:   DiscountType.Percentage,
+        DiscountValue:  20m,
+        MinOrderAmount: null,
+        MaxUses:        null,
+        ValidFrom:      null,
+        ValidUntil:     null);
 
     [Fact]
     public async Task Handle_NewCode_ReturnsCouponDto()

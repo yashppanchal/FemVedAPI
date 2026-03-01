@@ -41,8 +41,9 @@ public sealed class JwtService : IJwtService
     }
 
     /// <summary>
-    /// Generates a signed JWT access token containing sub, email, and role claims.
+    /// Generates a signed JWT access token containing sub, email, role, and country_iso_code claims.
     /// Role name is derived from <c>user.RoleId</c> via <see cref="UserRole"/> enum — no navigation property required.
+    /// <c>country_iso_code</c> is used by <c>DetectLocationCode()</c> in the Guided catalog endpoints for location-based pricing.
     /// </summary>
     /// <param name="user">The authenticated user.</param>
     /// <returns>Signed JWT string.</returns>
@@ -59,7 +60,8 @@ public sealed class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("role", ((UserRole)user.RoleId).ToString()),
             new Claim("firstName", user.FirstName),
-            new Claim("lastName", user.LastName)
+            new Claim("lastName", user.LastName),
+            new Claim("country_iso_code", user.CountryIsoCode ?? string.Empty)
         };
 
         var token = new JwtSecurityToken(

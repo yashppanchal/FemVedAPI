@@ -3,9 +3,13 @@ using FemVed.Application.Guided.Commands.ArchiveProgram;
 using FemVed.Application.Guided.Commands.CreateCategory;
 using FemVed.Application.Guided.Commands.CreateDomain;
 using FemVed.Application.Guided.Commands.CreateProgram;
+using FemVed.Application.Guided.Commands.DeleteCategory;
+using FemVed.Application.Guided.Commands.DeleteDomain;
+using FemVed.Application.Guided.Commands.DeleteProgram;
 using FemVed.Application.Guided.Commands.PublishProgram;
 using FemVed.Application.Guided.Commands.SubmitProgramForReview;
 using FemVed.Application.Guided.Commands.UpdateCategory;
+using FemVed.Application.Guided.Commands.UpdateDomain;
 using FemVed.Application.Guided.Commands.UpdateProgram;
 using FemVed.Application.Guided.DTOs;
 using FemVed.Application.Guided.Queries.GetCategoryBySlug;
@@ -120,9 +124,37 @@ public sealed class GuidedController : ControllerBase
         CancellationToken cancellationToken)
     {
         var id = await _mediator.Send(
-            new CreateDomainCommand(request.Name, request.Slug, request.SortOrder),
+            new CreateDomainCommand(request.Name, request.Slug, request.SortOrder, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
         return CreatedAtAction(nameof(GetTree), new { }, id);
+    }
+
+    /// <summary>
+    /// Updates an existing guided domain's name, slug, or sort order. Admin only.
+    /// All fields are optional — only non-null values are applied.
+    /// </summary>
+    /// <param name="id">Domain ID.</param>
+    /// <param name="request">Fields to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success.</returns>
+    [HttpPut("domains/{id:guid}")]
+    [Authorize(Policy = "AdminOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateDomain(
+        Guid id,
+        [FromBody] UpdateDomainRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new UpdateDomainCommand(id, request.Name, request.Slug, request.SortOrder,
+                GetCurrentUserId(), GetIpAddress()),
+            cancellationToken);
+        return NoContent();
     }
 
     /// <summary>
@@ -196,6 +228,42 @@ public sealed class GuidedController : ControllerBase
                 request.WhatsIncluded,
                 request.KeyAreas),
             cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Soft-deletes a guided domain (sets is_deleted = true). Admin only.
+    /// </summary>
+    /// <param name="id">Domain ID to delete.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success.</returns>
+    [HttpDelete("domains/{id:guid}")]
+    [Authorize(Policy = "AdminOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteDomain(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DeleteDomainCommand(id, GetCurrentUserId(), GetIpAddress()), cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Soft-deletes a guided category (sets is_deleted = true). Admin only.
+    /// </summary>
+    /// <param name="id">Category ID to delete.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success.</returns>
+    [HttpDelete("categories/{id:guid}")]
+    [Authorize(Policy = "AdminOnly")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteCategory(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new DeleteCategoryCommand(id, GetCurrentUserId(), GetIpAddress()), cancellationToken);
         return NoContent();
     }
 
@@ -338,6 +406,27 @@ public sealed class GuidedController : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    /// Soft-deletes a program (sets is_deleted = true). Expert or Admin.
+    /// Experts may only delete their own programs.
+    /// </summary>
+    /// <param name="id">Program ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success.</returns>
+    [HttpDelete("programs/{id:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteProgram(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new DeleteProgramCommand(id, GetCurrentUserId(), User.IsInRole("Admin"), GetIpAddress()),
+            cancellationToken);
+        return NoContent();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -378,6 +467,10 @@ public sealed class GuidedController : ControllerBase
             ?? throw new InvalidOperationException("NameIdentifier claim is missing from the JWT.");
         return Guid.Parse(value);
     }
+
+    /// <summary>Returns the client's remote IP address, or null if unavailable.</summary>
+    private string? GetIpAddress() =>
+        HttpContext.Connection.RemoteIpAddress?.ToString();
 }
 
 // ── HTTP request body records ─────────────────────────────────────────────────
@@ -387,6 +480,12 @@ public sealed class GuidedController : ControllerBase
 /// <param name="Slug">Unique URL slug.</param>
 /// <param name="SortOrder">Display order (default 0).</param>
 public record CreateDomainRequest(string Name, string Slug, int SortOrder = 0);
+
+/// <summary>HTTP request body for PUT /api/v1/guided/domains/{id}. All fields optional.</summary>
+/// <param name="Name">New display name (optional).</param>
+/// <param name="Slug">New URL slug — must be unique (optional).</param>
+/// <param name="SortOrder">New display order (optional).</param>
+public record UpdateDomainRequest(string? Name, string? Slug, int? SortOrder);
 
 /// <summary>HTTP request body for POST /api/v1/guided/categories.</summary>
 public record CreateCategoryRequest(

@@ -17,6 +17,7 @@ internal sealed class GuidedDomainConfiguration : IEntityTypeConfiguration<Guide
         builder.Property(d => d.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
         builder.Property(d => d.Slug).HasColumnName("slug").HasMaxLength(200).IsRequired();
         builder.Property(d => d.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        builder.Property(d => d.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
         builder.Property(d => d.SortOrder).HasColumnName("sort_order").HasDefaultValue(0);
         builder.Property(d => d.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(d => d.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
@@ -30,6 +31,7 @@ internal sealed class GuidedDomainConfiguration : IEntityTypeConfiguration<Guide
             Name = "Guided 1:1 Care",
             Slug = "guided-1-1-care",
             IsActive = true,
+            IsDeleted = false,
             SortOrder = 1,
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
             UpdatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)

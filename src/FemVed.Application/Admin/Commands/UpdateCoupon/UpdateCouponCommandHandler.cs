@@ -42,8 +42,9 @@ public sealed class UpdateCouponCommandHandler : IRequestHandler<UpdateCouponCom
         var before = JsonSerializer.Serialize(new
         {
             coupon.Code,
-            DiscountType  = coupon.DiscountType.ToString(),
+            DiscountType     = coupon.DiscountType.ToString(),
             coupon.DiscountValue,
+            coupon.MinOrderAmount,
             coupon.MaxUses,
             coupon.ValidFrom,
             coupon.ValidUntil
@@ -61,10 +62,12 @@ public sealed class UpdateCouponCommandHandler : IRequestHandler<UpdateCouponCom
             }
         }
 
-        if (request.DiscountType.HasValue)   coupon.DiscountType  = request.DiscountType.Value;
-        if (request.DiscountValue.HasValue)  coupon.DiscountValue = request.DiscountValue.Value;
-        if (request.ClearMaxUses)            coupon.MaxUses       = null;
-        else if (request.MaxUses.HasValue)   coupon.MaxUses       = request.MaxUses.Value;
+        if (request.DiscountType.HasValue)         coupon.DiscountType   = request.DiscountType.Value;
+        if (request.DiscountValue.HasValue)        coupon.DiscountValue  = request.DiscountValue.Value;
+        if (request.ClearMinOrderAmount)           coupon.MinOrderAmount = null;
+        else if (request.MinOrderAmount.HasValue)  coupon.MinOrderAmount = request.MinOrderAmount.Value;
+        if (request.ClearMaxUses)                  coupon.MaxUses        = null;
+        else if (request.MaxUses.HasValue)         coupon.MaxUses        = request.MaxUses.Value;
         if (request.ClearValidFrom)          coupon.ValidFrom     = null;
         else if (request.ValidFrom.HasValue) coupon.ValidFrom     = request.ValidFrom.Value;
         if (request.ClearValidUntil)         coupon.ValidUntil    = null;
@@ -84,8 +87,9 @@ public sealed class UpdateCouponCommandHandler : IRequestHandler<UpdateCouponCom
             AfterValue  = JsonSerializer.Serialize(new
             {
                 coupon.Code,
-                DiscountType  = coupon.DiscountType.ToString(),
+                DiscountType     = coupon.DiscountType.ToString(),
                 coupon.DiscountValue,
+                coupon.MinOrderAmount,
                 coupon.MaxUses,
                 coupon.ValidFrom,
                 coupon.ValidUntil
@@ -103,6 +107,7 @@ public sealed class UpdateCouponCommandHandler : IRequestHandler<UpdateCouponCom
             coupon.Code,
             coupon.DiscountType.ToString(),
             coupon.DiscountValue,
+            coupon.MinOrderAmount,
             coupon.MaxUses,
             coupon.UsedCount,
             coupon.ValidFrom,

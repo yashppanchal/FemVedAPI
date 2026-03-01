@@ -12,7 +12,8 @@ namespace FemVed.Application.Payments.Commands.ProcessPaypalWebhook;
 /// <summary>
 /// Handles <see cref="ProcessPaypalWebhookCommand"/>.
 /// Verifies the webhook via PayPal's API, parses the event, updates order status,
-/// and publishes <see cref="OrderPaidEvent"/> on a successful capture.
+/// and publishes <see cref="OrderPaidEvent"/> on a successful capture or
+/// <see cref="OrderFailedEvent"/> on a denied capture.
 /// </summary>
 public sealed class ProcessPaypalWebhookCommandHandler : IRequestHandler<ProcessPaypalWebhookCommand>
 {
@@ -34,13 +35,13 @@ public sealed class ProcessPaypalWebhookCommandHandler : IRequestHandler<Process
         IPublisher publisher,
         ILogger<ProcessPaypalWebhookCommandHandler> logger)
     {
-        _orders = orders;
-        _durations = durations;
-        _programs = programs;
+        _orders        = orders;
+        _durations     = durations;
+        _programs      = programs;
         _gatewayFactory = gatewayFactory;
-        _uow = uow;
-        _publisher = publisher;
-        _logger = logger;
+        _uow           = uow;
+        _publisher     = publisher;
+        _logger        = logger;
     }
 
     /// <summary>Verifies the webhook and processes the PayPal payment event.</summary>
@@ -55,10 +56,10 @@ public sealed class ProcessPaypalWebhookCommandHandler : IRequestHandler<Process
         var gateway = _gatewayFactory.GetGatewayByType(PaymentGateway.PayPal);
         var headers = new Dictionary<string, string>
         {
-            ["paypal-auth-algo"]       = request.AuthAlgo,
-            ["paypal-cert-url"]        = request.CertUrl,
-            ["paypal-transmission-id"] = request.TransmissionId,
-            ["paypal-transmission-sig"]= request.TransmissionSig,
+            ["paypal-auth-algo"]        = request.AuthAlgo,
+            ["paypal-cert-url"]         = request.CertUrl,
+            ["paypal-transmission-id"]  = request.TransmissionId,
+            ["paypal-transmission-sig"] = request.TransmissionSig,
             ["paypal-transmission-time"]= request.TransmissionTime
         };
 
@@ -73,54 +74,87 @@ public sealed class ProcessPaypalWebhookCommandHandler : IRequestHandler<Process
 
         // ── 2. Parse event ───────────────────────────────────────────────────
         using var doc = JsonDocument.Parse(request.RawPayload);
-        var root = doc.RootElement;
-
+        var root      = doc.RootElement;
         var eventType = root.GetProperty("event_type").GetString() ?? string.Empty;
 
-        // PAYMENT.CAPTURE.COMPLETED is the definitive "money received" event
-        if (eventType != "PAYMENT.CAPTURE.COMPLETED")
+        if (eventType == "PAYMENT.CAPTURE.COMPLETED")
+        {
+            // ── 3a. Success path ─────────────────────────────────────────────
+            // custom_id holds our internal Order UUID (set when creating the PayPal order)
+            var resource        = root.GetProperty("resource");
+            var internalOrderId = resource.TryGetProperty("custom_id", out var cid) ? cid.GetString() : null;
+            var captureId       = resource.TryGetProperty("id", out var capId) ? capId.GetString() : null;
+
+            if (!Guid.TryParse(internalOrderId, out var orderId))
+            {
+                _logger.LogWarning("PayPal webhook: non-GUID custom_id '{Id}' — ignored", internalOrderId);
+                return;
+            }
+
+            var order = await _orders.FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
+            if (order is null)
+            {
+                _logger.LogWarning("PayPal webhook: order {OrderId} not found — ignored", orderId);
+                return;
+            }
+
+            if (order.Status == OrderStatus.Paid)
+            {
+                _logger.LogInformation("Order {OrderId} already marked Paid — skipping duplicate webhook", orderId);
+                return;
+            }
+
+            order.GatewayPaymentId = captureId;
+            order.GatewayResponse  = request.RawPayload;
+            order.Status           = OrderStatus.Paid;
+            order.UpdatedAt        = DateTimeOffset.UtcNow;
+            _orders.Update(order);
+            await _uow.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Order {OrderId} marked as Paid (PayPal)", orderId);
+
+            await PublishOrderPaidEventAsync(order, cancellationToken);
+        }
+        else if (eventType == "PAYMENT.CAPTURE.DENIED")
+        {
+            // ── 3b. Failure path ─────────────────────────────────────────────
+            var resource        = root.GetProperty("resource");
+            var internalOrderId = resource.TryGetProperty("custom_id", out var cid) ? cid.GetString() : null;
+
+            if (!Guid.TryParse(internalOrderId, out var orderId))
+            {
+                _logger.LogWarning("PayPal webhook (DENIED): non-GUID custom_id '{Id}' — ignored", internalOrderId);
+                return;
+            }
+
+            var order = await _orders.FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
+            if (order is null)
+            {
+                _logger.LogWarning("PayPal webhook (DENIED): order {OrderId} not found — ignored", orderId);
+                return;
+            }
+
+            if (order.Status == OrderStatus.Failed)
+            {
+                _logger.LogInformation("Order {OrderId} already marked Failed — skipping duplicate webhook", orderId);
+                return;
+            }
+
+            order.Status          = OrderStatus.Failed;
+            order.FailureReason   = eventType;
+            order.GatewayResponse = request.RawPayload;
+            order.UpdatedAt       = DateTimeOffset.UtcNow;
+            _orders.Update(order);
+            await _uow.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Order {OrderId} marked as Failed (PayPal DENIED)", orderId);
+
+            await _publisher.Publish(new OrderFailedEvent(order.Id, order.UserId), cancellationToken);
+        }
+        else
         {
             _logger.LogInformation("PayPal event '{EventType}' — no action taken", eventType);
-            return;
         }
-
-        // custom_id holds our internal Order UUID (set when creating the PayPal order)
-        var resource = root.GetProperty("resource");
-        var internalOrderId = resource.TryGetProperty("custom_id", out var cid) ? cid.GetString() : null;
-        var captureId = resource.TryGetProperty("id", out var capId) ? capId.GetString() : null;
-
-        if (!Guid.TryParse(internalOrderId, out var orderId))
-        {
-            _logger.LogWarning("PayPal webhook: non-GUID custom_id '{Id}' — ignored", internalOrderId);
-            return;
-        }
-
-        // ── 3. Load order ────────────────────────────────────────────────────
-        var order = await _orders.FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
-        if (order is null)
-        {
-            _logger.LogWarning("PayPal webhook: order {OrderId} not found — ignored", orderId);
-            return;
-        }
-
-        if (order.Status == OrderStatus.Paid)
-        {
-            _logger.LogInformation("Order {OrderId} already marked Paid — skipping duplicate webhook", orderId);
-            return;
-        }
-
-        // ── 4. Update order ──────────────────────────────────────────────────
-        order.GatewayPaymentId = captureId;
-        order.GatewayResponse = request.RawPayload;
-        order.Status = OrderStatus.Paid;
-        order.UpdatedAt = DateTimeOffset.UtcNow;
-        _orders.Update(order);
-        await _uow.SaveChangesAsync(cancellationToken);
-
-        _logger.LogInformation("Order {OrderId} marked as Paid (PayPal)", orderId);
-
-        // ── 5. Publish domain event ──────────────────────────────────────────
-        await PublishOrderPaidEventAsync(order, cancellationToken);
     }
 
     private async Task PublishOrderPaidEventAsync(Order order, CancellationToken cancellationToken)
@@ -146,10 +180,10 @@ public sealed class ProcessPaypalWebhookCommandHandler : IRequestHandler<Process
         }
 
         await _publisher.Publish(new OrderPaidEvent(
-            OrderId: order.Id,
-            UserId: order.UserId,
-            ProgramId: program.Id,
+            OrderId:    order.Id,
+            UserId:     order.UserId,
+            ProgramId:  program.Id,
             DurationId: order.DurationId,
-            ExpertId: program.ExpertId), cancellationToken);
+            ExpertId:   program.ExpertId), cancellationToken);
     }
 }

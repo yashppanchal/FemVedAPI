@@ -43,17 +43,18 @@ public sealed class CreateCouponCommandHandler : IRequestHandler<CreateCouponCom
 
         var coupon = new Coupon
         {
-            Id            = Guid.NewGuid(),
-            Code          = code,
-            DiscountType  = request.DiscountType,
-            DiscountValue = request.DiscountValue,
-            MaxUses       = request.MaxUses,
-            UsedCount     = 0,
-            ValidFrom     = request.ValidFrom,
-            ValidUntil    = request.ValidUntil,
-            IsActive      = true,
-            CreatedAt     = DateTimeOffset.UtcNow,
-            UpdatedAt     = DateTimeOffset.UtcNow
+            Id             = Guid.NewGuid(),
+            Code           = code,
+            DiscountType   = request.DiscountType,
+            DiscountValue  = request.DiscountValue,
+            MinOrderAmount = request.MinOrderAmount,
+            MaxUses        = request.MaxUses,
+            UsedCount      = 0,
+            ValidFrom      = request.ValidFrom,
+            ValidUntil     = request.ValidUntil,
+            IsActive       = true,
+            CreatedAt      = DateTimeOffset.UtcNow,
+            UpdatedAt      = DateTimeOffset.UtcNow
         };
 
         await _coupons.AddAsync(coupon);
@@ -66,7 +67,7 @@ public sealed class CreateCouponCommandHandler : IRequestHandler<CreateCouponCom
             EntityType  = "coupons",
             EntityId    = coupon.Id,
             BeforeValue = null,
-            AfterValue  = JsonSerializer.Serialize(new { coupon.Code, DiscountType = coupon.DiscountType.ToString(), coupon.DiscountValue, coupon.MaxUses, coupon.ValidFrom, coupon.ValidUntil }),
+            AfterValue  = JsonSerializer.Serialize(new { coupon.Code, DiscountType = coupon.DiscountType.ToString(), coupon.DiscountValue, coupon.MinOrderAmount, coupon.MaxUses, coupon.ValidFrom, coupon.ValidUntil }),
             IpAddress   = request.IpAddress,
             CreatedAt   = DateTimeOffset.UtcNow
         });
@@ -80,6 +81,7 @@ public sealed class CreateCouponCommandHandler : IRequestHandler<CreateCouponCom
             coupon.Code,
             coupon.DiscountType.ToString(),
             coupon.DiscountValue,
+            coupon.MinOrderAmount,
             coupon.MaxUses,
             coupon.UsedCount,
             coupon.ValidFrom,
