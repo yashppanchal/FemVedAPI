@@ -1,6 +1,13 @@
 using System.Security.Claims;
+using FemVed.Application.Guided.Commands.AddDuration;
+using FemVed.Application.Guided.Commands.AddDurationPrice;
 using FemVed.Application.Guided.Commands.ArchiveProgram;
 using FemVed.Application.Guided.Commands.CreateCategory;
+using FemVed.Application.Guided.Commands.DeleteDuration;
+using FemVed.Application.Guided.Commands.DeleteDurationPrice;
+using FemVed.Application.Guided.Commands.UpdateDuration;
+using FemVed.Application.Guided.Commands.UpdateDurationPrice;
+using FemVed.Application.Guided.Queries.GetProgramDurations;
 using FemVed.Application.Guided.Commands.CreateDomain;
 using FemVed.Application.Guided.Commands.CreateProgram;
 using FemVed.Application.Guided.Commands.DeleteCategory;
@@ -427,6 +434,279 @@ public sealed class GuidedController : ControllerBase
         return Ok(new DeleteResultResponse(id, true));
     }
 
+    // ── Duration management (ExpertOrAdmin) ──────────────────────────────────
+
+    /// <summary>
+    /// Lists all durations for a program with all location prices (all countries, active and inactive).
+    /// Management view — unlike <c>GET /guided/tree</c> which filters to one location. Expert or Admin.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the list of durations, or 403 if not the owner.</returns>
+    [HttpGet("programs/{programId:guid}/durations")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(List<DurationManagementDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDurations(Guid programId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin")),
+            cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns a single duration with all location prices. Expert or Admin.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the duration, or 404 if not found.</returns>
+    [HttpGet("programs/{programId:guid}/durations/{durationId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(DurationManagementDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDuration(
+        Guid programId, Guid durationId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin"), durationId),
+            cancellationToken);
+        return Ok(result.Single());
+    }
+
+    /// <summary>
+    /// Adds a new duration (with prices) to an existing program. Expert or Admin.
+    /// Experts may only add durations to DRAFT or PENDING_REVIEW programs.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="request">Duration details including at least one location price.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>201 Created with the new duration ID.</returns>
+    [HttpPost("programs/{programId:guid}/durations")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AddDuration(
+        Guid programId,
+        [FromBody] AddDurationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var id = await _mediator.Send(
+            new AddDurationCommand(
+                programId, GetCurrentUserId(), User.IsInRole("Admin"),
+                request.Label, request.Weeks, request.SortOrder, request.Prices),
+            cancellationToken);
+        return CreatedAtAction(nameof(GetDuration), new { programId, durationId = id }, id);
+    }
+
+    /// <summary>
+    /// Updates a duration's label, week count, or sort order. Expert or Admin.
+    /// All body fields are optional — only non-null values are applied.
+    /// Experts may only modify DRAFT or PENDING_REVIEW programs.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="request">Fields to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with update confirmation payload.</returns>
+    [HttpPut("programs/{programId:guid}/durations/{durationId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(UpdateResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateDuration(
+        Guid programId,
+        Guid durationId,
+        [FromBody] UpdateDurationRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new UpdateDurationCommand(
+                durationId, programId, GetCurrentUserId(), User.IsInRole("Admin"),
+                request.Label, request.Weeks, request.SortOrder),
+            cancellationToken);
+        return Ok(new UpdateResultResponse(durationId, true));
+    }
+
+    /// <summary>
+    /// Deactivates a duration (sets is_active = false). Data is preserved. Expert or Admin.
+    /// Experts may only deactivate durations on DRAFT or PENDING_REVIEW programs.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with deactivation confirmation payload.</returns>
+    [HttpDelete("programs/{programId:guid}/durations/{durationId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(DeleteResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RemoveDuration(
+        Guid programId, Guid durationId, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new DeleteDurationCommand(durationId, programId, GetCurrentUserId(), User.IsInRole("Admin")),
+            cancellationToken);
+        return Ok(new DeleteResultResponse(durationId, true));
+    }
+
+    // ── Price management (ExpertOrAdmin) ──────────────────────────────────────
+
+    /// <summary>
+    /// Lists all prices for a duration (all locations, active and inactive). Expert or Admin.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the flat list of prices.</returns>
+    [HttpGet("programs/{programId:guid}/durations/{durationId:guid}/prices")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(List<DurationPriceManagementDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPrices(
+        Guid programId, Guid durationId, CancellationToken cancellationToken)
+    {
+        var durations = await _mediator.Send(
+            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin"), durationId),
+            cancellationToken);
+        return Ok(durations.Single().Prices);
+    }
+
+    /// <summary>
+    /// Returns a single price record. Expert or Admin.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="priceId">Price ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the price, or 404 if not found.</returns>
+    [HttpGet("programs/{programId:guid}/durations/{durationId:guid}/prices/{priceId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(DurationPriceManagementDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPrice(
+        Guid programId, Guid durationId, Guid priceId, CancellationToken cancellationToken)
+    {
+        var durations = await _mediator.Send(
+            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin"), durationId),
+            cancellationToken);
+        var price = durations.Single().Prices.FirstOrDefault(p => p.PriceId == priceId);
+        if (price is null) return NotFound();
+        return Ok(price);
+    }
+
+    /// <summary>
+    /// Adds a new location price to a duration. Expert or Admin.
+    /// One active price per location per duration is enforced — deactivate the existing one first if needed.
+    /// Experts may only modify DRAFT or PENDING_REVIEW programs.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="request">Price details.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>201 Created with the new price ID.</returns>
+    [HttpPost("programs/{programId:guid}/durations/{durationId:guid}/prices")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> AddPrice(
+        Guid programId,
+        Guid durationId,
+        [FromBody] AddDurationPriceRequest request,
+        CancellationToken cancellationToken)
+    {
+        var id = await _mediator.Send(
+            new AddDurationPriceCommand(
+                durationId, programId, GetCurrentUserId(), User.IsInRole("Admin"),
+                request.LocationCode, request.Amount, request.CurrencyCode, request.CurrencySymbol),
+            cancellationToken);
+        return CreatedAtAction(nameof(GetPrice), new { programId, durationId, priceId = id }, id);
+    }
+
+    /// <summary>
+    /// Updates a price's amount, currency code, or currency symbol. Expert or Admin.
+    /// All body fields are optional — only non-null values are applied.
+    /// Experts may only modify DRAFT or PENDING_REVIEW programs.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="priceId">Price ID.</param>
+    /// <param name="request">Fields to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with update confirmation payload.</returns>
+    [HttpPut("programs/{programId:guid}/durations/{durationId:guid}/prices/{priceId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(UpdateResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdatePrice(
+        Guid programId,
+        Guid durationId,
+        Guid priceId,
+        [FromBody] UpdateDurationPriceRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new UpdateDurationPriceCommand(
+                priceId, durationId, programId, GetCurrentUserId(), User.IsInRole("Admin"),
+                request.Amount, request.CurrencyCode, request.CurrencySymbol),
+            cancellationToken);
+        return Ok(new UpdateResultResponse(priceId, true));
+    }
+
+    /// <summary>
+    /// Deactivates a price (sets is_active = false). Data is preserved. Expert or Admin.
+    /// Experts may only deactivate prices on DRAFT or PENDING_REVIEW programs.
+    /// </summary>
+    /// <param name="programId">Program ID.</param>
+    /// <param name="durationId">Duration ID.</param>
+    /// <param name="priceId">Price ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with deactivation confirmation payload.</returns>
+    [HttpDelete("programs/{programId:guid}/durations/{durationId:guid}/prices/{priceId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(DeleteResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RemovePrice(
+        Guid programId,
+        Guid durationId,
+        Guid priceId,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new DeleteDurationPriceCommand(priceId, durationId, programId, GetCurrentUserId(), User.IsInRole("Admin")),
+            cancellationToken);
+        return Ok(new DeleteResultResponse(priceId, true));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -558,3 +838,29 @@ public record UpdateResultResponse(Guid Id, bool IsUpdated);
 /// <param name="Status">Final program status after the transition.</param>
 /// <param name="IsUpdated">Always true when transition succeeds.</param>
 public record ProgramLifecycleResultResponse(Guid Id, string Status, bool IsUpdated);
+
+/// <summary>HTTP request body for POST /api/v1/guided/programs/{programId}/durations.</summary>
+/// <param name="Label">Human-readable label, e.g. "6 weeks".</param>
+/// <param name="Weeks">Duration length in weeks.</param>
+/// <param name="SortOrder">Display order (default 0).</param>
+/// <param name="Prices">One or more location-specific prices for this duration.</param>
+public record AddDurationRequest(string Label, short Weeks, int SortOrder, List<DurationPriceInput> Prices);
+
+/// <summary>HTTP request body for PUT /api/v1/guided/programs/{programId}/durations/{durationId}. All fields optional.</summary>
+/// <param name="Label">New human-readable label (optional).</param>
+/// <param name="Weeks">New duration in weeks (optional).</param>
+/// <param name="SortOrder">New display order (optional).</param>
+public record UpdateDurationRequest(string? Label, short? Weeks, int? SortOrder);
+
+/// <summary>HTTP request body for POST /api/v1/guided/programs/{programId}/durations/{durationId}/prices.</summary>
+/// <param name="LocationCode">ISO country code, e.g. "GB", "IN", "US".</param>
+/// <param name="Amount">Price amount, e.g. 320.00.</param>
+/// <param name="CurrencyCode">ISO 4217 code, e.g. "GBP".</param>
+/// <param name="CurrencySymbol">Display symbol, e.g. "£".</param>
+public record AddDurationPriceRequest(string LocationCode, decimal Amount, string CurrencyCode, string CurrencySymbol);
+
+/// <summary>HTTP request body for PUT /api/v1/guided/programs/{programId}/durations/{durationId}/prices/{priceId}. All fields optional.</summary>
+/// <param name="Amount">New price amount (optional).</param>
+/// <param name="CurrencyCode">New ISO 4217 code (optional).</param>
+/// <param name="CurrencySymbol">New display symbol (optional).</param>
+public record UpdateDurationPriceRequest(decimal? Amount, string? CurrencyCode, string? CurrencySymbol);

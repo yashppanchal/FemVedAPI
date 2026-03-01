@@ -4,6 +4,7 @@ using FemVed.Application.Payments.Commands.InitiateRefund;
 using FemVed.Application.Payments.DTOs;
 using FemVed.Application.Payments.Queries.GetMyOrders;
 using FemVed.Application.Payments.Queries.GetOrder;
+using FemVed.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +30,9 @@ public sealed class OrdersController : ControllerBase
 
     /// <summary>
     /// Initiates a purchase order for the authenticated user.
-    /// Selects CashFree (IN) or PayPal (all other locations) based on the user's country.
+    /// <c>countryCode</c> selects the price tier (default: GB when omitted).
+    /// <c>gateway</c> selects the payment provider (default: PayPal when omitted).
+    /// Any country + gateway combination is accepted; the frontend decides what to offer.
     /// Duplicate <c>idempotencyKey</c> returns the existing order instead of creating a new one.
     /// </summary>
     /// <param name="request">Order initiation details.</param>
@@ -47,7 +50,13 @@ public sealed class OrdersController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var result = await _mediator.Send(
-            new InitiateOrderCommand(userId, request.DurationId, request.CouponCode, request.IdempotencyKey),
+            new InitiateOrderCommand(
+                userId,
+                request.DurationId,
+                request.CouponCode,
+                request.IdempotencyKey,
+                request.CountryCode,
+                request.Gateway),
             cancellationToken);
         return StatusCode(StatusCodes.Status201Created, result);
     }
@@ -137,7 +146,22 @@ public sealed class OrdersController : ControllerBase
 /// <param name="DurationId">The program duration option to purchase.</param>
 /// <param name="CouponCode">Optional discount coupon code.</param>
 /// <param name="IdempotencyKey">Client-generated UUID to prevent duplicate orders.</param>
-public record InitiateOrderRequest(Guid DurationId, string? CouponCode, string IdempotencyKey);
+/// <param name="CountryCode">
+/// Optional. Selects the price tier for this purchase.
+/// Use values from the <see cref="LocationCode"/> enum, e.g. <c>IN</c>, <c>GB</c>, <c>US</c>.
+/// Defaults to <c>GB</c> when omitted.
+/// </param>
+/// <param name="Gateway">
+/// Optional. Selects the payment gateway (<c>CashFree</c> or <c>PayPal</c>).
+/// Defaults to <c>PayPal</c> when omitted.
+/// Any country + gateway combination is accepted.
+/// </param>
+public record InitiateOrderRequest(
+    Guid DurationId,
+    string? CouponCode,
+    string IdempotencyKey,
+    LocationCode? CountryCode = null,
+    PaymentGateway? Gateway = null);
 
 /// <summary>HTTP request body for POST /api/v1/orders/{id}/refund.</summary>
 /// <param name="RefundAmount">Amount to refund (must be ≤ amount originally paid).</param>

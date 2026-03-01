@@ -77,7 +77,8 @@ public sealed class InitiateOrderCommandHandler
             cancellationToken)
             ?? throw new NotFoundException("User", request.UserId);
 
-        var locationCode = user.CountryIsoCode ?? "GB";
+        // Priority: (1) explicit request body value, (2) default GB
+        var locationCode = request.CountryCode?.ToString() ?? "GB";
 
         // ── 3. Load duration & price ─────────────────────────────────────────
         var duration = await _durations.FirstOrDefaultAsync(
@@ -131,8 +132,10 @@ public sealed class InitiateOrderCommandHandler
         }
 
         var amountPaid = price.Amount - discountAmount;
-        var gateway = _gatewayFactory.GetGateway(locationCode);
-        var gatewayEnum = locationCode == "IN" ? PaymentGateway.CashFree : PaymentGateway.PayPal;
+
+        // Priority: (1) explicit request body gateway, (2) default PayPal
+        var gatewayEnum = request.Gateway ?? PaymentGateway.PayPal;
+        var gateway = _gatewayFactory.GetGatewayByType(gatewayEnum);
 
         // ── 5. Persist order (Pending) ───────────────────────────────────────
         var order = new Order
