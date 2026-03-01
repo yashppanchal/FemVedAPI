@@ -111,11 +111,12 @@ public sealed class ExpertsController : ControllerBase
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
-    /// <summary>Returns the authenticated user's ID from the JWT NameIdentifier claim.</summary>
+    /// <summary>Returns the authenticated user's ID from JWT claims (NameIdentifier or sub).</summary>
     private Guid GetCurrentUserId()
     {
         var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? throw new InvalidOperationException("NameIdentifier claim is missing from the JWT.");
+            ?? User.FindFirst("sub")?.Value
+            ?? throw new InvalidOperationException("User ID claim is missing from the JWT.");
         return Guid.Parse(value);
     }
 

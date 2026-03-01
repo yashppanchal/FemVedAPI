@@ -459,12 +459,13 @@ public sealed class GuidedController : ControllerBase
         return "GB";
     }
 
-    /// <summary>Returns the authenticated user's ID from the JWT NameIdentifier claim.</summary>
-    /// <exception cref="InvalidOperationException">Thrown if the claim is missing (should never happen on [Authorize] endpoints).</exception>
+    /// <summary>Returns the authenticated user's ID from JWT claims (NameIdentifier or sub).</summary>
+    /// <exception cref="InvalidOperationException">Thrown if the user ID claim is missing (should never happen on [Authorize] endpoints).</exception>
     private Guid GetCurrentUserId()
     {
         var value = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? throw new InvalidOperationException("NameIdentifier claim is missing from the JWT.");
+            ?? User.FindFirst("sub")?.Value
+            ?? throw new InvalidOperationException("User ID claim is missing from the JWT.");
         return Guid.Parse(value);
     }
 
