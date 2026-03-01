@@ -441,6 +441,7 @@ public sealed class GuidedController : ControllerBase
     /// Management view — unlike <c>GET /guided/tree</c> which filters to one location. Expert or Admin.
     /// </summary>
     /// <param name="programId">Program ID.</param>
+    /// <param name="isActive">Optional. <c>true</c> = active only, <c>false</c> = inactive only, omit = all.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK with the list of durations, or 403 if not the owner.</returns>
     [HttpGet("programs/{programId:guid}/durations")]
@@ -449,10 +450,14 @@ public sealed class GuidedController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetDurations(Guid programId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetDurations(
+        Guid programId,
+        [FromQuery] bool? isActive,
+        CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin")),
+            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin"),
+                IsActive: isActive),
             cancellationToken);
         return Ok(result);
     }
@@ -571,6 +576,8 @@ public sealed class GuidedController : ControllerBase
     /// </summary>
     /// <param name="programId">Program ID.</param>
     /// <param name="durationId">Duration ID.</param>
+    /// <param name="isActive">Optional. <c>true</c> = active only, <c>false</c> = inactive only, omit = all.</param>
+    /// <param name="locationCode">Optional. ISO country code filter, e.g. "GB". Omit to return all locations.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK with the flat list of prices.</returns>
     [HttpGet("programs/{programId:guid}/durations/{durationId:guid}/prices")]
@@ -580,10 +587,15 @@ public sealed class GuidedController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPrices(
-        Guid programId, Guid durationId, CancellationToken cancellationToken)
+        Guid programId,
+        Guid durationId,
+        [FromQuery] bool? isActive,
+        [FromQuery] string? locationCode,
+        CancellationToken cancellationToken)
     {
         var durations = await _mediator.Send(
-            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin"), durationId),
+            new GetProgramDurationsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin"), durationId,
+                PriceIsActive: isActive, PriceLocationCode: locationCode),
             cancellationToken);
         return Ok(durations.Single().Prices);
     }

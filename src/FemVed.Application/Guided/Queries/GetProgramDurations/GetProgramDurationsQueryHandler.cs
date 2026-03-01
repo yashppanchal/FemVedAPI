@@ -47,8 +47,9 @@ public sealed class GetProgramDurationsQueryHandler
         CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "GetProgramDurations: program {ProgramId}, user {UserId}, durationFilter {DurationId}",
-            request.ProgramId, request.RequestingUserId, request.DurationId);
+            "GetProgramDurations: program {ProgramId}, user {UserId}, durationFilter {DurationId}, isActive {IsActive}, priceIsActive {PriceIsActive}, priceLocation {PriceLocationCode}",
+            request.ProgramId, request.RequestingUserId, request.DurationId,
+            request.IsActive, request.PriceIsActive, request.PriceLocationCode);
 
         var program = await _programs.FirstOrDefaultAsync(
             p => p.Id == request.ProgramId && !p.IsDeleted, cancellationToken)
@@ -64,21 +65,27 @@ public sealed class GetProgramDurationsQueryHandler
                 throw new ForbiddenException("You can only view durations for your own programs.");
         }
 
-        // Load durations — optionally filtered to a single one
+        // Load durations — optionally filtered by ID and/or active status
         var durationRows = await _durations.GetAllAsync(
             d => d.ProgramId == request.ProgramId
-              && (request.DurationId == null || d.Id == request.DurationId),
+              && (request.DurationId        == null || d.Id       == request.DurationId)
+              && (request.IsActive          == null || d.IsActive == request.IsActive),
             cancellationToken);
 
         if (request.DurationId.HasValue && durationRows.Count == 0)
             throw new NotFoundException(nameof(ProgramDuration), request.DurationId.Value);
 
         var result = new List<DurationManagementDto>();
+        var locationFilter = request.PriceLocationCode?.ToUpperInvariant();
 
         foreach (var dur in durationRows)
         {
+            // Load prices — optionally filtered by active status and/or location code
             var priceRows = await _prices.GetAllAsync(
-                p => p.DurationId == dur.Id, cancellationToken);
+                p => p.DurationId == dur.Id
+                  && (request.PriceIsActive     == null || p.IsActive     == request.PriceIsActive)
+                  && (locationFilter            == null || p.LocationCode == locationFilter),
+                cancellationToken);
 
             result.Add(new DurationManagementDto(
                 DurationId: dur.Id,
