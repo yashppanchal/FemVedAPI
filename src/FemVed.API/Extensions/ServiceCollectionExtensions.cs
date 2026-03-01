@@ -1,5 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -62,6 +64,7 @@ public static class ServiceCollectionExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
+                options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -71,6 +74,8 @@ public static class ServiceCollectionExtensions
                     ValidIssuer = jwtIssuer,
                     ValidAudience = jwtAudience,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+                    NameClaimType = JwtRegisteredClaimNames.Sub,
+                    RoleClaimType = ClaimTypes.Role,
                     ClockSkew = TimeSpan.Zero
                 };
             });
@@ -87,11 +92,11 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("AdminOnly", policy =>
                 policy.RequireAuthenticatedUser()
-                      .RequireClaim("role", "Admin"));
+                      .RequireRole("Admin"));
 
             options.AddPolicy("ExpertOrAdmin", policy =>
                 policy.RequireAuthenticatedUser()
-                      .RequireClaim("role", "Expert", "Admin"));
+                      .RequireRole("Expert", "Admin"));
         });
 
         return services;

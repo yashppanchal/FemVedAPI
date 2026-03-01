@@ -59,6 +59,7 @@ public sealed class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim("role", ((UserRole)user.RoleId).ToString()),
+            new Claim(ClaimTypes.Role, ((UserRole)user.RoleId).ToString()),
             new Claim("firstName", user.FirstName),
             new Claim("lastName", user.LastName),
             new Claim("country_iso_code", user.CountryIsoCode ?? string.Empty)
