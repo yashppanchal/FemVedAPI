@@ -34,7 +34,7 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.IdempotencyKey).HasColumnName("idempotency_key").HasMaxLength(100).IsRequired();
         builder.Property(o => o.GatewayOrderId).HasColumnName("gateway_order_id").HasMaxLength(200);
         builder.Property(o => o.GatewayPaymentId).HasColumnName("gateway_payment_id").HasMaxLength(200);
-        builder.Property(o => o.GatewayResponse).HasColumnName("gateway_response").HasColumnType("jsonb");
+        builder.Property(o => o.GatewayResponse).HasColumnName("gateway_response");
         builder.Property(o => o.FailureReason).HasColumnName("failure_reason");
         builder.Property(o => o.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(o => o.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
