@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "femved-api-v1-complete",
     "name": "FemVed API — Complete Test Suite",
-    "description": "End-to-end test suite covering all 56 endpoints. Run folders in order: Step 1 → Step 11.\n\n## One-time DB Setup (run in pgAdmin before testing)\n\n### Create Admin user (password: Admin@12345)\n```sql\nINSERT INTO users (id, email, password_hash, role_id, first_name, last_name, country_iso_code, country_dial_code, is_email_verified, is_active, is_deleted, whats_app_opt_in, created_at, updated_at)\nVALUES (gen_random_uuid(), 'admin@femved.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TiGnikmklte5aCEtlnPAUGCqV3qK', 1, 'Admin', 'FemVed', 'GB', '+44', true, true, false, false, NOW(), NOW());\n```\n\n### After running Step 3 (Register Expert), promote to Expert role\n```sql\nUPDATE users SET role_id = 2 WHERE email = 'expert@femved.com';\nINSERT INTO experts (id, user_id, display_name, title, bio, expert_grid_description, expert_detailed_description, specialisations, is_active, is_deleted, created_at, updated_at)\nVALUES (gen_random_uuid(), (SELECT id FROM users WHERE email = 'expert@femved.com'), 'Wellness Expert', 'Wellness Expert Title', 'Full bio here', 'Short grid bio here', NULL, ARRAY['Hormonal Health'], true, false, NOW(), NOW());\n```",
+    "description": "End-to-end test suite covering all 56 endpoints. Run folders in order: Step 1 → Step 12.\n\n## One-time DB Setup (run in pgAdmin before testing)\n\n### Create Admin user (password: Admin@12345)\n```sql\nINSERT INTO users (id, email, password_hash, role_id, first_name, last_name, country_iso_code, country_dial_code, is_email_verified, is_active, is_deleted, whats_app_opt_in, created_at, updated_at)\nVALUES (gen_random_uuid(), 'admin@femved.com', '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TiGnikmklte5aCEtlnPAUGCqV3qK', 1, 'Admin', 'FemVed', 'GB', '+44', true, true, false, false, NOW(), NOW());\n```\n\n### After running Step 3 (Register Expert), promote to Expert role\n```sql\nUPDATE users SET role_id = 2 WHERE email = 'expert@femved.com';\nINSERT INTO experts (id, user_id, display_name, title, bio, expert_grid_description, expert_detailed_description, specialisations, is_active, is_deleted, created_at, updated_at)\nVALUES (gen_random_uuid(), (SELECT id FROM users WHERE email = 'expert@femved.com'), 'Wellness Expert', 'Wellness Expert Title', 'Full bio here', 'Short grid bio here', NULL, ARRAY['Hormonal Health'], true, false, NOW(), NOW());\n```",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,6 +12,7 @@
     { "key": "userId",          "value": "", "type": "string" },
     { "key": "adminToken",      "value": "", "type": "string" },
     { "key": "expertToken",     "value": "", "type": "string" },
+    { "key": "expertId",        "value": "", "type": "string" },
     { "key": "domainId",        "value": "", "type": "string" },
     { "key": "categoryId",      "value": "", "type": "string" },
     { "key": "categorySlug",    "value": "hormonal-health-support", "type": "string" },
@@ -126,7 +127,12 @@
         {
           "name": "1.7 Logout",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has confirmation payload', () => {",
+            "  pm.expect(j).to.have.property('userId');",
+            "  pm.expect(j).to.have.property('isLoggedOut', true);",
+            "});"
           ]}}],
           "request": {
             "method": "POST",
@@ -175,7 +181,25 @@
           }
         },
         {
-          "name": "2.3 Create Category",
+          "name": "2.3 Update Domain",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has update payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"name\": \"Guided 1:1 Care\",\n  \"sortOrder\": 1\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/domains/{{domainId}}", "host": ["{{baseUrl}}"], "path": ["guided", "domains", "{{domainId}}"] }
+          }
+        },
+        {
+          "name": "2.4 Create Category",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Status 201', () => pm.response.to.have.status(201));",
             "const j = pm.response.json();",
@@ -191,9 +215,14 @@
           }
         },
         {
-          "name": "2.4 Update Category",
+          "name": "2.5 Update Category",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has update payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -265,7 +294,12 @@
         {
           "name": "4.2 Update Program",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has update payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
@@ -278,7 +312,13 @@
         {
           "name": "4.3 Submit Program for Review",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));",
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has lifecycle payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('status');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});",
             "console.log('Program in PENDING_REVIEW. Run 4.4 as Admin to publish.');"
           ]}}],
           "request": {
@@ -291,7 +331,13 @@
         {
           "name": "4.4 Publish Program (Admin)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));",
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has publish payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('status', 'PUBLISHED');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});",
             "console.log('Program is now PUBLISHED and visible in the catalog.');"
           ]}}],
           "request": {
@@ -304,7 +350,13 @@
         {
           "name": "4.5 Archive Program (Admin)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has archive payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('status', 'ARCHIVED');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -531,7 +583,15 @@
         {
           "name": "8.4 Send Progress Update to Enrolled User",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204 or 404', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has progress update payload', () => {",
+            "    pm.expect(j).to.have.property('accessId');",
+            "    pm.expect(j).to.have.property('isUpdated', true);",
+            "    pm.expect(j).to.have.property('emailQueued');",
+            "  });",
+            "}"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
@@ -574,7 +634,13 @@
         {
           "name": "9.3 Deactivate User",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has deactivate payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isActive', false);",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -585,7 +651,13 @@
         {
           "name": "9.4 Activate User",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has activate payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isActive', true);",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -596,7 +668,12 @@
         {
           "name": "9.5 Soft-Delete User",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has delete payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isDeleted', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -608,7 +685,12 @@
           "name": "9.6 GET All Experts",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Status 200', () => pm.response.to.have.status(200));",
-            "console.log('Total experts:', pm.response.json().length);"
+            "const j = pm.response.json();",
+            "if (j.length > 0) {",
+            "  const id = j[0].expertId || j[0].id;",
+            "  if (id) pm.collectionVariables.set('expertId', id);",
+            "}",
+            "console.log('Total experts:', j.length);"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -617,31 +699,67 @@
           }
         },
         {
-          "name": "9.7 Activate Expert",
+          "name": "9.7 Update Expert",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has update payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "PUT",
-            "url": { "raw": "{{baseUrl}}/admin/experts/{{expertToken}}/activate", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "PASTE_EXPERT_ID_HERE", "activate"] }
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"title\": \"Updated Expert Title\"\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/experts/{{expertId}}", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "{{expertId}}"] }
           }
         },
         {
-          "name": "9.8 Deactivate Expert",
+          "name": "9.8 Activate Expert",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has activate payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isActive', true);",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
             "method": "PUT",
-            "url": { "raw": "{{baseUrl}}/admin/experts/PASTE_EXPERT_ID_HERE/deactivate", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "PASTE_EXPERT_ID_HERE", "deactivate"] }
+            "url": { "raw": "{{baseUrl}}/admin/experts/{{expertId}}/activate", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "{{expertId}}", "activate"] }
           }
         },
         {
-          "name": "9.9 Change User Role (Admin)",
+          "name": "9.9 Deactivate Expert",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));",
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has deactivate payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isActive', false);",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/admin/experts/{{expertId}}/deactivate", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "{{expertId}}", "deactivate"] }
+          }
+        },
+        {
+          "name": "9.10 Change User Role (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has role-change payload', () => {",
+            "  pm.expect(j).to.have.property('userId');",
+            "  pm.expect(j).to.have.property('roleId');",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});",
             "console.log('User role changed. RoleId: 1=Admin, 2=Expert, 3=User');"
           ]}}],
           "request": {
@@ -686,7 +804,13 @@
         {
           "name": "10.3 Deactivate Coupon",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204', () => pm.response.to.have.status(204));"
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "const j = pm.response.json();",
+            "pm.test('Has deactivate payload', () => {",
+            "  pm.expect(j).to.have.property('id');",
+            "  pm.expect(j).to.have.property('isActive', false);",
+            "  pm.expect(j).to.have.property('isUpdated', true);",
+            "});"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -715,7 +839,15 @@
         {
           "name": "11.2 Initiate Refund (Admin)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204 or 422 or 404', () => pm.expect(pm.response.code).to.be.oneOf([204, 422, 404]));"
+            "pm.test('Status 200 or 422 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 422, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has refund payload', () => {",
+            "    pm.expect(j).to.have.property('orderId');",
+            "    pm.expect(j).to.have.property('action', 'REFUND_INITIATED');",
+            "    pm.expect(j).to.have.property('isUpdated', true);",
+            "  });",
+            "}"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -753,7 +885,15 @@
         {
           "name": "11.5 Process GDPR Request",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
-            "pm.test('Status 204 or 404', () => pm.expect(pm.response.code).to.be.oneOf([204, 404]));"
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has GDPR process payload', () => {",
+            "    pm.expect(j).to.have.property('requestId');",
+            "    pm.expect(j).to.have.property('action');",
+            "    pm.expect(j).to.have.property('isUpdated', true);",
+            "  });",
+            "}"
           ]}}],
           "request": {
             "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
@@ -761,6 +901,67 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"action\": \"Complete\"\n}" },
             "url": { "raw": "{{baseUrl}}/admin/gdpr-requests/{{gdprRequestId}}/process", "host": ["{{baseUrl}}"], "path": ["admin", "gdpr-requests", "{{gdprRequestId}}", "process"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "Step 12 — Cleanup",
+      "description": "Run cleanup calls last. These are destructive soft-delete operations for guided content created during testing.",
+      "item": [
+        {
+          "name": "12.1 Soft-Delete Program",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has delete payload', () => {",
+            "    pm.expect(j).to.have.property('id');",
+            "    pm.expect(j).to.have.property('isDeleted', true);",
+            "  });",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}"] }
+          }
+        },
+        {
+          "name": "12.2 Soft-Delete Category",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has delete payload', () => {",
+            "    pm.expect(j).to.have.property('id');",
+            "    pm.expect(j).to.have.property('isDeleted', true);",
+            "  });",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/guided/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["guided", "categories", "{{categoryId}}"] }
+          }
+        },
+        {
+          "name": "12.3 Soft-Delete Domain",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has delete payload', () => {",
+            "    pm.expect(j).to.have.property('id');",
+            "    pm.expect(j).to.have.property('isDeleted', true);",
+            "  });",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/guided/domains/{{domainId}}", "host": ["{{baseUrl}}"], "path": ["guided", "domains", "{{domainId}}"] }
           }
         }
       ]

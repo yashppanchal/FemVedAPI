@@ -89,9 +89,9 @@ public sealed class ExpertsController : ControllerBase
     /// <param name="accessId">UUID of the UserProgramAccess record (from GET /me/enrollments).</param>
     /// <param name="request">The update note and optional email flag.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with mutation confirmation payload.</returns>
     [HttpPost("me/enrollments/{accessId:guid}/progress-update")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ExpertProgressUpdateResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -106,7 +106,7 @@ public sealed class ExpertsController : ControllerBase
         await _mediator.Send(
             new SendProgressUpdateCommand(expertId, accessId, request.UpdateNote, request.SendEmail),
             cancellationToken);
-        return NoContent();
+        return Ok(new ExpertProgressUpdateResultResponse(accessId, true, request.SendEmail));
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -139,3 +139,9 @@ public sealed class ExpertsController : ControllerBase
 /// <param name="UpdateNote">The progress note content (10–2000 characters).</param>
 /// <param name="SendEmail">When true, also sends the note as an email to the enrolled user.</param>
 public record SendProgressUpdateRequest(string UpdateNote, bool SendEmail);
+
+/// <summary>Mutation confirmation payload returned by expert progress update endpoints.</summary>
+/// <param name="AccessId">ID of the user program access record updated.</param>
+/// <param name="IsUpdated">Always true when update succeeds.</param>
+/// <param name="EmailQueued">True when the request asked to send an email notification.</param>
+public record ExpertProgressUpdateResultResponse(Guid AccessId, bool IsUpdated, bool EmailQueued);

@@ -98,10 +98,10 @@ public sealed class OrdersController : ControllerBase
     /// <param name="id">Order UUID to refund.</param>
     /// <param name="request">Refund details.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with mutation confirmation payload.</returns>
     [HttpPost("{id:guid}/refund")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(OrderMutationResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -116,7 +116,7 @@ public sealed class OrdersController : ControllerBase
         await _mediator.Send(
             new InitiateRefundCommand(id, userId, request.RefundAmount, request.Reason),
             cancellationToken);
-        return NoContent();
+        return Ok(new OrderMutationResultResponse(id, "REFUND_INITIATED", true));
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
@@ -143,3 +143,9 @@ public record InitiateOrderRequest(Guid DurationId, string? CouponCode, string I
 /// <param name="RefundAmount">Amount to refund (must be ≤ amount originally paid).</param>
 /// <param name="Reason">Human-readable reason for the refund.</param>
 public record RefundRequest(decimal RefundAmount, string Reason);
+
+/// <summary>Mutation confirmation payload returned by order action endpoints.</summary>
+/// <param name="OrderId">ID of the order affected by the action.</param>
+/// <param name="Action">Action that was performed.</param>
+/// <param name="IsUpdated">Always true when the action succeeds.</param>
+public record OrderMutationResultResponse(Guid OrderId, string Action, bool IsUpdated);

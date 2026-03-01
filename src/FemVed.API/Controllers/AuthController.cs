@@ -96,10 +96,10 @@ public sealed class AuthController : ControllerBase
     /// </summary>
     /// <param name="request">The refresh token to revoke.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content.</returns>
+    /// <returns>200 OK with mutation confirmation payload.</returns>
     [HttpPost("logout")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(LogoutResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout(
         [FromBody] LogoutRequest request,
@@ -110,7 +110,7 @@ public sealed class AuthController : ControllerBase
             ?? throw new UnauthorizedAccessException("User ID claim missing."));
 
         await _mediator.Send(new LogoutCommand(userId, request.RefreshToken), cancellationToken);
-        return NoContent();
+        return Ok(new LogoutResultResponse(userId, true));
     }
 
     /// <summary>
@@ -178,3 +178,8 @@ public sealed class AuthController : ControllerBase
 /// <summary>Request body for the logout endpoint.</summary>
 /// <param name="RefreshToken">The refresh token to revoke.</param>
 public record LogoutRequest(string RefreshToken);
+
+/// <summary>Mutation confirmation payload returned by logout endpoint.</summary>
+/// <param name="UserId">ID of the user who logged out.</param>
+/// <param name="IsLoggedOut">Always true when logout succeeds.</param>
+public record LogoutResultResponse(Guid UserId, bool IsLoggedOut);

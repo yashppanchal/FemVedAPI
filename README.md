@@ -259,6 +259,32 @@ Base URL: `/api/v1`
 | GET | `/users/me/program-access` | Bearer | List purchased program access records |
 | POST | `/users/me/gdpr-deletion-request` | Bearer | Submit GDPR right-to-erasure request |
 
+---
+
+## Mutation Confirmation Smoke Test
+
+Use this script to verify that update/delete/lifecycle mutation endpoints return explicit confirmation payloads (`isUpdated`, `isDeleted`, `isActive`, etc.):
+
+```powershell
+./docs/test-mutation-confirmations.ps1 \
+  -BaseUrl "http://localhost:5064/api/v1" \
+  -AdminToken "<admin_access_token>" \
+  -UserToken "<user_access_token>" \
+  -ExpertToken "<expert_access_token>" \
+  -RefreshToken "<user_refresh_token>" \
+  -DomainId "<domain_guid>" \
+  -CategoryId "<category_guid>" \
+  -ProgramId "<program_guid>" \
+  -OrderId "<order_guid>" \
+  -AccessId "<user_program_access_guid>" \
+  -UserId "<user_guid>" \
+  -ExpertId "<expert_guid>" \
+  -CouponId "<coupon_guid>" \
+  -GdprRequestId "<gdpr_request_guid>"
+```
+
+Any test without the required IDs/tokens is skipped automatically.
+
 ### Expert Dashboard
 
 | Method | Path | Auth | Description |

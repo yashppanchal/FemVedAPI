@@ -19,6 +19,7 @@
 10. [Error Response Format](#10-error-response-format)
 11. [Role & Policy Summary](#11-role--policy-summary)
 12. [End-to-End Scenario: User Buys a Program](#12-end-to-end-scenario-user-buys-a-program)
+13. [Mutation Confirmation Responses](#13-mutation-confirmation-responses)
 
 ---
 
@@ -614,6 +615,43 @@ Roles are stored in the `roles` table and seeded in the initial migration.
 ```
 
 ---
+
+## 13. Mutation Confirmation Responses
+
+All mutation endpoints now return explicit success JSON payloads instead of empty `204 No Content` responses.
+
+Common response shapes:
+
+```json
+{ "id": "uuid", "isDeleted": true }
+```
+
+```json
+{ "id": "uuid", "isUpdated": true }
+```
+
+```json
+{ "id": "uuid", "isActive": false, "isUpdated": true }
+```
+
+```json
+{ "id": "uuid", "status": "PUBLISHED", "isUpdated": true }
+```
+
+```json
+{ "orderId": "uuid", "action": "REFUND_INITIATED", "isUpdated": true }
+```
+
+```json
+{ "userId": "uuid", "isLoggedOut": true }
+```
+
+For quick automated verification, use the script:
+
+```powershell
+./docs/test-mutation-confirmations.ps1
+```
+
 
 ## Quick Reference: All Endpoints
 

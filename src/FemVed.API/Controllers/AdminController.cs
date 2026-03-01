@@ -85,9 +85,9 @@ public sealed class AdminController : ControllerBase
     /// </summary>
     /// <param name="userId">Target user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with state confirmation payload.</returns>
     [HttpPut("users/{userId:guid}/activate")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminActivationResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,7 +96,7 @@ public sealed class AdminController : ControllerBase
         await _mediator.Send(
             new ActivateUserCommand(userId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminActivationResultResponse(userId, true, true));
     }
 
     /// <summary>
@@ -104,9 +104,9 @@ public sealed class AdminController : ControllerBase
     /// </summary>
     /// <param name="userId">Target user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with state confirmation payload.</returns>
     [HttpPut("users/{userId:guid}/deactivate")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminActivationResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -115,7 +115,7 @@ public sealed class AdminController : ControllerBase
         await _mediator.Send(
             new DeactivateUserCommand(userId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminActivationResultResponse(userId, false, true));
     }
 
     /// <summary>
@@ -145,9 +145,9 @@ public sealed class AdminController : ControllerBase
     /// <param name="userId">Target user ID.</param>
     /// <param name="request">Request body containing the new role ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with update confirmation payload.</returns>
     [HttpPut("user/change-role")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminChangeRoleResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -160,7 +160,7 @@ public sealed class AdminController : ControllerBase
         await _mediator.Send(
             new ChangeUserRoleCommand(request.UserId, request.RoleId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminChangeRoleResultResponse(request.UserId, request.RoleId, true));
     }
 
     // ── Experts ────────────────────────────────────────────────────────────────
@@ -185,9 +185,9 @@ public sealed class AdminController : ControllerBase
     /// </summary>
     /// <param name="expertId">Target expert profile ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with state confirmation payload.</returns>
     [HttpPut("experts/{expertId:guid}/activate")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminActivationResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -196,7 +196,7 @@ public sealed class AdminController : ControllerBase
         await _mediator.Send(
             new ActivateExpertCommand(expertId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminActivationResultResponse(expertId, true, true));
     }
 
     /// <summary>
@@ -204,9 +204,9 @@ public sealed class AdminController : ControllerBase
     /// </summary>
     /// <param name="expertId">Target expert profile ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with state confirmation payload.</returns>
     [HttpPut("experts/{expertId:guid}/deactivate")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminActivationResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -215,7 +215,7 @@ public sealed class AdminController : ControllerBase
         await _mediator.Send(
             new DeactivateExpertCommand(expertId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminActivationResultResponse(expertId, false, true));
     }
 
     /// <summary>
@@ -263,9 +263,9 @@ public sealed class AdminController : ControllerBase
     /// <param name="expertId">Target expert profile ID.</param>
     /// <param name="request">Fields to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with update confirmation payload.</returns>
     [HttpPut("experts/{expertId:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminUpdateResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -293,7 +293,7 @@ public sealed class AdminController : ControllerBase
                 GetCurrentUserId(),
                 GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminUpdateResultResponse(expertId, true));
     }
 
     // ── Coupons ────────────────────────────────────────────────────────────────
@@ -389,9 +389,9 @@ public sealed class AdminController : ControllerBase
     /// </summary>
     /// <param name="couponId">Target coupon ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with state confirmation payload.</returns>
     [HttpPut("coupons/{couponId:guid}/deactivate")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminActivationResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -400,7 +400,7 @@ public sealed class AdminController : ControllerBase
         await _mediator.Send(
             new DeactivateCouponCommand(GetCurrentUserId(), GetIpAddress(), couponId),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminActivationResultResponse(couponId, false, true));
     }
 
     // ── Orders ─────────────────────────────────────────────────────────────────
@@ -448,9 +448,9 @@ public sealed class AdminController : ControllerBase
     /// <param name="requestId">Target GDPR request ID.</param>
     /// <param name="request">Action payload: "Complete" or "Reject" with optional reason.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with mutation confirmation payload.</returns>
     [HttpPost("gdpr-requests/{requestId:guid}/process")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminGdprProcessResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -469,7 +469,7 @@ public sealed class AdminController : ControllerBase
                 request.Action,
                 request.RejectionReason),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminGdprProcessResultResponse(requestId, request.Action.ToUpperInvariant(), true));
     }
 
     // ── Audit Log ──────────────────────────────────────────────────────────────
@@ -622,3 +622,26 @@ public record ProcessGdprRequestBody(
 /// <param name="Id">ID of the deleted resource.</param>
 /// <param name="IsDeleted">Always true when deletion succeeds.</param>
 public record AdminDeleteResultResponse(Guid Id, bool IsDeleted);
+
+/// <summary>Standard update success payload returned by Admin PUT update endpoints.</summary>
+/// <param name="Id">ID of the updated resource.</param>
+/// <param name="IsUpdated">Always true when update succeeds.</param>
+public record AdminUpdateResultResponse(Guid Id, bool IsUpdated);
+
+/// <summary>Standard activation/deactivation payload returned by Admin state endpoints.</summary>
+/// <param name="Id">ID of the resource whose active state changed.</param>
+/// <param name="IsActive">Final active state after the operation.</param>
+/// <param name="IsUpdated">Always true when state change succeeds.</param>
+public record AdminActivationResultResponse(Guid Id, bool IsActive, bool IsUpdated);
+
+/// <summary>Standard role-change payload returned by the user role update endpoint.</summary>
+/// <param name="UserId">Target user ID.</param>
+/// <param name="RoleId">Final role ID assigned to the user.</param>
+/// <param name="IsUpdated">Always true when role update succeeds.</param>
+public record AdminChangeRoleResultResponse(Guid UserId, short RoleId, bool IsUpdated);
+
+/// <summary>Mutation confirmation payload returned by GDPR process endpoint.</summary>
+/// <param name="RequestId">ID of the GDPR request processed.</param>
+/// <param name="Action">Action applied: COMPLETE or REJECT.</param>
+/// <param name="IsUpdated">Always true when processing succeeds.</param>
+public record AdminGdprProcessResultResponse(Guid RequestId, string Action, bool IsUpdated);

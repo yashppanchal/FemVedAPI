@@ -136,10 +136,10 @@ public sealed class GuidedController : ControllerBase
     /// <param name="id">Domain ID.</param>
     /// <param name="request">Fields to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with update confirmation payload.</returns>
     [HttpPut("domains/{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(UpdateResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -154,7 +154,7 @@ public sealed class GuidedController : ControllerBase
             new UpdateDomainCommand(id, request.Name, request.Slug, request.SortOrder,
                 GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new UpdateResultResponse(id, true));
     }
 
     /// <summary>
@@ -200,10 +200,10 @@ public sealed class GuidedController : ControllerBase
     /// <param name="id">Category ID.</param>
     /// <param name="request">Fields to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with update confirmation payload.</returns>
     [HttpPut("categories/{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(UpdateResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -228,7 +228,7 @@ public sealed class GuidedController : ControllerBase
                 request.WhatsIncluded,
                 request.KeyAreas),
             cancellationToken);
-        return NoContent();
+        return Ok(new UpdateResultResponse(id, true));
     }
 
     /// <summary>
@@ -312,10 +312,10 @@ public sealed class GuidedController : ControllerBase
     /// <param name="id">Program ID.</param>
     /// <param name="request">Fields to update (all optional).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with update confirmation payload.</returns>
     [HttpPut("programs/{id:guid}")]
     [Authorize(Policy = "ExpertOrAdmin")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(UpdateResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -340,7 +340,7 @@ public sealed class GuidedController : ControllerBase
                 request.SortOrder,
                 request.DetailSections),
             cancellationToken);
-        return NoContent();
+        return Ok(new UpdateResultResponse(id, true));
     }
 
     /// <summary>
@@ -348,10 +348,10 @@ public sealed class GuidedController : ControllerBase
     /// </summary>
     /// <param name="id">Program ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with lifecycle confirmation payload.</returns>
     [HttpPost("programs/{id:guid}/submit")]
     [Authorize(Policy = "ExpertOrAdmin")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProgramLifecycleResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -363,7 +363,7 @@ public sealed class GuidedController : ControllerBase
         await _mediator.Send(
             new SubmitProgramForReviewCommand(id, userId, isAdmin),
             cancellationToken);
-        return NoContent();
+        return Ok(new ProgramLifecycleResultResponse(id, "PENDING_REVIEW", true));
     }
 
     /// <summary>
@@ -372,10 +372,10 @@ public sealed class GuidedController : ControllerBase
     /// </summary>
     /// <param name="id">Program ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with lifecycle confirmation payload.</returns>
     [HttpPost("programs/{id:guid}/publish")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProgramLifecycleResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -383,7 +383,7 @@ public sealed class GuidedController : ControllerBase
     public async Task<IActionResult> Publish(Guid id, CancellationToken cancellationToken)
     {
         await _mediator.Send(new PublishProgramCommand(id), cancellationToken);
-        return NoContent();
+        return Ok(new ProgramLifecycleResultResponse(id, "PUBLISHED", true));
     }
 
     /// <summary>
@@ -392,10 +392,10 @@ public sealed class GuidedController : ControllerBase
     /// </summary>
     /// <param name="id">Program ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with lifecycle confirmation payload.</returns>
     [HttpPost("programs/{id:guid}/archive")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProgramLifecycleResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -403,7 +403,7 @@ public sealed class GuidedController : ControllerBase
     public async Task<IActionResult> Archive(Guid id, CancellationToken cancellationToken)
     {
         await _mediator.Send(new ArchiveProgramCommand(id), cancellationToken);
-        return NoContent();
+        return Ok(new ProgramLifecycleResultResponse(id, "ARCHIVED", true));
     }
 
     /// <summary>
@@ -547,3 +547,14 @@ public record UpdateProgramRequest(
 /// <param name="Id">ID of the deleted resource.</param>
 /// <param name="IsDeleted">Always true when deletion succeeds.</param>
 public record DeleteResultResponse(Guid Id, bool IsDeleted);
+
+/// <summary>Standard update success payload returned by Guided PUT endpoints.</summary>
+/// <param name="Id">ID of the updated resource.</param>
+/// <param name="IsUpdated">Always true when update succeeds.</param>
+public record UpdateResultResponse(Guid Id, bool IsUpdated);
+
+/// <summary>Lifecycle transition payload returned by Guided program state POST endpoints.</summary>
+/// <param name="Id">ID of the program.</param>
+/// <param name="Status">Final program status after the transition.</param>
+/// <param name="IsUpdated">Always true when transition succeeds.</param>
+public record ProgramLifecycleResultResponse(Guid Id, string Status, bool IsUpdated);
