@@ -30,6 +30,9 @@ public class Expert
     /// <summary>Profile photo URL (hosted on Cloudflare R2).</summary>
     public string? ProfileImageUrl { get; set; }
 
+    /// <summary>Grid card image URL — the expert photo shown on the program grid card. Mapped to <c>expertGridImageUrl</c> in the API response.</summary>
+    public string? GridImageUrl { get; set; }
+
     /// <summary>Areas of specialisation, e.g. ["Hormonal Health", "PCOS"].</summary>
     public string[]? Specialisations { get; set; }
 

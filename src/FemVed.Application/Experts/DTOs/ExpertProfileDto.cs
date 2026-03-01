@@ -12,6 +12,7 @@ namespace FemVed.Application.Experts.DTOs;
 /// <param name="GridDescription">Short bio used in program grid cards (max 500 chars) — <c>expertGridDescription</c> in the guided tree response.</param>
 /// <param name="DetailedDescription">Detailed expert description shown on the program detail page — <c>expertDetailedDescription</c> in the guided tree response.</param>
 /// <param name="ProfileImageUrl">Profile photo URL (Cloudflare R2).</param>
+/// <param name="GridImageUrl">Expert grid card image URL — <c>expertGridImageUrl</c> in the guided tree response.</param>
 /// <param name="Specialisations">Areas of specialisation.</param>
 /// <param name="YearsExperience">Years of clinical/professional experience.</param>
 /// <param name="Credentials">Degrees and certifications.</param>
@@ -27,6 +28,7 @@ public record ExpertProfileDto(
     string? GridDescription,
     string? DetailedDescription,
     string? ProfileImageUrl,
+    string? GridImageUrl,
     string[]? Specialisations,
     short? YearsExperience,
     string[]? Credentials,

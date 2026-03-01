@@ -47,10 +47,12 @@ public sealed class GuidedController : ControllerBase
     [HttpGet("tree")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(GuidedTreeResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTree(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTree(
+        [FromQuery] string? countryCode,
+        CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new GetGuidedTreeQuery(DetectLocationCode()),
+            new GetGuidedTreeQuery(DetectLocationCode(countryCode)),
             cancellationToken);
         return Ok(result);
     }
@@ -66,10 +68,13 @@ public sealed class GuidedController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(GuidedCategoryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetCategory(string slug, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetCategory(
+        string slug,
+        [FromQuery] string? countryCode,
+        CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new GetCategoryBySlugQuery(slug, DetectLocationCode()),
+            new GetCategoryBySlugQuery(slug, DetectLocationCode(countryCode)),
             cancellationToken);
         return Ok(result);
     }
@@ -85,10 +90,13 @@ public sealed class GuidedController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(ProgramInCategoryDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetProgram(string slug, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetProgram(
+        string slug,
+        [FromQuery] string? countryCode,
+        CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(
-            new GetProgramBySlugQuery(slug, DetectLocationCode()),
+            new GetProgramBySlugQuery(slug, DetectLocationCode(countryCode)),
             cancellationToken);
         return Ok(result);
     }
@@ -334,16 +342,21 @@ public sealed class GuidedController : ControllerBase
 
     /// <summary>
     /// Detects the caller's ISO country code for price formatting.
-    /// Resolution order: (1) JWT <c>country_iso_code</c> claim, (2) Accept-Language header, (3) "GB".
+    /// Resolution order: (1) explicit <paramref name="queryCountryCode"/> query string, (2) JWT <c>country_iso_code</c> claim, (3) Accept-Language header, (4) "GB".
     /// </summary>
-    private string DetectLocationCode()
+    /// <param name="queryCountryCode">Value of the <c>country_code</c> query string parameter, if provided.</param>
+    private string DetectLocationCode(string? queryCountryCode = null)
     {
-        // 1. Authenticated user's stored country code
+        // 1. Explicit query string override — e.g. ?country_code=IN
+        if (!string.IsNullOrWhiteSpace(queryCountryCode))
+            return queryCountryCode.ToUpperInvariant();
+
+        // 2. Authenticated user's stored country code
         var claim = User.FindFirst("country_iso_code")?.Value;
         if (!string.IsNullOrWhiteSpace(claim))
             return claim;
 
-        // 2. Accept-Language header — e.g. "en-IN,en;q=0.9" → "IN"
+        // 3. Accept-Language header — e.g. "en-IN,en;q=0.9" → "IN"
         var acceptLang = Request.Headers["Accept-Language"].FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(acceptLang))
         {
@@ -353,7 +366,7 @@ public sealed class GuidedController : ControllerBase
                 return parts[1].ToUpperInvariant();
         }
 
-        // 3. Default
+        // 4. Default
         return "GB";
     }
 

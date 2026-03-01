@@ -337,6 +337,7 @@ The React frontend binds directly to this shape. **Field names must match exactl
               "expertTitle": "Ayurvedic Physician & Women's Health Specialist",
               "expertGridDescription": "string short bio for grid card (max 500 chars)",
               "expertDetailedDescription": "string detailed bio for program detail page (nullable)",
+              "expertGridImageUrl": "string url (nullable)",
               "programDurations": [
                 {
                   "durationId": "uuid",

@@ -101,7 +101,7 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
             accessToken,
             rawRefresh,
             DateTimeOffset.UtcNow.AddMinutes(expiryMinutes),
-            new AuthUserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Role?.Name ?? "User"));
+            new AuthUserDto(user.Id, user.Email, user.FirstName, user.LastName, user.RoleId));
     }
 
     private static string HashToken(string token)

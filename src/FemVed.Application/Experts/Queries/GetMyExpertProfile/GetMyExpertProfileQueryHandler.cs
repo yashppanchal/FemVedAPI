@@ -50,6 +50,7 @@ public sealed class GetMyExpertProfileQueryHandler : IRequestHandler<GetMyExpert
             GridDescription:    expert.GridDescription,
             DetailedDescription:expert.DetailedDescription,
             ProfileImageUrl:    expert.ProfileImageUrl,
+            GridImageUrl:       expert.GridImageUrl,
             Specialisations:    expert.Specialisations,
             YearsExperience:    expert.YearsExperience,
             Credentials:        expert.Credentials,

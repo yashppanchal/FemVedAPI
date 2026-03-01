@@ -142,7 +142,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
             accessToken,
             rawRefresh,
             accessExpiry,
-            new AuthUserDto(savedUser.Id, savedUser.Email, savedUser.FirstName, savedUser.LastName, savedUser.Role?.Name ?? "User"));
+            new AuthUserDto(savedUser.Id, savedUser.Email, savedUser.FirstName, savedUser.LastName, savedUser.RoleId));
     }
 
     private static string HashToken(string token)

@@ -58,6 +58,7 @@ public record CategoryPageDataDto(
 /// <param name="ExpertTitle">Expert professional title.</param>
 /// <param name="ExpertGridDescription">Short bio used in the program grid card (max 500 chars).</param>
 /// <param name="ExpertDetailedDescription">Detailed expert description shown on the program detail page.</param>
+/// <param name="ExpertGridImageUrl">Expert image URL for the program grid card.</param>
 /// <param name="ProgramDurations">Available duration options with location-formatted prices.</param>
 /// <param name="ProgramPageDisplayDetails">Full detail page content.</param>
 public record ProgramInCategoryDto(
@@ -70,6 +71,7 @@ public record ProgramInCategoryDto(
     string ExpertTitle,
     string? ExpertGridDescription,
     string? ExpertDetailedDescription,
+    string? ExpertGridImageUrl,
     List<ProgramDurationDto> ProgramDurations,
     ProgramPageDisplayDetailsDto ProgramPageDisplayDetails);
 

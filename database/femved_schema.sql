@@ -166,6 +166,7 @@ CREATE TABLE experts (
     bio                       TEXT         NOT NULL,
     expert_grid_description   VARCHAR(500) NULL,         -- Short bio for program grid cards (was short_bio)
     expert_detailed_description TEXT       NULL,         -- Detailed bio for program detail pages
+    expert_grid_image_url VARCHAR(1000) NULL,            -- Expert image shown on the program grid card
     profile_image_url    TEXT         NULL,
     specialisations      TEXT[]       NULL,          -- PostgreSQL array
     years_experience     SMALLINT     NULL,

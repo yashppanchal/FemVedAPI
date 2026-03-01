@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
+using FemVed.Domain.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -41,8 +42,9 @@ public sealed class JwtService : IJwtService
 
     /// <summary>
     /// Generates a signed JWT access token containing sub, email, and role claims.
+    /// Role name is derived from <c>user.RoleId</c> via <see cref="UserRole"/> enum — no navigation property required.
     /// </summary>
-    /// <param name="user">The authenticated user (must have Role navigation loaded).</param>
+    /// <param name="user">The authenticated user.</param>
     /// <returns>Signed JWT string.</returns>
     public string GenerateAccessToken(User user)
     {
@@ -55,7 +57,7 @@ public sealed class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("role", user.Role?.Name ?? "User"),
+            new Claim("role", ((UserRole)user.RoleId).ToString()),
             new Claim("firstName", user.FirstName),
             new Claim("lastName", user.LastName)
         };

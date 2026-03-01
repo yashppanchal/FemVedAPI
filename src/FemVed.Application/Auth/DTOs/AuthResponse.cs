@@ -22,10 +22,10 @@ public record AuthResponse(
 /// <param name="Email">User email address.</param>
 /// <param name="FirstName">User first name.</param>
 /// <param name="LastName">User last name.</param>
-/// <param name="Role">Role name: Admin, Expert, or User.</param>
+/// <param name="Role">Numeric role ID — 1 = Admin, 2 = Expert, 3 = User.</param>
 public record AuthUserDto(
     Guid Id,
     string Email,
     string FirstName,
     string LastName,
-    string Role);
+    int Role);
