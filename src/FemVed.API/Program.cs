@@ -9,6 +9,7 @@ using FemVed.Infrastructure.Extensions;
 using FluentValidation;
 using MediatR;
 using Serilog;
+using Serilog.Sinks.PostgreSQL.ColumnWriters;
 
 // ── Load .env.local if it exists (local development only) ────────────────────
 // Searches the current directory and all parent directories for .env.local.
@@ -27,8 +28,36 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     // ── Serilog ───────────────────────────────────────────────────────────────
+    // Columns written to the `logs` table in PostgreSQL.
+    // log_event (JSONB) contains ALL structured properties — fully queryable.
+    var logColumnOptions = new Dictionary<string, ColumnWriterBase>
+    {
+        ["timestamp"]        = new TimestampColumnWriter(),
+        ["level"]            = new LevelColumnWriter(renderAsText: true),
+        ["message"]          = new RenderedMessageColumnWriter(),
+        ["message_template"] = new MessageTemplateColumnWriter(),
+        ["exception"]        = new ExceptionColumnWriter(),
+        ["log_event"]        = new LogEventSerializedColumnWriter(), // full JSON
+        ["source_context"]   = new SinglePropertyColumnWriter("SourceContext")
+    };
+
     builder.Host.UseSerilog((ctx, lc) =>
-        lc.ReadFrom.Configuration(ctx.Configuration));
+    {
+        lc.ReadFrom.Configuration(ctx.Configuration);
+
+        var connStr = ctx.Configuration["DB_CONNECTION_STRING"];
+        if (!string.IsNullOrWhiteSpace(connStr))
+        {
+            lc.WriteTo.PostgreSQL(
+                connectionString:  connStr,
+                tableName:         "logs",
+                columnOptions:     logColumnOptions,
+                needAutoCreateTable: true,
+                schemaName:        "public",
+                batchSizeLimit:    50,
+                period:            TimeSpan.FromSeconds(5));
+        }
+    });
 
     // ── Controllers ──────────────────────────────────────────────────────────
     builder.Services.AddControllers()
