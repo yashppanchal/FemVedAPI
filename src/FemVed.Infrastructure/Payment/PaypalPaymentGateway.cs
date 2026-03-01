@@ -98,13 +98,16 @@ public sealed class PaypalPaymentGateway : IPaymentGateway
 
         var paypalOrderId = root.GetProperty("id").GetString() ?? string.Empty;
 
-        // Find the approval URL (rel=approve)
+        // Find the approval URL — PayPal returns "payer-action" when payment_source.paypal
+        // is specified, and "approve" in the basic HATEOAS flow. Accept either.
         var approvalUrl = string.Empty;
         if (root.TryGetProperty("links", out var links))
         {
             foreach (var link in links.EnumerateArray())
             {
-                if (link.TryGetProperty("rel", out var rel) && rel.GetString() == "approve")
+                if (!link.TryGetProperty("rel", out var rel)) continue;
+                var relValue = rel.GetString();
+                if (relValue == "payer-action" || relValue == "approve")
                 {
                     approvalUrl = link.GetProperty("href").GetString() ?? string.Empty;
                     break;
