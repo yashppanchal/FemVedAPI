@@ -124,9 +124,9 @@ public sealed class AdminController : ControllerBase
     /// </summary>
     /// <param name="userId">Target user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with delete confirmation payload.</returns>
     [HttpDelete("users/{userId:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(AdminDeleteResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -135,7 +135,7 @@ public sealed class AdminController : ControllerBase
         await _mediator.Send(
             new DeleteUserCommand(userId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new AdminDeleteResultResponse(userId, true));
     }
 
     /// <summary>
@@ -617,3 +617,8 @@ public record ProcessGdprRequestBody(
     string Action,
     /// <summary>Required when Action is "Reject". Explains why the request was declined.</summary>
     string? RejectionReason);
+
+/// <summary>Standard delete success payload returned by Admin DELETE endpoints.</summary>
+/// <param name="Id">ID of the deleted resource.</param>
+/// <param name="IsDeleted">Always true when deletion succeeds.</param>
+public record AdminDeleteResultResponse(Guid Id, bool IsDeleted);

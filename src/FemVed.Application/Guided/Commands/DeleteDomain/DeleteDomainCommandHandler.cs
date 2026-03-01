@@ -1,9 +1,11 @@
 using System.Text.Json;
 using FemVed.Application.Interfaces;
+using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FemVed.Application.Guided.Commands.DeleteDomain;
 
@@ -13,9 +15,13 @@ namespace FemVed.Application.Guided.Commands.DeleteDomain;
 /// </summary>
 public sealed class DeleteDomainCommandHandler : IRequestHandler<DeleteDomainCommand>
 {
+    private static readonly string[] KnownLocationCodes =
+        ["IN", "GB", "US", "AU", "AE", "NZ", "IE", "DE", "FR", "NL", "SG", "MY", "ZA", "LK"];
+
     private readonly IRepository<GuidedDomain> _domains;
     private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<DeleteDomainCommandHandler> _logger;
 
     /// <summary>Initialises the handler with required services.</summary>
@@ -23,11 +29,13 @@ public sealed class DeleteDomainCommandHandler : IRequestHandler<DeleteDomainCom
         IRepository<GuidedDomain> domains,
         IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
+        IMemoryCache cache,
         ILogger<DeleteDomainCommandHandler> logger)
     {
         _domains   = domains;
         _auditLogs = auditLogs;
         _uow       = uow;
+        _cache     = cache;
         _logger    = logger;
     }
 
@@ -63,6 +71,10 @@ public sealed class DeleteDomainCommandHandler : IRequestHandler<DeleteDomainCom
         });
 
         await _uow.SaveChangesAsync(cancellationToken);
+
+        foreach (var loc in KnownLocationCodes)
+            _cache.Remove($"{GetGuidedTreeQueryHandler.CacheKeyPrefix}{loc}");
+
         _logger.LogInformation("DeleteDomain: domain {DomainId} soft-deleted", domain.Id);
     }
 }

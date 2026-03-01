@@ -1,9 +1,11 @@
 using System.Text.Json;
 using FemVed.Application.Interfaces;
+using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FemVed.Application.Guided.Commands.DeleteProgram;
 
@@ -14,10 +16,14 @@ namespace FemVed.Application.Guided.Commands.DeleteProgram;
 /// </summary>
 public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramCommand>
 {
+    private static readonly string[] KnownLocationCodes =
+        ["IN", "GB", "US", "AU", "AE", "NZ", "IE", "DE", "FR", "NL", "SG", "MY", "ZA", "LK"];
+
     private readonly IRepository<Program> _programs;
     private readonly IRepository<Expert> _experts;
     private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<DeleteProgramCommandHandler> _logger;
 
     /// <summary>Initialises the handler with required services.</summary>
@@ -26,12 +32,14 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
         IRepository<Expert> experts,
         IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
+        IMemoryCache cache,
         ILogger<DeleteProgramCommandHandler> logger)
     {
         _programs  = programs;
         _experts   = experts;
         _auditLogs = auditLogs;
         _uow       = uow;
+        _cache     = cache;
         _logger    = logger;
     }
 
@@ -79,6 +87,10 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
         });
 
         await _uow.SaveChangesAsync(cancellationToken);
+
+        foreach (var loc in KnownLocationCodes)
+            _cache.Remove($"{GetGuidedTreeQueryHandler.CacheKeyPrefix}{loc}");
+
         _logger.LogInformation("DeleteProgram: program {ProgramId} soft-deleted", program.Id);
     }
 }

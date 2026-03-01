@@ -236,17 +236,17 @@ public sealed class GuidedController : ControllerBase
     /// </summary>
     /// <param name="id">Domain ID to delete.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with delete confirmation payload.</returns>
     [HttpDelete("domains/{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(DeleteResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteDomain(Guid id, CancellationToken cancellationToken)
     {
         await _mediator.Send(new DeleteDomainCommand(id, GetCurrentUserId(), GetIpAddress()), cancellationToken);
-        return NoContent();
+        return Ok(new DeleteResultResponse(id, true));
     }
 
     /// <summary>
@@ -254,17 +254,17 @@ public sealed class GuidedController : ControllerBase
     /// </summary>
     /// <param name="id">Category ID to delete.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with delete confirmation payload.</returns>
     [HttpDelete("categories/{id:guid}")]
     [Authorize(Policy = "AdminOnly")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(DeleteResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCategory(Guid id, CancellationToken cancellationToken)
     {
         await _mediator.Send(new DeleteCategoryCommand(id, GetCurrentUserId(), GetIpAddress()), cancellationToken);
-        return NoContent();
+        return Ok(new DeleteResultResponse(id, true));
     }
 
     // ── Expert + Admin program management ─────────────────────────────────────
@@ -412,10 +412,10 @@ public sealed class GuidedController : ControllerBase
     /// </summary>
     /// <param name="id">Program ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>204 No Content on success.</returns>
+    /// <returns>200 OK with delete confirmation payload.</returns>
     [HttpDelete("programs/{id:guid}")]
     [Authorize(Policy = "ExpertOrAdmin")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(DeleteResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -424,7 +424,7 @@ public sealed class GuidedController : ControllerBase
         await _mediator.Send(
             new DeleteProgramCommand(id, GetCurrentUserId(), User.IsInRole("Admin"), GetIpAddress()),
             cancellationToken);
-        return NoContent();
+        return Ok(new DeleteResultResponse(id, true));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -542,3 +542,8 @@ public record UpdateProgramRequest(
     string? Overview,
     int? SortOrder,
     List<DetailSectionInput>? DetailSections);
+
+/// <summary>Standard delete success payload returned by Guided DELETE endpoints.</summary>
+/// <param name="Id">ID of the deleted resource.</param>
+/// <param name="IsDeleted">Always true when deletion succeeds.</param>
+public record DeleteResultResponse(Guid Id, bool IsDeleted);
