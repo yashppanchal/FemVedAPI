@@ -102,6 +102,10 @@ public static class InfrastructureServiceExtensions
             opts.ClientId  = configuration["PAYPAL_CLIENT_ID"]  ?? throw new InvalidOperationException("PAYPAL_CLIENT_ID is not set.");
             opts.Secret    = configuration["PAYPAL_SECRET"]     ?? throw new InvalidOperationException("PAYPAL_SECRET is not set.");
             opts.WebhookId = configuration["PAYPAL_WEBHOOK_ID"] ?? throw new InvalidOperationException("PAYPAL_WEBHOOK_ID is not set.");
+            if (!string.IsNullOrWhiteSpace(configuration["PAYPAL_RETURN_URL"]))
+                opts.ReturnUrl = configuration["PAYPAL_RETURN_URL"]!;
+            if (!string.IsNullOrWhiteSpace(configuration["PAYPAL_CANCEL_URL"]))
+                opts.CancelUrl = configuration["PAYPAL_CANCEL_URL"]!;
         });
 
         services.AddHttpClient("cashfree", (sp, client) =>
