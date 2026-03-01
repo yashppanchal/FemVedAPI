@@ -195,6 +195,62 @@ public sealed class PaypalPaymentGateway : IPaymentGateway
     }
 
     /// <inheritdoc/>
+    public async Task<string?> CaptureOrderAsync(
+        string gatewayOrderId,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("PayPal: capturing order {GatewayOrderId}", gatewayOrderId);
+
+        var token = await GetAccessTokenAsync(cancellationToken);
+
+        using var httpRequest = new HttpRequestMessage(
+            HttpMethod.Post, $"/v2/checkout/orders/{gatewayOrderId}/capture")
+        {
+            Content = new StringContent("{}", System.Text.Encoding.UTF8, "application/json")
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _http.SendAsync(httpRequest, cancellationToken);
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError("PayPal CaptureOrder failed: {Status} {Body}", response.StatusCode, responseBody);
+            return null;
+        }
+
+        using var doc = JsonDocument.Parse(responseBody);
+        var root = doc.RootElement;
+
+        // The capture ID is nested: purchase_units[0].payments.captures[0].id
+        string? captureId = null;
+        if (root.TryGetProperty("purchase_units", out var units))
+        {
+            foreach (var unit in units.EnumerateArray())
+            {
+                if (unit.TryGetProperty("payments", out var payments)
+                    && payments.TryGetProperty("captures", out var captures))
+                {
+                    foreach (var capture in captures.EnumerateArray())
+                    {
+                        if (capture.TryGetProperty("id", out var capId))
+                        {
+                            captureId = capId.GetString();
+                            break;
+                        }
+                    }
+                }
+                if (captureId is not null) break;
+            }
+        }
+
+        _logger.LogInformation("PayPal: order {GatewayOrderId} captured, captureId={CaptureId}",
+            gatewayOrderId, captureId);
+
+        return captureId;
+    }
+
+    /// <inheritdoc/>
     public async Task<GatewayRefundResult> RefundAsync(
         GatewayRefundRequest request,
         CancellationToken cancellationToken = default)

@@ -123,6 +123,13 @@ public sealed class CashfreePaymentGateway : IPaymentGateway
     }
 
     /// <inheritdoc/>
+    /// <remarks>CashFree payments are captured automatically via the payment session — no explicit capture call needed.</remarks>
+    public Task<string?> CaptureOrderAsync(
+        string gatewayOrderId,
+        CancellationToken cancellationToken = default)
+        => throw new NotSupportedException("CashFree does not require an explicit capture call.");
+
+    /// <inheritdoc/>
     public async Task<GatewayRefundResult> RefundAsync(
         GatewayRefundRequest request,
         CancellationToken cancellationToken = default)

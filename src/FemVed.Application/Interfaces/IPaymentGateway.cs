@@ -80,6 +80,17 @@ public interface IPaymentGateway
         IDictionary<string, string> headers,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Captures a previously approved PayPal order, moving it to COMPLETED.
+    /// Only applicable to PayPal — CashFree payments are captured automatically via the session.
+    /// </summary>
+    /// <param name="gatewayOrderId">The PayPal order ID returned by <see cref="CreateOrderAsync"/>.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The capture ID (gateway payment ID), or null on failure.</returns>
+    Task<string?> CaptureOrderAsync(
+        string gatewayOrderId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Initiates a refund against a previously captured payment.</summary>
     /// <param name="request">Refund details.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
