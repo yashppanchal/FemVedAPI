@@ -25,7 +25,8 @@
     { "key": "couponId",         "value": "", "type": "string" },
     { "key": "couponCode",       "value": "TEST10", "type": "string" },
     { "key": "gdprRequestId",    "value": "", "type": "string" },
-    { "key": "resetToken",       "value": "", "type": "string" }
+    { "key": "resetToken",       "value": "", "type": "string" },
+    { "key": "testimonialId",    "value": "", "type": "string" }
   ],
   "auth": {
     "type": "bearer",
@@ -696,6 +697,28 @@
             "method": "GET",
             "url": { "raw": "{{baseUrl}}/orders/my", "host": ["{{baseUrl}}"], "path": ["orders", "my"] }
           }
+        },
+        {
+          "name": "6.7 Cancel Pending Order",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 422 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 422, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has cancel payload', () => {",
+            "    pm.expect(j).to.have.property('orderId');",
+            "    pm.expect(j).to.have.property('action', 'CANCELLED');",
+            "    pm.expect(j).to.have.property('isUpdated', true);",
+            "  });",
+            "  console.log('Order cancelled:', pm.collectionVariables.get('orderId'));",
+            "} else {",
+            "  console.log('Order not in Pending status (may already be Paid/Failed) — skip this step or create a fresh pending order');",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/orders/{{orderId}}/cancel", "host": ["{{baseUrl}}"], "path": ["orders", "{{orderId}}", "cancel"] }
+          }
         }
       ]
     },
@@ -740,7 +763,79 @@
           }
         },
         {
-          "name": "7.4 Submit GDPR Deletion Request",
+          "name": "7.4 GET My Orders (alias via /users/me/orders)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+            "console.log('My orders (alias):', pm.response.json().length);"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/me/orders", "host": ["{{baseUrl}}"], "path": ["users", "me", "orders"] }
+          }
+        },
+        {
+          "name": "7.5 GET My Refunds",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+            "const j = pm.response.json();",
+            "if (j.length > 0) {",
+            "  pm.test('Refund has required fields', () => {",
+            "    pm.expect(j[0]).to.have.property('refundId');",
+            "    pm.expect(j[0]).to.have.property('orderId');",
+            "    pm.expect(j[0]).to.have.property('refundAmount');",
+            "    pm.expect(j[0]).to.have.property('status');",
+            "    pm.expect(j[0]).to.have.property('currencyCode');",
+            "  });",
+            "}",
+            "console.log('My refunds:', j.length);"
+          ]}}],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/me/refunds", "host": ["{{baseUrl}}"], "path": ["users", "me", "refunds"] }
+          }
+        },
+        {
+          "name": "7.6 Pause My Enrollment",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200, 404, 422]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has session action payload', () => {",
+            "    pm.expect(j).to.have.property('accessId');",
+            "    pm.expect(j).to.have.property('action', 'paused');",
+            "  });",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"note\": \"Taking a short break\"\n}" },
+            "url": { "raw": "{{baseUrl}}/users/me/enrollments/{{accessId}}/pause", "host": ["{{baseUrl}}"], "path": ["users", "me", "enrollments", "{{accessId}}", "pause"] }
+          }
+        },
+        {
+          "name": "7.7 End My Enrollment",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200, 404, 422]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has session action payload', () => {",
+            "    pm.expect(j).to.have.property('accessId');",
+            "    pm.expect(j).to.have.property('action', 'ended');",
+            "  });",
+            "}"
+          ]}}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"note\": \"Program completed\"\n}" },
+            "url": { "raw": "{{baseUrl}}/users/me/enrollments/{{accessId}}/end", "host": ["{{baseUrl}}"], "path": ["users", "me", "enrollments", "{{accessId}}", "end"] }
+          }
+        },
+        {
+          "name": "7.8 Submit GDPR Deletion Request (UK/EU users only)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Status 202 or 409', () => pm.expect(pm.response.code).to.be.oneOf([202, 409]));"
           ]}}],
@@ -794,7 +889,218 @@
           }
         },
         {
-          "name": "8.4 Send Progress Update to Enrolled User",
+          "name": "8.4 UPDATE My Expert Profile",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has expert profile fields', () => {",
+            "    pm.expect(j).to.have.property('expertId');",
+            "    pm.expect(j).to.have.property('displayName');",
+            "    pm.expect(j).to.have.property('commissionRate'); // read-only — admin only",
+            "  });",
+            "  console.log('Expert profile updated. CommissionRate (admin-only):', j.commissionRate);",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"displayName\": \"Dr Jane Expert\",\n  \"title\": \"Certified Women's Health Coach\",\n  \"bio\": \"I specialise in hormonal health and stress management for women.\",\n  \"gridDescription\": \"Expert in hormonal health — 10+ years experience.\",\n  \"yearsExperience\": 10,\n  \"specialisations\": [\"Hormonal Health\", \"PCOS\", \"Stress\"],\n  \"credentials\": [\"MSc Nutrition\", \"IFM Certified\"]\n}" },
+            "url": { "raw": "{{baseUrl}}/experts/me", "host": ["{{baseUrl}}"], "path": ["experts", "me"] }
+          }
+        },
+        {
+          "name": "8.5 GET My Earnings",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has earnings fields', () => {",
+            "    pm.expect(j).to.have.property('expertId');",
+            "    pm.expect(j).to.have.property('commissionRate');",
+            "    pm.expect(j).to.have.property('totalEarned');",
+            "    pm.expect(j).to.have.property('expertShare');",
+            "    pm.expect(j).to.have.property('outstandingBalance');",
+            "  });",
+            "  console.log('Earnings summary:', JSON.stringify(j.outstandingBalance));",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/experts/me/earnings", "host": ["{{baseUrl}}"], "path": ["experts", "me", "earnings"] }
+          }
+        },
+        {
+          "name": "8.6 GET My Payout History",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Returns array', () => pm.expect(j).to.be.an('array'));",
+            "  console.log('Payout records:', j.length);",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/experts/me/payouts", "host": ["{{baseUrl}}"], "path": ["experts", "me", "payouts"] }
+          }
+        },
+        {
+          "name": "8.7 Start Enrollment Session (Expert)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200, 404, 422]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has session action payload', () => {",
+            "    pm.expect(j).to.have.property('accessId');",
+            "    pm.expect(j).to.have.property('action', 'started');",
+            "  });",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"note\": \"Program kicked off!\"\n}" },
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/start", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments", "{{accessId}}", "start"] }
+          }
+        },
+        {
+          "name": "8.8 Pause Enrollment Session (Expert)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200, 404, 422]));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"note\": \"User requested a pause\"\n}" },
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/pause", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments", "{{accessId}}", "pause"] }
+          }
+        },
+        {
+          "name": "8.9 Resume Enrollment Session (Expert)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200, 404, 422]));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"note\": \"Resumed after pause\"\n}" },
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/resume", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments", "{{accessId}}", "resume"] }
+          }
+        },
+        {
+          "name": "8.10 End Enrollment Session (Expert)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200, 404, 422]));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"note\": \"Program completed successfully\"\n}" },
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/end", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments", "{{accessId}}", "end"] }
+          }
+        },
+        {
+          "name": "8.11 Send Comment to Enrolled User",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has comment payload', () => {",
+            "    pm.expect(j).to.have.property('accessId');",
+            "    pm.expect(j).to.have.property('sent', true);",
+            "  });",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"updateNote\": \"Great progress this week! Keep following the nutrition plan.\"\n}" },
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/comments", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments", "{{accessId}}", "comments"] }
+          }
+        },
+        {
+          "name": "8.12 GET Comments for Enrollment",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+            "  console.log('Comments:', pm.response.json().length);",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/experts/me/enrollments/{{accessId}}/comments", "host": ["{{baseUrl}}"], "path": ["experts", "me", "enrollments", "{{accessId}}", "comments"] }
+          }
+        },
+        {
+          "name": "8.13 GET Testimonials for Program (management)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]));",
+            "if (pm.response.code === 200) {",
+            "  pm.test('Returns array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+            "  console.log('Testimonials:', pm.response.json().length);",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}/testimonials", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}", "testimonials"] }
+          }
+        },
+        {
+          "name": "8.14 Add Testimonial — captures testimonialId",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 201 or 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([201, 403, 404]));",
+            "if (pm.response.code === 201) {",
+            "  const j = pm.response.json();",
+            "  pm.collectionVariables.set('testimonialId', j.testimonialId || j);",
+            "  console.log('Testimonial created:', j.testimonialId || j);",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"reviewerName\": \"Sarah M.\",\n  \"reviewerTitle\": \"Working mum\",\n  \"reviewText\": \"This program completely transformed my energy levels and hormonal health!\",\n  \"rating\": 5,\n  \"sortOrder\": 0\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}/testimonials", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}", "testimonials"] }
+          }
+        },
+        {
+          "name": "8.15 Update Testimonial",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"reviewText\": \"Updated: This program was absolutely life-changing for my hormones!\",\n  \"rating\": 5\n}" },
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}/testimonials/{{testimonialId}}", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}", "testimonials", "{{testimonialId}}"] }
+          }
+        },
+        {
+          "name": "8.16 Hide Testimonial (soft — isActive = false)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 403 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 403, 404]));"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{expertToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/guided/programs/{{programId}}/testimonials/{{testimonialId}}", "host": ["{{baseUrl}}"], "path": ["guided", "programs", "{{programId}}", "testimonials", "{{testimonialId}}"] }
+          }
+        },
+        {
+          "name": "8.17 Send Progress Update to Enrolled User (legacy endpoint)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
             "if (pm.response.code === 200) {",
@@ -1015,7 +1321,23 @@
           }
         },
         {
-          "name": "10.3 Deactivate Coupon",
+          "name": "10.3 Activate Coupon (re-enable a deactivated coupon)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 422', () => pm.expect(pm.response.code).to.be.oneOf([200, 422]));",
+            "if (pm.response.code === 200) {",
+            "  console.log('Coupon activated:', pm.collectionVariables.get('couponId'));",
+            "} else {",
+            "  console.log('Coupon may already be active — run 10.4 (Deactivate) first then retry');",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/admin/coupons/{{couponId}}/activate", "host": ["{{baseUrl}}"], "path": ["admin", "coupons", "{{couponId}}", "activate"] }
+          }
+        },
+        {
+          "name": "10.4 Deactivate Coupon",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Status 200', () => pm.response.to.have.status(200));",
             "const j = pm.response.json();",
@@ -1071,7 +1393,51 @@
           }
         },
         {
-          "name": "11.3 GET Audit Log",
+          "name": "11.3 GET Expert Payout Balance (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has balance fields', () => {",
+            "    pm.expect(j).to.have.property('expertId');",
+            "    pm.expect(j).to.have.property('commissionRate');",
+            "    pm.expect(j).to.have.property('outstandingBalance');",
+            "  });",
+            "  console.log('Outstanding balance:', JSON.stringify(j.outstandingBalance));",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/admin/experts/{{expertId}}/payout-balance", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "{{expertId}}", "payout-balance"] }
+          }
+        },
+        {
+          "name": "11.4 Record Expert Payout (Admin)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
+            "pm.test('Status 200 or 422 or 404', () => pm.expect(pm.response.code).to.be.oneOf([200, 422, 404]));",
+            "if (pm.response.code === 200) {",
+            "  const j = pm.response.json();",
+            "  pm.test('Has payout payload', () => {",
+            "    pm.expect(j).to.have.property('expertId');",
+            "    pm.expect(j).to.have.property('payoutId');",
+            "    pm.expect(j).to.have.property('isRecorded', true);",
+            "  });",
+            "  console.log('Payout recorded:', j.payoutId);",
+            "} else {",
+            "  console.log('Payout may exceed outstanding balance or expert not found');",
+            "}"
+          ]}}],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "options": { "raw": { "language": "json" } }, "raw": "{\n  \"amount\": 100.00,\n  \"currencyCode\": \"GBP\",\n  \"note\": \"Monthly payout — Bank transfer\",\n  \"reference\": \"BACS-2026-03\"\n}" },
+            "url": { "raw": "{{baseUrl}}/admin/experts/{{expertId}}/payouts", "host": ["{{baseUrl}}"], "path": ["admin", "experts", "{{expertId}}", "payouts"] }
+          }
+        },
+        {
+          "name": "11.5 GET Audit Log (Admin)",
           "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": [
             "pm.test('Status 200', () => pm.response.to.have.status(200));",
             "console.log('Audit entries:', pm.response.json().length);"

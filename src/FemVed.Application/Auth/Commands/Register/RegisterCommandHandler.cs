@@ -49,7 +49,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
     /// <param name="request">The register command.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Auth response containing tokens and user summary.</returns>
-    /// <exception cref="ValidationException">Thrown when the email is already registered.</exception>
+    /// <exception cref="ValidationException">Thrown when the email or mobile number is already registered.</exception>
     public async Task<AuthResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Registration attempt for email {Email}", request.Email);
@@ -67,6 +67,17 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         var fullMobile = string.IsNullOrEmpty(request.CountryCode) || string.IsNullOrEmpty(request.MobileNumber)
             ? null
             : $"{request.CountryCode}{request.MobileNumber}";
+
+        if (!string.IsNullOrEmpty(fullMobile))
+        {
+            var phoneTaken = await _users.AnyAsync(
+                u => u.FullMobile == fullMobile && !u.IsDeleted, cancellationToken);
+            if (phoneTaken)
+                throw new ValidationException(new Dictionary<string, string[]>
+                {
+                    { "mobileNumber", ["An account with this mobile number already exists."] }
+                });
+        }
 
         var user = new User
         {
