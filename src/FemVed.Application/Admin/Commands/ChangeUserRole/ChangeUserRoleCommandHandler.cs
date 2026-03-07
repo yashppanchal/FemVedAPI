@@ -7,10 +7,16 @@ using Microsoft.Extensions.Logging;
 
 namespace FemVed.Application.Admin.Commands.ChangeUserRole;
 
-/// <summary>Handles <see cref="ChangeUserRoleCommand"/>. Updates the user's role and writes an audit log entry.</summary>
+/// <summary>
+/// Handles <see cref="ChangeUserRoleCommand"/>.
+/// Updates the user's role and writes an audit log entry.
+/// When promoting to role 2 (Expert), automatically creates an expert profile row
+/// if one does not already exist, so the user can immediately access expert features.
+/// </summary>
 public sealed class ChangeUserRoleCommandHandler : IRequestHandler<ChangeUserRoleCommand>
 {
     private readonly IRepository<User> _users;
+    private readonly IRepository<Expert> _experts;
     private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<ChangeUserRoleCommandHandler> _logger;
@@ -18,17 +24,22 @@ public sealed class ChangeUserRoleCommandHandler : IRequestHandler<ChangeUserRol
     /// <summary>Initialises the handler.</summary>
     public ChangeUserRoleCommandHandler(
         IRepository<User> users,
+        IRepository<Expert> experts,
         IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
         ILogger<ChangeUserRoleCommandHandler> logger)
     {
         _users     = users;
+        _experts   = experts;
         _auditLogs = auditLogs;
         _uow       = uow;
         _logger    = logger;
     }
 
-    /// <summary>Changes the user's role and logs the action.</summary>
+    /// <summary>
+    /// Changes the user's role and logs the action.
+    /// When promoting to Expert (role 2), auto-creates an expert profile if one does not exist.
+    /// </summary>
     /// <exception cref="NotFoundException">Thrown when the user does not exist.</exception>
     /// <exception cref="DomainException">Thrown when the user already has the requested role.</exception>
     public async Task Handle(ChangeUserRoleCommand request, CancellationToken cancellationToken)
@@ -47,6 +58,32 @@ public sealed class ChangeUserRoleCommandHandler : IRequestHandler<ChangeUserRol
         user.RoleId    = request.RoleId;
         user.UpdatedAt = DateTimeOffset.UtcNow;
         _users.Update(user);
+
+        // When promoting to Expert, auto-create an expert profile if one doesn't exist yet.
+        // The expert can fill in bio/title later via their profile update endpoint.
+        if (request.RoleId == 2)
+        {
+            var profileExists = await _experts.AnyAsync(
+                e => e.UserId == user.Id && !e.IsDeleted, cancellationToken);
+
+            if (!profileExists)
+            {
+                var expert = new Expert
+                {
+                    Id          = Guid.NewGuid(),
+                    UserId      = user.Id,
+                    DisplayName = $"{user.FirstName} {user.LastName}".Trim(),
+                    Title       = string.Empty,
+                    Bio         = string.Empty,
+                    IsActive    = true,
+                    IsDeleted   = false,
+                    CreatedAt   = DateTimeOffset.UtcNow,
+                    UpdatedAt   = DateTimeOffset.UtcNow
+                };
+                await _experts.AddAsync(expert);
+                _logger.LogInformation("ChangeUserRole: expert profile auto-created for user {UserId}", user.Id);
+            }
+        }
 
         await _auditLogs.AddAsync(new AdminAuditLog
         {
