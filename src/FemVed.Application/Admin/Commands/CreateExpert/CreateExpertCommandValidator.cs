@@ -22,8 +22,13 @@ public sealed class CreateExpertCommandValidator : AbstractValidator<CreateExper
             .NotEmpty();
 
         RuleFor(x => x.GridDescription)
+            .NotEmpty().WithMessage("Grid description cannot be empty or whitespace.")
             .MaximumLength(500)
             .When(x => x.GridDescription is not null);
+
+        RuleFor(x => x.CommissionRate)
+            .InclusiveBetween(0m, 100m)
+            .WithMessage("CommissionRate must be between 0 and 100.");
 
         RuleFor(x => x.YearsExperience)
             .GreaterThan((short)0)

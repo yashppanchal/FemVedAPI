@@ -25,8 +25,14 @@ public sealed class UpdateExpertCommandValidator : AbstractValidator<UpdateExper
             .When(x => x.Bio is not null);
 
         RuleFor(x => x.GridDescription)
+            .NotEmpty().WithMessage("Grid description cannot be empty or whitespace.")
             .MaximumLength(500)
             .When(x => x.GridDescription is not null);
+
+        RuleFor(x => x.CommissionRate)
+            .InclusiveBetween(0m, 100m)
+            .WithMessage("CommissionRate must be between 0 and 100.")
+            .When(x => x.CommissionRate.HasValue);
 
         RuleFor(x => x.YearsExperience)
             .GreaterThan((short)0)

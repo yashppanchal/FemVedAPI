@@ -1,4 +1,8 @@
 using System.Security.Claims;
+using FemVed.Application.Guided.Commands.AddTestimonial;
+using FemVed.Application.Guided.Commands.DeleteTestimonial;
+using FemVed.Application.Guided.Commands.UpdateTestimonial;
+using FemVed.Application.Guided.Queries.GetProgramTestimonials;
 using FemVed.Application.Guided.Commands.AddDuration;
 using FemVed.Application.Guided.Commands.AddDurationPrice;
 using FemVed.Application.Guided.Commands.ArchiveProgram;
@@ -725,6 +729,114 @@ public sealed class GuidedController : ControllerBase
         return Ok(new DeleteResultResponse(priceId, true));
     }
 
+    // ── Testimonials ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all testimonials (active and inactive) for the specified program. Expert or Admin.
+    /// Experts may only view testimonials for programs they own.
+    /// </summary>
+    /// <param name="programId">Program UUID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with list of testimonials ordered by SortOrder (may be empty).</returns>
+    [HttpGet("programs/{programId:guid}/testimonials")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(List<TestimonialDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetTestimonials(Guid programId, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetProgramTestimonialsQuery(programId, GetCurrentUserId(), User.IsInRole("Admin")),
+            cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Adds a new testimonial to the specified program. Expert or Admin.
+    /// Experts may only add testimonials to programs they own.
+    /// </summary>
+    /// <param name="programId">Program UUID.</param>
+    /// <param name="request">Testimonial content.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>201 Created with the new testimonial UUID.</returns>
+    [HttpPost("programs/{programId:guid}/testimonials")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(CreatedTestimonialResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddTestimonial(
+        Guid programId,
+        [FromBody] AddTestimonialRequest request,
+        CancellationToken cancellationToken)
+    {
+        var id = await _mediator.Send(
+            new AddTestimonialCommand(
+                programId, GetCurrentUserId(), User.IsInRole("Admin"),
+                request.ReviewerName, request.ReviewerTitle, request.ReviewText,
+                request.Rating, request.SortOrder),
+            cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, new CreatedTestimonialResponse(id));
+    }
+
+    /// <summary>
+    /// Updates an existing testimonial. All fields are optional (patch semantics). Expert or Admin.
+    /// Experts may only update testimonials on programs they own.
+    /// </summary>
+    /// <param name="programId">Program UUID.</param>
+    /// <param name="testimonialId">Testimonial UUID.</param>
+    /// <param name="request">Fields to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with update confirmation.</returns>
+    [HttpPut("programs/{programId:guid}/testimonials/{testimonialId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(UpdateResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateTestimonial(
+        Guid programId,
+        Guid testimonialId,
+        [FromBody] UpdateTestimonialRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new UpdateTestimonialCommand(
+                testimonialId, programId, GetCurrentUserId(), User.IsInRole("Admin"),
+                request.ReviewerName, request.ReviewerTitle, request.ReviewText,
+                request.Rating, request.SortOrder, request.IsActive),
+            cancellationToken);
+        return Ok(new UpdateResultResponse(testimonialId, true));
+    }
+
+    /// <summary>
+    /// Hides a testimonial (sets is_active = false). Data is preserved. Expert or Admin.
+    /// Experts may only hide testimonials on programs they own.
+    /// </summary>
+    /// <param name="programId">Program UUID.</param>
+    /// <param name="testimonialId">Testimonial UUID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with delete confirmation.</returns>
+    [HttpDelete("programs/{programId:guid}/testimonials/{testimonialId:guid}")]
+    [Authorize(Policy = "ExpertOrAdmin")]
+    [ProducesResponseType(typeof(DeleteResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteTestimonial(
+        Guid programId,
+        Guid testimonialId,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new DeleteTestimonialCommand(testimonialId, programId, GetCurrentUserId(), User.IsInRole("Admin")),
+            cancellationToken);
+        return Ok(new DeleteResultResponse(testimonialId, true));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -891,3 +1003,35 @@ public record AddDurationPriceRequest(string LocationCode, decimal Amount, strin
 /// <param name="CurrencyCode">New ISO 4217 code (optional).</param>
 /// <param name="CurrencySymbol">New display symbol (optional).</param>
 public record UpdateDurationPriceRequest(decimal? Amount, string? CurrencyCode, string? CurrencySymbol);
+
+/// <summary>HTTP request body for POST /api/v1/guided/programs/{programId}/testimonials.</summary>
+/// <param name="ReviewerName">Reviewer's display name (required).</param>
+/// <param name="ReviewerTitle">Reviewer context, e.g. "Mother of two, London" (optional).</param>
+/// <param name="ReviewText">The testimonial body text (required).</param>
+/// <param name="Rating">Star rating 1–5 (optional).</param>
+/// <param name="SortOrder">Display order (default 0).</param>
+public record AddTestimonialRequest(
+    string ReviewerName,
+    string? ReviewerTitle,
+    string ReviewText,
+    short? Rating,
+    int SortOrder = 0);
+
+/// <summary>HTTP request body for PUT /api/v1/guided/programs/{programId}/testimonials/{testimonialId}. All fields optional.</summary>
+/// <param name="ReviewerName">New reviewer display name (optional).</param>
+/// <param name="ReviewerTitle">New reviewer context (optional).</param>
+/// <param name="ReviewText">New testimonial body (optional).</param>
+/// <param name="Rating">New star rating 1–5 (optional).</param>
+/// <param name="SortOrder">New display order (optional).</param>
+/// <param name="IsActive">Set true to show, false to hide publicly (optional).</param>
+public record UpdateTestimonialRequest(
+    string? ReviewerName,
+    string? ReviewerTitle,
+    string? ReviewText,
+    short? Rating,
+    int? SortOrder,
+    bool? IsActive);
+
+/// <summary>Response returned after a testimonial is successfully created.</summary>
+/// <param name="TestimonialId">UUID of the newly created testimonial.</param>
+public record CreatedTestimonialResponse(Guid TestimonialId);

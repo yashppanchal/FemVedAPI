@@ -12,10 +12,12 @@ public sealed class UpdateProgramCommandValidator : AbstractValidator<UpdateProg
             .NotEmpty().WithMessage("Program ID is required.");
 
         RuleFor(x => x.Name)
+            .NotEmpty().WithMessage("Program name cannot be empty or whitespace.")
             .MaximumLength(300).WithMessage("Program name must not exceed 300 characters.")
             .When(x => x.Name is not null);
 
         RuleFor(x => x.GridDescription)
+            .NotEmpty().WithMessage("Grid description cannot be empty or whitespace.")
             .MaximumLength(500).WithMessage("Grid description must not exceed 500 characters.")
             .When(x => x.GridDescription is not null);
     }

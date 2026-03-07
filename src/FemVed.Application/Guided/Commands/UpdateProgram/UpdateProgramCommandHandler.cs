@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
@@ -13,6 +14,7 @@ namespace FemVed.Application.Guided.Commands.UpdateProgram;
 /// Handles <see cref="UpdateProgramCommand"/>.
 /// Applies partial updates. Experts can only edit programs they own in DRAFT or PENDING_REVIEW status.
 /// List fields (WhatYouGet, WhoIsThisFor, Tags, DetailSections) are replaced wholesale when non-null.
+/// All mutations (both admin and expert) are recorded in admin_audit_log.
 /// </summary>
 public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramCommand>
 {
@@ -25,6 +27,7 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
     private readonly IRepository<ProgramWhatYouGet> _whatYouGet;
     private readonly IRepository<ProgramWhoIsThisFor> _whoIsThisFor;
     private readonly IRepository<ProgramTag> _tags;
+    private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
     private readonly IMemoryCache _cache;
     private readonly ILogger<UpdateProgramCommandHandler> _logger;
@@ -37,6 +40,7 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         IRepository<ProgramWhatYouGet> whatYouGet,
         IRepository<ProgramWhoIsThisFor> whoIsThisFor,
         IRepository<ProgramTag> tags,
+        IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
         IMemoryCache cache,
         ILogger<UpdateProgramCommandHandler> logger)
@@ -47,6 +51,7 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         _whatYouGet     = whatYouGet;
         _whoIsThisFor   = whoIsThisFor;
         _tags           = tags;
+        _auditLogs      = auditLogs;
         _uow            = uow;
         _cache          = cache;
         _logger         = logger;
@@ -150,6 +155,27 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
                     SortOrder = section.SortOrder
                 });
         }
+
+        // ── Audit log ─────────────────────────────────────────────────────────
+        await _auditLogs.AddAsync(new AdminAuditLog
+        {
+            Id          = Guid.NewGuid(),
+            AdminUserId = request.RequestingUserId,
+            Action      = "UPDATE_PROGRAM",
+            EntityType  = "programs",
+            EntityId    = program.Id,
+            BeforeValue = null,   // full before snapshot would require re-loading all child lists; caller diff is sufficient
+            AfterValue  = JsonSerializer.Serialize(new
+            {
+                request.Name,
+                request.GridDescription,
+                request.Overview,
+                request.SortOrder,
+                UpdatedBy = request.IsAdmin ? "ADMIN" : "EXPERT"
+            }),
+            IpAddress = null,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
 
         await _uow.SaveChangesAsync(cancellationToken);
 

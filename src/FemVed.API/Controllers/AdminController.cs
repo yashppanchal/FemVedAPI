@@ -11,6 +11,7 @@ using FemVed.Application.Admin.Commands.ActivateUser;
 using FemVed.Application.Admin.Commands.ChangeUserRole;
 using FemVed.Application.Admin.Commands.CreateCoupon;
 using FemVed.Application.Admin.Commands.CreateExpert;
+using FemVed.Application.Admin.Commands.ActivateCoupon;
 using FemVed.Application.Admin.Commands.DeactivateCoupon;
 using FemVed.Application.Admin.Commands.DeactivateExpert;
 using FemVed.Application.Admin.Commands.DeactivateUser;
@@ -419,6 +420,26 @@ public sealed class AdminController : ControllerBase
             new DeactivateCouponCommand(GetCurrentUserId(), GetIpAddress(), couponId),
             cancellationToken);
         return Ok(new AdminActivationResultResponse(couponId, false, true));
+    }
+
+    /// <summary>
+    /// Reactivates a previously deactivated coupon (sets IsActive = true).
+    /// </summary>
+    /// <param name="couponId">Target coupon ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with state confirmation payload; 422 if the coupon is already active.</returns>
+    [HttpPut("coupons/{couponId:guid}/activate")]
+    [ProducesResponseType(typeof(AdminActivationResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ActivateCoupon(Guid couponId, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new ActivateCouponCommand(GetCurrentUserId(), GetIpAddress(), couponId),
+            cancellationToken);
+        return Ok(new AdminActivationResultResponse(couponId, true, true));
     }
 
     // ── Orders ─────────────────────────────────────────────────────────────────

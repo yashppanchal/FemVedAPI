@@ -1,14 +1,18 @@
 using System.Security.Claims;
+using FemVed.Application.Admin.DTOs;
 using FemVed.Application.Enrollments.Commands.EndEnrollment;
 using FemVed.Application.Enrollments.Commands.PauseEnrollment;
 using FemVed.Application.Enrollments.Commands.ResumeEnrollment;
 using FemVed.Application.Enrollments.Commands.StartEnrollment;
 using FemVed.Application.Experts.Commands.SendProgressUpdate;
+using FemVed.Application.Experts.Commands.UpdateMyExpertProfile;
 using FemVed.Application.Experts.DTOs;
 using FemVed.Application.Experts.Queries.GetEnrollmentComments;
+using FemVed.Application.Experts.Queries.GetMyEarnings;
 using FemVed.Application.Experts.Queries.GetMyEnrollments;
 using FemVed.Application.Experts.Queries.GetMyExpertProfile;
 using FemVed.Application.Experts.Queries.GetMyExpertPrograms;
+using FemVed.Application.Experts.Queries.GetMyPayoutHistory;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -68,6 +72,84 @@ public sealed class ExpertsController : ControllerBase
     {
         var expertId = await GetCurrentExpertIdAsync(cancellationToken);
         var result   = await _mediator.Send(new GetMyExpertProgramsQuery(expertId), cancellationToken);
+        return Ok(result);
+    }
+
+    // ── Self-Profile Update ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Updates the authenticated expert's own profile fields.
+    /// All body fields are optional — only provided (non-null) fields are updated.
+    /// CommissionRate and IsActive can only be changed by an Admin via PUT /admin/experts/{id}.
+    /// </summary>
+    /// <param name="request">Profile fields to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the updated expert profile; 404 if no expert profile is linked to the account.</returns>
+    [HttpPut("me")]
+    [ProducesResponseType(typeof(ExpertProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMyExpertProfile(
+        [FromBody] UpdateMyExpertProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new UpdateMyExpertProfileCommand(
+                userId,
+                request.DisplayName,
+                request.Title,
+                request.Bio,
+                request.GridDescription,
+                request.DetailedDescription,
+                request.ProfileImageUrl,
+                request.GridImageUrl,
+                request.Specialisations,
+                request.YearsExperience,
+                request.Credentials,
+                request.LocationCountry),
+            cancellationToken);
+        return Ok(result);
+    }
+
+    // ── Earnings & Payouts ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the authenticated expert's full earnings and payout balance sheet.
+    /// Shows gross revenue from all their programs, their commission share,
+    /// platform commission, total already paid out, and outstanding balance — all per currency.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the earnings balance sheet; 404 if no expert profile is linked to the account.</returns>
+    [HttpGet("me/earnings")]
+    [ProducesResponseType(typeof(ExpertPayoutBalanceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyEarnings(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(new GetMyEarningsQuery(userId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns all payout records received by the authenticated expert, newest first.
+    /// Each record shows the amount, currency, payment reference, and which admin made the payment.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with list of payout records (may be empty); 404 if no expert profile is linked.</returns>
+    [HttpGet("me/payouts")]
+    [ProducesResponseType(typeof(List<ExpertPayoutRecordDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyPayoutHistory(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(new GetMyPayoutHistoryQuery(userId), cancellationToken);
         return Ok(result);
     }
 
@@ -277,21 +359,30 @@ public sealed class ExpertsController : ControllerBase
 }
 
 // ── Request / Response body records ───────────────────────────────────────────
+// Note: SessionActionRequest, SessionActionResponse, SendCommentRequest, CommentSentResponse
+//       are defined in src/FemVed.API/Models/SessionModels.cs (shared with UsersController).
 
-/// <summary>HTTP request body for session lifecycle actions (start/pause/resume/end).</summary>
-/// <param name="Note">Optional reason or message logged against this action.</param>
-public record SessionActionRequest(string? Note);
-
-/// <summary>Response returned after a successful session lifecycle action.</summary>
-/// <param name="AccessId">UUID of the enrollment record acted upon.</param>
-/// <param name="Action">The action performed: started, paused, resumed, or ended.</param>
-public record SessionActionResponse(Guid AccessId, string Action);
-
-/// <summary>HTTP request body for POST /comments endpoints.</summary>
-/// <param name="UpdateNote">The comment text (10–2000 characters).</param>
-public record SendCommentRequest(string UpdateNote);
-
-/// <summary>Response returned after a comment is successfully sent.</summary>
-/// <param name="AccessId">UUID of the enrollment record the comment was sent for.</param>
-/// <param name="Sent">Always true when the operation succeeds.</param>
-public record CommentSentResponse(Guid AccessId, bool Sent);
+/// <summary>HTTP request body for PUT /api/v1/experts/me. All fields are optional.</summary>
+/// <param name="DisplayName">New public display name. Null = no change.</param>
+/// <param name="Title">New professional title. Null = no change.</param>
+/// <param name="Bio">New full biography text. Null = no change.</param>
+/// <param name="GridDescription">New short bio for grid cards (max 500 chars). Null = no change.</param>
+/// <param name="DetailedDescription">New detailed bio for program detail page. Null = no change.</param>
+/// <param name="ProfileImageUrl">New profile photo URL. Null = no change.</param>
+/// <param name="GridImageUrl">New grid card image URL. Null = no change.</param>
+/// <param name="Specialisations">New list of specialisation areas. Null = no change.</param>
+/// <param name="YearsExperience">New years of experience. Null = no change.</param>
+/// <param name="Credentials">New list of credentials/certifications. Null = no change.</param>
+/// <param name="LocationCountry">New country. Null = no change.</param>
+public record UpdateMyExpertProfileRequest(
+    string? DisplayName,
+    string? Title,
+    string? Bio,
+    string? GridDescription,
+    string? DetailedDescription,
+    string? ProfileImageUrl,
+    string? GridImageUrl,
+    List<string>? Specialisations,
+    short? YearsExperience,
+    List<string>? Credentials,
+    string? LocationCountry);

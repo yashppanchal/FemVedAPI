@@ -15,6 +15,7 @@ public sealed class UpdateDurationCommandValidator : AbstractValidator<UpdateDur
             .NotEmpty().WithMessage("ProgramId is required.");
 
         RuleFor(x => x.Label)
+            .NotEmpty().WithMessage("Label cannot be empty or whitespace.")
             .MaximumLength(100).WithMessage("Label must not exceed 100 characters.")
             .When(x => x.Label is not null);
 

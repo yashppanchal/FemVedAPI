@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using FemVed.Application.Payments.Commands.CancelOrder;
 using FemVed.Application.Payments.Commands.InitiateOrder;
 using FemVed.Application.Payments.Commands.InitiateRefund;
 using FemVed.Application.Payments.DTOs;
@@ -126,6 +127,27 @@ public sealed class OrdersController : ControllerBase
             new InitiateRefundCommand(id, userId, request.RefundAmount, request.Reason),
             cancellationToken);
         return Ok(new OrderMutationResultResponse(id, "REFUND_INITIATED", true));
+    }
+
+    /// <summary>
+    /// Cancels a pending order for the authenticated user.
+    /// Only orders in <c>Pending</c> status can be cancelled; Paid, Failed, and Refunded orders cannot be cancelled.
+    /// </summary>
+    /// <param name="id">Order UUID to cancel.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with mutation confirmation payload.</returns>
+    [HttpPost("{id:guid}/cancel")]
+    [Authorize]
+    [ProducesResponseType(typeof(OrderMutationResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(new CancelOrderCommand(id, userId), cancellationToken);
+        return Ok(new OrderMutationResultResponse(id, "CANCELLED", true));
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────

@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using FemVed.Application.Enrollments.Commands.EndEnrollment;
 using FemVed.Application.Enrollments.Commands.PauseEnrollment;
+using FemVed.Application.Payments.DTOs;
+using FemVed.Application.Payments.Queries.GetMyOrders;
+using FemVed.Application.Payments.Queries.GetMyRefunds;
 using FemVed.Application.Users.Commands.RequestGdprDeletion;
 using FemVed.Application.Users.Commands.UpdateMyProfile;
 using FemVed.Application.Users.DTOs;
@@ -89,6 +92,39 @@ public sealed class UsersController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var result = await _mediator.Send(new GetMyProgramAccessQuery(userId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns all orders belonging to the authenticated user, newest first.
+    /// An empty list is returned when the user has no orders.
+    /// This is a convenience alias for <c>GET /api/v1/orders/my</c>.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the list of orders.</returns>
+    [HttpGet("me/orders")]
+    [ProducesResponseType(typeof(List<OrderDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyOrders(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(new GetMyOrdersQuery(userId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns all refunds issued against the authenticated user's orders, newest first.
+    /// An empty list is returned when the user has no refunds.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the list of refund records.</returns>
+    [HttpGet("me/refunds")]
+    [ProducesResponseType(typeof(List<RefundDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyRefunds(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(new GetMyRefundsQuery(userId), cancellationToken);
         return Ok(result);
     }
 
