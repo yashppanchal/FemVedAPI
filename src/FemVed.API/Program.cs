@@ -139,14 +139,18 @@ try
     app.UseMiddleware<RequestLoggingMiddleware>();
 
     // 4. Swagger
-    // UI:   https://api.femved.com/docs
-    // JSON: https://api.femved.com/openapi.json
-    app.UseSwagger(c => c.RouteTemplate = "openapi.json");
+    // UI:   https://api.femved.com/           (root)
+    // JSON: https://api.femved.com/swagger/v1/swagger.json
+    //       https://api.femved.com/openapi.json  (alias for tooling)
+    app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/openapi.json", "FemVed API v1");
-        c.RoutePrefix = "docs";
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FemVed API v1");
+        c.RoutePrefix = string.Empty; // Swagger UI at root "/"
     });
+    // Alias so tools that probe /openapi.json also work
+    app.MapGet("/openapi.json", () => Results.Redirect("/swagger/v1/swagger.json"))
+       .ExcludeFromDescription();
 
     // 5. Forwarded headers — reads X-Forwarded-For and X-Forwarded-Proto from
     // Railway's edge proxy so the app sees the correct client IP and scheme.
