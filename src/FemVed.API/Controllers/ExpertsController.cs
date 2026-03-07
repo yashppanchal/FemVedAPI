@@ -1,6 +1,11 @@
 using System.Security.Claims;
+using FemVed.Application.Enrollments.Commands.EndEnrollment;
+using FemVed.Application.Enrollments.Commands.PauseEnrollment;
+using FemVed.Application.Enrollments.Commands.ResumeEnrollment;
+using FemVed.Application.Enrollments.Commands.StartEnrollment;
 using FemVed.Application.Experts.Commands.SendProgressUpdate;
 using FemVed.Application.Experts.DTOs;
+using FemVed.Application.Experts.Queries.GetEnrollmentComments;
 using FemVed.Application.Experts.Queries.GetMyEnrollments;
 using FemVed.Application.Experts.Queries.GetMyExpertProfile;
 using FemVed.Application.Experts.Queries.GetMyExpertPrograms;
@@ -11,7 +16,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace FemVed.API.Controllers;
 
 /// <summary>
-/// Handles expert dashboard operations: profile, program overview, enrollments, and progress updates.
+/// Handles expert dashboard operations: profile, program overview, enrollments,
+/// session lifecycle actions (start/pause/resume/end), and progress comments.
 /// All endpoints require the ExpertOrAdmin policy.
 /// Base route: /api/v1/experts
 /// </summary>
@@ -28,6 +34,8 @@ public sealed class ExpertsController : ControllerBase
     {
         _mediator = mediator;
     }
+
+    // ── Profile & Programs ────────────────────────────────────────────────────
 
     /// <summary>
     /// Returns the expert profile linked to the authenticated user account.
@@ -63,9 +71,11 @@ public sealed class ExpertsController : ControllerBase
         return Ok(result);
     }
 
+    // ── Enrollments ───────────────────────────────────────────────────────────
+
     /// <summary>
     /// Returns all enrollment records across all of the expert's programs, newest first.
-    /// Includes enrolled user details so the expert can identify who to contact.
+    /// Includes session lifecycle fields: pausedAt, endedBy, endedByRole.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK with the list of enrollments (may be empty).</returns>
@@ -80,33 +90,167 @@ public sealed class ExpertsController : ControllerBase
         return Ok(result);
     }
 
+    // ── Session Lifecycle ─────────────────────────────────────────────────────
+
     /// <summary>
-    /// Sends a progress update note to a specific enrolled user.
-    /// The <paramref name="accessId"/> must belong to the expert's own programs — attempting to
-    /// update another expert's enrollment returns 403 Forbidden.
-    /// Optionally also sends the note as an email via SendGrid (<c>expert_progress_update</c> template).
+    /// Starts an enrollment — transitions it from NOT_STARTED to ACTIVE.
+    /// The enrollment must belong to the authenticated expert's own program.
+    /// Emails the enrolled user a <c>session_started</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to start.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/start")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> StartEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new StartEnrollmentCommand(accessId, userId, IsAdmin: false, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "started"));
+    }
+
+    /// <summary>
+    /// Pauses an enrollment — transitions it from ACTIVE to PAUSED.
+    /// The enrollment must belong to the authenticated expert's own program.
+    /// Emails the enrolled user a <c>session_paused</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to pause.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/pause")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> PauseEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new PauseEnrollmentCommand(accessId, userId, IsAdmin: false, IsUser: false, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "paused"));
+    }
+
+    /// <summary>
+    /// Resumes a paused enrollment — transitions it from PAUSED back to ACTIVE.
+    /// The enrollment must belong to the authenticated expert's own program.
+    /// Emails the enrolled user a <c>session_resumed</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to resume.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/resume")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ResumeEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new ResumeEnrollmentCommand(accessId, userId, IsAdmin: false, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "resumed"));
+    }
+
+    /// <summary>
+    /// Ends an enrollment — transitions it from ACTIVE or PAUSED to COMPLETED.
+    /// The enrollment must belong to the authenticated expert's own program.
+    /// Emails the enrolled user a <c>session_ended</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to end.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/end")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> EndEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new EndEnrollmentCommand(accessId, userId, IsAdmin: false, IsUser: false, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "ended"));
+    }
+
+    // ── Progress Comments ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Sends a progress comment to a specific enrolled user.
+    /// Always dispatches an email via SendGrid (<c>expert_progress_update</c> template).
+    /// The <paramref name="accessId"/> must belong to the expert's own programs.
     /// </summary>
     /// <param name="accessId">UUID of the UserProgramAccess record (from GET /me/enrollments).</param>
-    /// <param name="request">The update note and optional email flag.</param>
+    /// <param name="request">The comment text (10–2000 characters).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>200 OK with mutation confirmation payload.</returns>
-    [HttpPost("me/enrollments/{accessId:guid}/progress-update")]
-    [ProducesResponseType(typeof(ExpertProgressUpdateResultResponse), StatusCodes.Status200OK)]
+    /// <returns>200 OK with confirmation payload.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/comments")]
+    [ProducesResponseType(typeof(CommentSentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SendProgressUpdate(
+    public async Task<IActionResult> SendComment(
         Guid accessId,
-        [FromBody] SendProgressUpdateRequest request,
+        [FromBody] SendCommentRequest request,
         CancellationToken cancellationToken)
     {
-        var expertId = await GetCurrentExpertIdAsync(cancellationToken);
+        var userId = GetCurrentUserId();
         await _mediator.Send(
-            new SendProgressUpdateCommand(expertId, accessId, request.UpdateNote, request.SendEmail),
+            new SendProgressUpdateCommand(userId, accessId, request.UpdateNote, IsAdmin: false),
             cancellationToken);
-        return Ok(new ExpertProgressUpdateResultResponse(accessId, true, request.SendEmail));
+        return Ok(new CommentSentResponse(accessId, true));
+    }
+
+    /// <summary>
+    /// Returns all comments sent for a specific enrollment, oldest first.
+    /// The <paramref name="accessId"/> must belong to the expert's own programs.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with list of comments (may be empty).</returns>
+    [HttpGet("me/enrollments/{accessId:guid}/comments")]
+    [ProducesResponseType(typeof(List<EnrollmentCommentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetComments(
+        Guid accessId,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetEnrollmentCommentsQuery(accessId, userId, IsAdmin: false),
+            cancellationToken);
+        return Ok(result);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -122,8 +266,7 @@ public sealed class ExpertsController : ControllerBase
 
     /// <summary>
     /// Resolves the expert ID for the authenticated user by looking up the expert profile.
-    /// Throws <see cref="Application.Experts.Queries.GetMyExpertProfile.GetMyExpertProfileQuery"/>
-    /// internally — returns 404 if the account has no expert profile.
+    /// Returns 404 if the account has no expert profile.
     /// </summary>
     private async Task<Guid> GetCurrentExpertIdAsync(CancellationToken cancellationToken)
     {
@@ -133,15 +276,22 @@ public sealed class ExpertsController : ControllerBase
     }
 }
 
-// ── Request body records ──────────────────────────────────────────────────────
+// ── Request / Response body records ───────────────────────────────────────────
 
-/// <summary>HTTP request body for POST /api/v1/experts/me/enrollments/{accessId}/progress-update.</summary>
-/// <param name="UpdateNote">The progress note content (10–2000 characters).</param>
-/// <param name="SendEmail">When true, also sends the note as an email to the enrolled user.</param>
-public record SendProgressUpdateRequest(string UpdateNote, bool SendEmail);
+/// <summary>HTTP request body for session lifecycle actions (start/pause/resume/end).</summary>
+/// <param name="Note">Optional reason or message logged against this action.</param>
+public record SessionActionRequest(string? Note);
 
-/// <summary>Mutation confirmation payload returned by expert progress update endpoints.</summary>
-/// <param name="AccessId">ID of the user program access record updated.</param>
-/// <param name="IsUpdated">Always true when update succeeds.</param>
-/// <param name="EmailQueued">True when the request asked to send an email notification.</param>
-public record ExpertProgressUpdateResultResponse(Guid AccessId, bool IsUpdated, bool EmailQueued);
+/// <summary>Response returned after a successful session lifecycle action.</summary>
+/// <param name="AccessId">UUID of the enrollment record acted upon.</param>
+/// <param name="Action">The action performed: started, paused, resumed, or ended.</param>
+public record SessionActionResponse(Guid AccessId, string Action);
+
+/// <summary>HTTP request body for POST /comments endpoints.</summary>
+/// <param name="UpdateNote">The comment text (10–2000 characters).</param>
+public record SendCommentRequest(string UpdateNote);
+
+/// <summary>Response returned after a comment is successfully sent.</summary>
+/// <param name="AccessId">UUID of the enrollment record the comment was sent for.</param>
+/// <param name="Sent">Always true when the operation succeeds.</param>
+public record CommentSentResponse(Guid AccessId, bool Sent);

@@ -11,9 +11,10 @@ namespace FemVed.Application.Users.DTOs;
 /// <param name="ExpertId">UUID of the delivering expert.</param>
 /// <param name="ExpertName">Expert's public display name.</param>
 /// <param name="DurationLabel">Human-readable duration, e.g. "6 weeks".</param>
-/// <param name="Status">Access state: Active, Expired, or Revoked.</param>
-/// <param name="StartedAt">UTC timestamp when the user started the program (null if not yet started).</param>
-/// <param name="CompletedAt">UTC timestamp when the user completed the program (null if not completed).</param>
+/// <param name="Status">Access state: NotStarted, Active, Paused, Completed, or Cancelled.</param>
+/// <param name="StartedAt">UTC timestamp when the expert started the program (null if not yet started).</param>
+/// <param name="PausedAt">UTC timestamp when the program was last paused (null if never paused or since resumed).</param>
+/// <param name="CompletedAt">UTC timestamp when the program was completed or ended (null if not completed).</param>
 /// <param name="PurchasedAt">UTC timestamp when access was granted (order paid).</param>
 public record ProgramAccessDto(
     Guid AccessId,
@@ -26,5 +27,6 @@ public record ProgramAccessDto(
     string DurationLabel,
     string Status,
     DateTimeOffset? StartedAt,
+    DateTimeOffset? PausedAt,
     DateTimeOffset? CompletedAt,
     DateTimeOffset PurchasedAt);

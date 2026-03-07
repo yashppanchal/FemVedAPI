@@ -3,15 +3,15 @@ using MediatR;
 namespace FemVed.Application.Experts.Commands.SendProgressUpdate;
 
 /// <summary>
-/// Sends a progress update note from an expert to a specific enrolled user.
-/// Optionally also sends the note as an email via SendGrid (<c>expert_progress_update</c> template).
+/// Sends a progress comment from an expert or admin to a specific enrolled user.
+/// Always dispatches an email to the enrolled user via SendGrid (<c>expert_progress_update</c> template).
 /// </summary>
-/// <param name="ExpertId">The authenticated expert's ID (injected from JWT by the controller).</param>
+/// <param name="SenderUserId">The authenticated user's ID (expert user ID or admin user ID).</param>
 /// <param name="AccessId">UUID of the UserProgramAccess record identifying the enrolled user.</param>
-/// <param name="UpdateNote">The progress note content to send.</param>
-/// <param name="SendEmail">When true, also dispatches an email to the enrolled user via SendGrid.</param>
+/// <param name="UpdateNote">The comment content to send.</param>
+/// <param name="IsAdmin">True when the caller holds the Admin role (bypasses ownership check).</param>
 public record SendProgressUpdateCommand(
-    Guid ExpertId,
+    Guid SenderUserId,
     Guid AccessId,
     string UpdateNote,
-    bool SendEmail) : IRequest;
+    bool IsAdmin) : IRequest;

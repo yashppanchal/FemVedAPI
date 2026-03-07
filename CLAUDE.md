@@ -470,7 +470,51 @@ AWSSDK.S3
 
 ---
 
-## 18. FIRST MESSAGE TO SEND ME WHEN I START A NEW SESSION
+## 18. ENROLLMENT / SESSION LIFECYCLE (added post-Phase 8)
+
+### States of `user_program_access.status`
+```
+NOT_STARTED → ACTIVE → PAUSED → COMPLETED
+                   └──────────────▶ COMPLETED
+```
+
+| Status | Meaning |
+|---|---|
+| `NOT_STARTED` | Purchase complete, expert hasn't started the program yet (default after payment) |
+| `ACTIVE` | Program in progress |
+| `PAUSED` | Temporarily on hold |
+| `COMPLETED` | Program ended (success or user/expert terminated) |
+| `CANCELLED` | Reserved for refund/admin cancellation |
+
+### Who can trigger each action
+| Action | Expert (own programs) | Admin | User (own) |
+|---|---|---|---|
+| `start` | ✅ | ✅ | ❌ |
+| `pause` | ✅ | ✅ | ✅ |
+| `resume` | ✅ | ✅ | ❌ |
+| `end` | ✅ | ✅ | ✅ |
+
+### Audit trail
+Every state change writes a row to `program_session_log` (action, performed_by, performed_by_role, note).
+
+### New DB columns on `user_program_access`
+- `paused_at TIMESTAMPTZ NULL`
+- `ended_by UUID NULL` (FK to users — who triggered end)
+- `ended_by_role VARCHAR(20) NULL` — `EXPERT | ADMIN | USER`
+
+### New endpoints
+- `POST /api/v1/experts/me/enrollments/{accessId}/{start|pause|resume|end}`
+- `POST /api/v1/admin/enrollments/{accessId}/{start|pause|resume|end}`
+- `POST /api/v1/users/me/enrollments/{accessId}/{pause|end}`
+
+All accept optional `{ "note": "reason" }` body.
+
+### OrderPaidEventHandler
+Creates `UserProgramAccess` with `Status = NOT_STARTED` (not ACTIVE) so expert must explicitly start.
+
+---
+
+## 19. FIRST MESSAGE TO SEND ME WHEN I START A NEW SESSION
 
 If the user says "start" or "continue" or asks what to do next — respond with:
 

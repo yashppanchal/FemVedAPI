@@ -1,4 +1,11 @@
 using System.Security.Claims;
+using FemVed.Application.Enrollments.Commands.EndEnrollment;
+using FemVed.Application.Enrollments.Commands.PauseEnrollment;
+using FemVed.Application.Enrollments.Commands.ResumeEnrollment;
+using FemVed.Application.Enrollments.Commands.StartEnrollment;
+using FemVed.Application.Experts.Commands.SendProgressUpdate;
+using FemVed.Application.Experts.DTOs;
+using FemVed.Application.Experts.Queries.GetEnrollmentComments;
 using FemVed.Application.Admin.Commands.ActivateExpert;
 using FemVed.Application.Admin.Commands.ActivateUser;
 using FemVed.Application.Admin.Commands.ChangeUserRole;
@@ -472,6 +479,165 @@ public sealed class AdminController : ControllerBase
         return Ok(new AdminGdprProcessResultResponse(requestId, request.Action.ToUpperInvariant(), true));
     }
 
+    // ── Enrollment Session Management (Admin) ─────────────────────────────────
+
+    /// <summary>
+    /// Starts an enrollment on behalf of any expert — transitions it from NOT_STARTED to ACTIVE.
+    /// Emails the enrolled user a <c>session_started</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to start.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("enrollments/{accessId:guid}/start")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> StartEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new StartEnrollmentCommand(accessId, userId, IsAdmin: true, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "started"));
+    }
+
+    /// <summary>
+    /// Pauses an enrollment — transitions it from ACTIVE to PAUSED.
+    /// Emails the enrolled user a <c>session_paused</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to pause.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("enrollments/{accessId:guid}/pause")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> PauseEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new PauseEnrollmentCommand(accessId, userId, IsAdmin: true, IsUser: false, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "paused"));
+    }
+
+    /// <summary>
+    /// Resumes a paused enrollment — transitions it from PAUSED back to ACTIVE.
+    /// Emails the enrolled user a <c>session_resumed</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to resume.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("enrollments/{accessId:guid}/resume")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ResumeEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new ResumeEnrollmentCommand(accessId, userId, IsAdmin: true, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "resumed"));
+    }
+
+    /// <summary>
+    /// Ends an enrollment — transitions it from ACTIVE or PAUSED to COMPLETED.
+    /// Emails the enrolled user a <c>session_ended</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to end.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("enrollments/{accessId:guid}/end")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> EndEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new EndEnrollmentCommand(accessId, userId, IsAdmin: true, IsUser: false, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "ended"));
+    }
+
+    // ── Enrollment Comments (Admin) ───────────────────────────────────────────
+
+    /// <summary>
+    /// Sends a progress comment as an admin to a specific enrolled user.
+    /// Always dispatches an email via SendGrid (<c>expert_progress_update</c> template).
+    /// Admins may comment on any enrollment regardless of which expert owns the program.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record.</param>
+    /// <param name="request">The comment text (10–2000 characters).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with confirmation payload.</returns>
+    [HttpPost("enrollments/{accessId:guid}/comments")]
+    [ProducesResponseType(typeof(CommentSentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> SendComment(
+        Guid accessId,
+        [FromBody] AdminSendCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new SendProgressUpdateCommand(userId, accessId, request.UpdateNote, IsAdmin: true),
+            cancellationToken);
+        return Ok(new CommentSentResponse(accessId, true));
+    }
+
+    /// <summary>
+    /// Returns all comments sent for a specific enrollment, oldest first.
+    /// Admins may view comments for any enrollment.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with list of comments (may be empty).</returns>
+    [HttpGet("enrollments/{accessId:guid}/comments")]
+    [ProducesResponseType(typeof(List<EnrollmentCommentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetComments(
+        Guid accessId,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(
+            new GetEnrollmentCommentsQuery(accessId, userId, IsAdmin: true),
+            cancellationToken);
+        return Ok(result);
+    }
+
     // ── Audit Log ──────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -645,3 +811,7 @@ public record AdminChangeRoleResultResponse(Guid UserId, short RoleId, bool IsUp
 /// <param name="Action">Action applied: COMPLETE or REJECT.</param>
 /// <param name="IsUpdated">Always true when processing succeeds.</param>
 public record AdminGdprProcessResultResponse(Guid RequestId, string Action, bool IsUpdated);
+
+/// <summary>HTTP request body for POST /api/v1/admin/enrollments/{accessId}/comments.</summary>
+/// <param name="UpdateNote">The comment text (10–2000 characters).</param>
+public record AdminSendCommentRequest(string UpdateNote);

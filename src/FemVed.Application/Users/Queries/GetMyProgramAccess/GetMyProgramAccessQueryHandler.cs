@@ -84,6 +84,7 @@ public sealed class GetMyProgramAccessQueryHandler : IRequestHandler<GetMyProgra
                     DurationLabel:   dur?.Label       ?? "Unknown Duration",
                     Status:          a.Status.ToString(),
                     StartedAt:       a.StartedAt,
+                    PausedAt:        a.PausedAt,
                     CompletedAt:     a.CompletedAt,
                     PurchasedAt:     a.CreatedAt);
             })

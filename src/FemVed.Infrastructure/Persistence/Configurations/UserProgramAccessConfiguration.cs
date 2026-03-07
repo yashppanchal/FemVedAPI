@@ -2,12 +2,38 @@ using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace FemVed.Infrastructure.Persistence.Configurations;
 
 /// <summary>EF Core Fluent API configuration for <see cref="UserProgramAccess"/> → <c>user_program_access</c>.</summary>
 internal sealed class UserProgramAccessConfiguration : IEntityTypeConfiguration<UserProgramAccess>
 {
+    // ValueConverter lambdas compile to expression trees — switch expressions are not allowed.
+    // Use static helper methods instead.
+    private static readonly ValueConverter<UserProgramAccessStatus, string> StatusConverter =
+        new(v => ToDb(v), v => FromDb(v));
+
+    private static string ToDb(UserProgramAccessStatus v)
+    {
+        if (v == UserProgramAccessStatus.NotStarted) return "NOT_STARTED";
+        if (v == UserProgramAccessStatus.Active)     return "ACTIVE";
+        if (v == UserProgramAccessStatus.Paused)     return "PAUSED";
+        if (v == UserProgramAccessStatus.Completed)  return "COMPLETED";
+        if (v == UserProgramAccessStatus.Cancelled)  return "CANCELLED";
+        return v.ToString().ToUpperInvariant();
+    }
+
+    private static UserProgramAccessStatus FromDb(string v)
+    {
+        if (v == "NOT_STARTED") return UserProgramAccessStatus.NotStarted;
+        if (v == "ACTIVE")      return UserProgramAccessStatus.Active;
+        if (v == "PAUSED")      return UserProgramAccessStatus.Paused;
+        if (v == "COMPLETED")   return UserProgramAccessStatus.Completed;
+        if (v == "CANCELLED")   return UserProgramAccessStatus.Cancelled;
+        return Enum.Parse<UserProgramAccessStatus>(v, true);
+    }
+
     /// <inheritdoc />
     public void Configure(EntityTypeBuilder<UserProgramAccess> builder)
     {
@@ -23,10 +49,13 @@ internal sealed class UserProgramAccessConfiguration : IEntityTypeConfiguration<
         builder.Property(a => a.Status)
             .HasColumnName("status")
             .HasMaxLength(30)
-            .HasConversion(v => v.ToString().ToUpperInvariant(), v => Enum.Parse<UserProgramAccessStatus>(v, true));
+            .HasConversion(StatusConverter);
         builder.Property(a => a.ReminderSent).HasColumnName("reminder_sent").HasDefaultValue(false);
         builder.Property(a => a.StartedAt).HasColumnName("started_at");
+        builder.Property(a => a.PausedAt).HasColumnName("paused_at");
         builder.Property(a => a.CompletedAt).HasColumnName("completed_at");
+        builder.Property(a => a.EndedBy).HasColumnName("ended_by");
+        builder.Property(a => a.EndedByRole).HasColumnName("ended_by_role").HasMaxLength(20);
         builder.Property(a => a.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(a => a.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
 

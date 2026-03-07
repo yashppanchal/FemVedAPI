@@ -27,16 +27,25 @@ public class UserProgramAccess
     public Guid ExpertId { get; set; }
 
     /// <summary>Current access state.</summary>
-    public UserProgramAccessStatus Status { get; set; } = UserProgramAccessStatus.Active;
+    public UserProgramAccessStatus Status { get; set; } = UserProgramAccessStatus.NotStarted;
 
     /// <summary>Whether the 24-hour program reminder has been sent.</summary>
     public bool ReminderSent { get; set; }
 
-    /// <summary>UTC timestamp when the user started the program.</summary>
+    /// <summary>UTC timestamp when the expert started the program for this user.</summary>
     public DateTimeOffset? StartedAt { get; set; }
 
-    /// <summary>UTC timestamp when the user completed the program.</summary>
+    /// <summary>UTC timestamp when the program was paused (null if never paused).</summary>
+    public DateTimeOffset? PausedAt { get; set; }
+
+    /// <summary>UTC timestamp when the program was completed or ended.</summary>
     public DateTimeOffset? CompletedAt { get; set; }
+
+    /// <summary>FK to the user who triggered the end action (null if not yet ended).</summary>
+    public Guid? EndedBy { get; set; }
+
+    /// <summary>Role of the user who triggered the end action: EXPERT, ADMIN, or USER (null if not yet ended).</summary>
+    public string? EndedByRole { get; set; }
 
     /// <summary>UTC creation timestamp.</summary>
     public DateTimeOffset CreatedAt { get; set; }
@@ -62,4 +71,7 @@ public class UserProgramAccess
 
     /// <summary>Progress updates sent by the expert to this user.</summary>
     public ICollection<ExpertProgressUpdate> ProgressUpdates { get; set; } = new List<ExpertProgressUpdate>();
+
+    /// <summary>Session lifecycle audit log entries for this access record.</summary>
+    public ICollection<ProgramSessionLog> SessionLogs { get; set; } = new List<ProgramSessionLog>();
 }

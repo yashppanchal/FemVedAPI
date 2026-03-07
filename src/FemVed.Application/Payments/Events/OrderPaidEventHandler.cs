@@ -154,7 +154,7 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             ProgramId = notification.ProgramId,
             DurationId = notification.DurationId,
             ExpertId  = notification.ExpertId,
-            Status    = UserProgramAccessStatus.Active,
+            Status    = UserProgramAccessStatus.NotStarted,   // Expert must explicitly start the program
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };

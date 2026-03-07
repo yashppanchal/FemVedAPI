@@ -78,6 +78,9 @@ public class AppDbContext : DbContext
     /// <summary>Post-purchase program access records.</summary>
     public DbSet<UserProgramAccess> UserProgramAccess => Set<UserProgramAccess>();
 
+    /// <summary>Session lifecycle audit log (start / pause / resume / end).</summary>
+    public DbSet<ProgramSessionLog> ProgramSessionLogs => Set<ProgramSessionLog>();
+
     /// <summary>Expert progress update messages.</summary>
     public DbSet<ExpertProgressUpdate> ExpertProgressUpdates => Set<ExpertProgressUpdate>();
 

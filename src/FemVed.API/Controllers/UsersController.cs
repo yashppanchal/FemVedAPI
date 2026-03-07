@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using FemVed.Application.Enrollments.Commands.EndEnrollment;
+using FemVed.Application.Enrollments.Commands.PauseEnrollment;
 using FemVed.Application.Users.Commands.RequestGdprDeletion;
 using FemVed.Application.Users.Commands.UpdateMyProfile;
 using FemVed.Application.Users.DTOs;
@@ -89,6 +91,62 @@ public sealed class UsersController : ControllerBase
         var result = await _mediator.Send(new GetMyProgramAccessQuery(userId), cancellationToken);
         return Ok(result);
     }
+
+    // ── Session Lifecycle (User) ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Pauses one of the user's own active enrollments — transitions it from ACTIVE to PAUSED.
+    /// Emails the user a <c>session_paused</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to pause.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/pause")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> PauseEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new PauseEnrollmentCommand(accessId, userId, IsAdmin: false, IsUser: true, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "paused"));
+    }
+
+    /// <summary>
+    /// Ends one of the user's own enrollments — transitions it from ACTIVE or PAUSED to COMPLETED.
+    /// Emails the user a <c>session_ended</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to end.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/end")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> EndEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new EndEnrollmentCommand(accessId, userId, IsAdmin: false, IsUser: true, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "ended"));
+    }
+
+    // ── GDPR ─────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Submits a GDPR right-to-erasure request (for GB/EU users).

@@ -85,7 +85,10 @@ public sealed class GetMyEnrollmentsQueryHandler : IRequestHandler<GetMyEnrollme
                     DurationLabel: dur?.Label       ?? "Unknown Duration",
                     AccessStatus:  a.Status.ToString(),
                     StartedAt:     a.StartedAt,
+                    PausedAt:      a.PausedAt,
                     CompletedAt:   a.CompletedAt,
+                    EndedBy:       a.EndedBy,
+                    EndedByRole:   a.EndedByRole,
                     EnrolledAt:    a.CreatedAt);
             })
             .ToList();

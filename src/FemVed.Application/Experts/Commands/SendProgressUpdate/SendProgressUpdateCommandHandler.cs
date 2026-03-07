@@ -9,15 +9,17 @@ namespace FemVed.Application.Experts.Commands.SendProgressUpdate;
 /// <summary>
 /// Handles <see cref="SendProgressUpdateCommand"/>.
 /// <list type="number">
-///   <item>Verifies the access record exists and belongs to the expert's own program.</item>
+///   <item>Verifies the access record exists and the caller is authorised (expert owns program, or admin).</item>
+///   <item>Resolves the expert ID: for experts, from their profile; for admins, uses the access record's ExpertId.</item>
 ///   <item>Persists an <see cref="ExpertProgressUpdate"/> record.</item>
-///   <item>Optionally sends an <c>expert_progress_update</c> email to the enrolled user via SendGrid.</item>
+///   <item>Always sends the comment as an email via SendGrid (<c>expert_progress_update</c> template).</item>
 /// </list>
 /// Email failures are caught and logged — they never fail the overall operation.
 /// </summary>
 public sealed class SendProgressUpdateCommandHandler : IRequestHandler<SendProgressUpdateCommand>
 {
     private readonly IRepository<UserProgramAccess> _access;
+    private readonly IRepository<Expert> _experts;
     private readonly IRepository<ExpertProgressUpdate> _progressUpdates;
     private readonly IRepository<User> _users;
     private readonly IEmailService _emailService;
@@ -27,6 +29,7 @@ public sealed class SendProgressUpdateCommandHandler : IRequestHandler<SendProgr
     /// <summary>Initialises the handler with required services.</summary>
     public SendProgressUpdateCommandHandler(
         IRepository<UserProgramAccess> access,
+        IRepository<Expert> experts,
         IRepository<ExpertProgressUpdate> progressUpdates,
         IRepository<User> users,
         IEmailService emailService,
@@ -34,6 +37,7 @@ public sealed class SendProgressUpdateCommandHandler : IRequestHandler<SendProgr
         ILogger<SendProgressUpdateCommandHandler> logger)
     {
         _access          = access;
+        _experts         = experts;
         _progressUpdates = progressUpdates;
         _users           = users;
         _emailService    = emailService;
@@ -41,44 +45,59 @@ public sealed class SendProgressUpdateCommandHandler : IRequestHandler<SendProgr
         _logger          = logger;
     }
 
-    /// <summary>Persists the progress update and optionally emails the enrolled user.</summary>
+    /// <summary>Persists the comment and emails the enrolled user.</summary>
     /// <param name="request">The command.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="NotFoundException">Thrown when the access record does not exist.</exception>
-    /// <exception cref="ForbiddenException">Thrown when the access record belongs to a different expert.</exception>
+    /// <exception cref="ForbiddenException">Thrown when the caller is not the expert for this program.</exception>
     public async Task Handle(SendProgressUpdateCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "SendProgressUpdate: expert {ExpertId} sending update for access {AccessId}",
-            request.ExpertId, request.AccessId);
+            "SendProgressUpdate: user {UserId} (isAdmin={IsAdmin}) sending comment for access {AccessId}",
+            request.SenderUserId, request.IsAdmin, request.AccessId);
 
-        // ── 1. Verify access record ownership ────────────────────────────────
         var accessRecord = await _access.FirstOrDefaultAsync(
             a => a.Id == request.AccessId,
             cancellationToken)
             ?? throw new NotFoundException(nameof(UserProgramAccess), request.AccessId);
 
-        if (accessRecord.ExpertId != request.ExpertId)
-            throw new ForbiddenException("You can only send progress updates for your own enrolled users.");
+        // ── Authorisation + resolve expert ID for the record ──────────────────
+        Guid recordExpertId;
+        if (request.IsAdmin)
+        {
+            // Admin can comment on any enrollment; the stored ExpertId is the program's expert
+            recordExpertId = accessRecord.ExpertId;
+        }
+        else
+        {
+            var expert = await _experts.FirstOrDefaultAsync(
+                e => e.UserId == request.SenderUserId && !e.IsDeleted, cancellationToken)
+                ?? throw new ForbiddenException("You do not have an expert profile.");
 
-        // ── 2. Persist ExpertProgressUpdate ──────────────────────────────────
+            if (expert.Id != accessRecord.ExpertId)
+                throw new ForbiddenException("You can only send comments for your own enrolled users.");
+
+            recordExpertId = expert.Id;
+        }
+
+        // ── Persist comment ───────────────────────────────────────────────────
         var update = new ExpertProgressUpdate
         {
             Id         = Guid.NewGuid(),
             AccessId   = request.AccessId,
-            ExpertId   = request.ExpertId,
+            ExpertId   = recordExpertId,
             UpdateNote = request.UpdateNote.Trim(),
-            SendEmail  = request.SendEmail,
+            SendEmail  = true,              // always email as per platform policy
             CreatedAt  = DateTimeOffset.UtcNow
         };
 
         await _progressUpdates.AddAsync(update);
         await _uow.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("SendProgressUpdate: update {UpdateId} persisted", update.Id);
+        _logger.LogInformation("SendProgressUpdate: comment {CommentId} persisted for access {AccessId}", update.Id, request.AccessId);
 
-        // ── 3. Optionally email the enrolled user ─────────────────────────────
-        if (request.SendEmail)
+        // ── Always email the enrolled user ────────────────────────────────────
+        try
         {
             var enrolledUser = await _users.FirstOrDefaultAsync(
                 u => u.Id == accessRecord.UserId,
@@ -86,38 +105,29 @@ public sealed class SendProgressUpdateCommandHandler : IRequestHandler<SendProgr
 
             if (enrolledUser is not null)
             {
-                try
-                {
-                    await _emailService.SendAsync(
-                        toEmail:      enrolledUser.Email,
-                        toName:       $"{enrolledUser.FirstName} {enrolledUser.LastName}",
-                        templateKey:  "expert_progress_update",
-                        templateData: new Dictionary<string, object>
-                        {
-                            ["first_name"]   = enrolledUser.FirstName,
-                            ["update_note"]  = request.UpdateNote
-                        },
-                        cancellationToken: cancellationToken);
+                await _emailService.SendAsync(
+                    toEmail:      enrolledUser.Email,
+                    toName:       $"{enrolledUser.FirstName} {enrolledUser.LastName}",
+                    templateKey:  "expert_progress_update",
+                    templateData: new Dictionary<string, object>
+                    {
+                        ["first_name"]  = enrolledUser.FirstName,
+                        ["update_note"] = request.UpdateNote
+                    },
+                    cancellationToken: cancellationToken);
 
-                    _logger.LogInformation(
-                        "SendProgressUpdate: email sent to user {UserId}", enrolledUser.Id);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex,
-                        "SendProgressUpdate: email failed for user {UserId} — update is still saved",
-                        enrolledUser.Id);
-                }
+                _logger.LogInformation("SendProgressUpdate: email sent to user {UserId}", enrolledUser.Id);
             }
             else
             {
-                _logger.LogWarning(
-                    "SendProgressUpdate: enrolled user {UserId} not found, skipping email",
-                    accessRecord.UserId);
+                _logger.LogWarning("SendProgressUpdate: enrolled user {UserId} not found, skipping email", accessRecord.UserId);
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "SendProgressUpdate: email failed for access {AccessId} — comment is still saved", request.AccessId);
+        }
 
-        _logger.LogInformation(
-            "SendProgressUpdate: completed for access {AccessId}", request.AccessId);
+        _logger.LogInformation("SendProgressUpdate: completed for access {AccessId}", request.AccessId);
     }
 }
