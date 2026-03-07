@@ -870,12 +870,16 @@ public record AddDurationRequest(string Label, short Weeks, int SortOrder, List<
 /// <param name="SortOrder">New display order (optional).</param>
 public record UpdateDurationRequest(string? Label, short? Weeks, int? SortOrder);
 
-/// <summary>HTTP request body for POST /api/v1/guided/programs/{programId}/durations/{durationId}/prices.</summary>
+/// <summary>
+/// HTTP request body for POST /api/v1/guided/programs/{programId}/durations/{durationId}/prices.
+/// <c>CurrencyCode</c> and <c>CurrencySymbol</c> are optional — they are auto-resolved from
+/// <c>LocationCode</c> (e.g. "IN" → "INR" / "₹"). Provide them explicitly only for unsupported locations.
+/// </summary>
 /// <param name="LocationCode">ISO country code, e.g. "GB", "IN", "US".</param>
 /// <param name="Amount">Price amount, e.g. 320.00.</param>
-/// <param name="CurrencyCode">ISO 4217 code, e.g. "GBP".</param>
-/// <param name="CurrencySymbol">Display symbol, e.g. "£".</param>
-public record AddDurationPriceRequest(string LocationCode, decimal Amount, string CurrencyCode, string CurrencySymbol);
+/// <param name="CurrencyCode">ISO 4217 code (optional — auto-resolved from LocationCode).</param>
+/// <param name="CurrencySymbol">Display symbol (optional — auto-resolved from LocationCode).</param>
+public record AddDurationPriceRequest(string LocationCode, decimal Amount, string? CurrencyCode = null, string? CurrencySymbol = null);
 
 /// <summary>HTTP request body for PUT /api/v1/guided/programs/{programId}/durations/{durationId}/prices/{priceId}. All fields optional.</summary>
 /// <param name="Amount">New price amount (optional).</param>

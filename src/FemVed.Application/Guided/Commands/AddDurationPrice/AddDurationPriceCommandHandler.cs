@@ -3,6 +3,7 @@ using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
+using FemVed.Domain.ValueObjects;
 using MediatR;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -98,14 +99,26 @@ public sealed class AddDurationPriceCommandHandler : IRequestHandler<AddDuration
                 $"An active price for location '{locationCode}' already exists on this duration. " +
                 "Update the existing price instead, or deactivate it first.");
 
+        var currency = CurrencyInfo.TryGet(locationCode);
+        var code     = request.CurrencyCode?.ToUpperInvariant()
+                       ?? currency?.Code
+                       ?? throw new DomainException(
+                           $"Location code '{locationCode}' is not in the built-in currency map. " +
+                           "Please provide CurrencyCode and CurrencySymbol explicitly.");
+        var symbol   = request.CurrencySymbol
+                       ?? currency?.Symbol
+                       ?? throw new DomainException(
+                           $"Location code '{locationCode}' is not in the built-in currency map. " +
+                           "Please provide CurrencyCode and CurrencySymbol explicitly.");
+
         var price = new DurationPrice
         {
             Id             = Guid.NewGuid(),
             DurationId     = duration.Id,
             LocationCode   = locationCode,
             Amount         = request.Amount,
-            CurrencyCode   = request.CurrencyCode.ToUpperInvariant(),
-            CurrencySymbol = request.CurrencySymbol,
+            CurrencyCode   = code,
+            CurrencySymbol = symbol,
             IsActive       = true,
             CreatedAt      = DateTimeOffset.UtcNow,
             UpdatedAt      = DateTimeOffset.UtcNow

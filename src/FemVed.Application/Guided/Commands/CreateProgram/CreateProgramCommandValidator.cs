@@ -1,3 +1,4 @@
+using FemVed.Domain.ValueObjects;
 using FluentValidation;
 
 namespace FemVed.Application.Guided.Commands.CreateProgram;
@@ -45,10 +46,19 @@ public sealed class CreateProgramCommandValidator : AbstractValidator<CreateProg
             duration.RuleFor(d => d.Prices).NotEmpty().WithMessage("Each duration requires at least one price.");
             duration.RuleForEach(d => d.Prices).ChildRules(price =>
             {
-                price.RuleFor(p => p.LocationCode).NotEmpty().WithMessage("Location code is required.");
-                price.RuleFor(p => p.Amount).GreaterThan(0).WithMessage("Price amount must be greater than 0.");
-                price.RuleFor(p => p.CurrencyCode).NotEmpty().WithMessage("Currency code is required.");
-                price.RuleFor(p => p.CurrencySymbol).NotEmpty().WithMessage("Currency symbol is required.");
+                price.RuleFor(p => p.LocationCode)
+                    .NotEmpty().WithMessage("Location code is required.");
+
+                price.RuleFor(p => p.Amount)
+                    .GreaterThan(0).WithMessage("Price amount must be greater than 0.");
+
+                // CurrencyCode is optional — auto-resolved from LocationCode when omitted.
+                // If provided, it must match the expected currency for the given location.
+                price.RuleFor(p => p.CurrencyCode)
+                    .Must((p, code) => code is null || CurrencyInfo.IsConsistentCode(p.LocationCode, code))
+                    .WithMessage(p =>
+                        $"CurrencyCode '{p.CurrencyCode}' does not match the expected currency for location '{p.LocationCode}'. " +
+                        $"Expected: {CurrencyInfo.TryGet(p.LocationCode)?.Code ?? "unknown"}.");
             });
         });
     }

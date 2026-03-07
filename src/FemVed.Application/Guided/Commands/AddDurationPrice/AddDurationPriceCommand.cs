@@ -15,8 +15,8 @@ namespace FemVed.Application.Guided.Commands.AddDurationPrice;
 /// <param name="IsAdmin">True when the caller has the Admin role.</param>
 /// <param name="LocationCode">ISO country code, e.g. "AU", "IN", "GB".</param>
 /// <param name="Amount">Price amount, e.g. 450.00.</param>
-/// <param name="CurrencyCode">ISO 4217 code, e.g. "AUD".</param>
-/// <param name="CurrencySymbol">Display symbol, e.g. "A$".</param>
+/// <param name="CurrencyCode">ISO 4217 code, e.g. "AUD". Null to auto-resolve from LocationCode.</param>
+/// <param name="CurrencySymbol">Display symbol, e.g. "A$". Null to auto-resolve from LocationCode.</param>
 public record AddDurationPriceCommand(
     Guid DurationId,
     Guid ProgramId,
@@ -24,5 +24,5 @@ public record AddDurationPriceCommand(
     bool IsAdmin,
     string LocationCode,
     decimal Amount,
-    string CurrencyCode,
-    string CurrencySymbol) : IRequest<Guid>;
+    string? CurrencyCode,
+    string? CurrencySymbol) : IRequest<Guid>;

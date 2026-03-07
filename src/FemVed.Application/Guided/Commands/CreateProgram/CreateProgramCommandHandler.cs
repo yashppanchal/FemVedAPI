@@ -2,6 +2,7 @@ using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
+using FemVed.Domain.ValueObjects;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -116,17 +117,30 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
 
             foreach (var p in dur.Prices)
             {
+                var loc      = p.LocationCode.ToUpperInvariant();
+                var currency = CurrencyInfo.TryGet(loc);
+                var code     = p.CurrencyCode?.ToUpperInvariant()
+                               ?? currency?.Code
+                               ?? throw new DomainException(
+                                   $"Location code '{loc}' is not in the built-in currency map. " +
+                                   "Please provide CurrencyCode and CurrencySymbol explicitly.");
+                var symbol   = p.CurrencySymbol
+                               ?? currency?.Symbol
+                               ?? throw new DomainException(
+                                   $"Location code '{loc}' is not in the built-in currency map. " +
+                                   "Please provide CurrencyCode and CurrencySymbol explicitly.");
+
                 await _prices.AddAsync(new DurationPrice
                 {
-                    Id = Guid.NewGuid(),
-                    DurationId = duration.Id,
-                    LocationCode = p.LocationCode.ToUpperInvariant(),
-                    Amount = p.Amount,
-                    CurrencyCode = p.CurrencyCode.ToUpperInvariant(),
-                    CurrencySymbol = p.CurrencySymbol,
-                    IsActive = true,
-                    CreatedAt = DateTimeOffset.UtcNow,
-                    UpdatedAt = DateTimeOffset.UtcNow
+                    Id             = Guid.NewGuid(),
+                    DurationId     = duration.Id,
+                    LocationCode   = loc,
+                    Amount         = p.Amount,
+                    CurrencyCode   = code,
+                    CurrencySymbol = symbol,
+                    IsActive       = true,
+                    CreatedAt      = DateTimeOffset.UtcNow,
+                    UpdatedAt      = DateTimeOffset.UtcNow
                 });
             }
         }

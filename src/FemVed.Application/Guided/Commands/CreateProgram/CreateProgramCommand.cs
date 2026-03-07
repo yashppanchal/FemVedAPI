@@ -15,12 +15,17 @@ public record DetailSectionInput(string Heading, string Description, int SortOrd
 /// <param name="Prices">Location-specific prices for this duration.</param>
 public record DurationInput(string Label, short Weeks, int SortOrder, List<DurationPriceInput> Prices);
 
-/// <summary>Input model for a single location-specific price.</summary>
+/// <summary>
+/// Input model for a single location-specific price.
+/// <c>CurrencyCode</c> and <c>CurrencySymbol</c> are optional — when omitted they are
+/// auto-resolved from <c>LocationCode</c> using the built-in currency map (e.g. IN → INR / ₹).
+/// If provided, they must match the expected currency for the given location.
+/// </summary>
 /// <param name="LocationCode">ISO country code, e.g. "GB", "IN", "US".</param>
 /// <param name="Amount">Price amount, e.g. 320.00.</param>
-/// <param name="CurrencyCode">ISO 4217 code, e.g. "GBP".</param>
-/// <param name="CurrencySymbol">Display symbol, e.g. "£".</param>
-public record DurationPriceInput(string LocationCode, decimal Amount, string CurrencyCode, string CurrencySymbol);
+/// <param name="CurrencyCode">ISO 4217 code, e.g. "GBP". Omit to auto-resolve.</param>
+/// <param name="CurrencySymbol">Display symbol, e.g. "£". Omit to auto-resolve.</param>
+public record DurationPriceInput(string LocationCode, decimal Amount, string? CurrencyCode = null, string? CurrencySymbol = null);
 
 /// <summary>
 /// Creates a new program as DRAFT. Expert creates for their own profile.
