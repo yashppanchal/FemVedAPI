@@ -345,6 +345,9 @@ public sealed class GuidedController : ControllerBase
                 request.GridImageUrl,
                 request.Overview,
                 request.SortOrder,
+                request.WhatYouGet,
+                request.WhoIsThisFor,
+                request.Tags,
                 request.DetailSections),
             cancellationToken);
         return Ok(new UpdateResultResponse(id, true));
@@ -833,6 +836,9 @@ public record UpdateProgramRequest(
     string? GridImageUrl,
     string? Overview,
     int? SortOrder,
+    List<string>? WhatYouGet,
+    List<string>? WhoIsThisFor,
+    List<string>? Tags,
     List<DetailSectionInput>? DetailSections);
 
 /// <summary>Standard delete success payload returned by Guided DELETE endpoints.</summary>

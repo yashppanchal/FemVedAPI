@@ -10,13 +10,16 @@ namespace FemVed.Application.Guided.Commands.UpdateProgram;
 /// <summary>
 /// Handles <see cref="UpdateProgramCommand"/>.
 /// Applies partial updates. Experts can only edit programs they own in DRAFT or PENDING_REVIEW status.
-/// When <c>DetailSections</c> is non-null, all existing sections are deleted and replaced.
+/// List fields (WhatYouGet, WhoIsThisFor, Tags, DetailSections) are replaced wholesale when non-null.
 /// </summary>
 public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramCommand>
 {
     private readonly IRepository<Domain.Entities.Program> _programs;
     private readonly IRepository<Domain.Entities.Expert> _experts;
     private readonly IRepository<ProgramDetailSection> _detailSections;
+    private readonly IRepository<ProgramWhatYouGet> _whatYouGet;
+    private readonly IRepository<ProgramWhoIsThisFor> _whoIsThisFor;
+    private readonly IRepository<ProgramTag> _tags;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<UpdateProgramCommandHandler> _logger;
 
@@ -25,14 +28,20 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         IRepository<Domain.Entities.Program> programs,
         IRepository<Domain.Entities.Expert> experts,
         IRepository<ProgramDetailSection> detailSections,
+        IRepository<ProgramWhatYouGet> whatYouGet,
+        IRepository<ProgramWhoIsThisFor> whoIsThisFor,
+        IRepository<ProgramTag> tags,
         IUnitOfWork uow,
         ILogger<UpdateProgramCommandHandler> logger)
     {
-        _programs = programs;
-        _experts = experts;
+        _programs       = programs;
+        _experts        = experts;
         _detailSections = detailSections;
-        _uow = uow;
-        _logger = logger;
+        _whatYouGet     = whatYouGet;
+        _whoIsThisFor   = whoIsThisFor;
+        _tags           = tags;
+        _uow            = uow;
+        _logger         = logger;
     }
 
     /// <summary>Applies partial updates to the program.</summary>
@@ -72,13 +81,56 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         program.UpdatedAt = DateTimeOffset.UtcNow;
         _programs.Update(program);
 
+        // ── WhatYouGet: replace all when provided ───────────────────────────
+        if (request.WhatYouGet is not null)
+        {
+            foreach (var old in await _whatYouGet.GetAllAsync(
+                w => w.ProgramId == request.ProgramId, cancellationToken))
+                _whatYouGet.Remove(old);
+
+            for (var i = 0; i < request.WhatYouGet.Count; i++)
+                await _whatYouGet.AddAsync(new ProgramWhatYouGet
+                {
+                    Id = Guid.NewGuid(), ProgramId = request.ProgramId,
+                    ItemText = request.WhatYouGet[i].Trim(), SortOrder = i
+                });
+        }
+
+        // ── WhoIsThisFor: replace all when provided ──────────────────────────
+        if (request.WhoIsThisFor is not null)
+        {
+            foreach (var old in await _whoIsThisFor.GetAllAsync(
+                w => w.ProgramId == request.ProgramId, cancellationToken))
+                _whoIsThisFor.Remove(old);
+
+            for (var i = 0; i < request.WhoIsThisFor.Count; i++)
+                await _whoIsThisFor.AddAsync(new ProgramWhoIsThisFor
+                {
+                    Id = Guid.NewGuid(), ProgramId = request.ProgramId,
+                    ItemText = request.WhoIsThisFor[i].Trim(), SortOrder = i
+                });
+        }
+
+        // ── Tags: replace all when provided ─────────────────────────────────
+        if (request.Tags is not null)
+        {
+            foreach (var old in await _tags.GetAllAsync(
+                t => t.ProgramId == request.ProgramId, cancellationToken))
+                _tags.Remove(old);
+
+            foreach (var tag in request.Tags)
+                await _tags.AddAsync(new ProgramTag
+                {
+                    Id = Guid.NewGuid(), ProgramId = request.ProgramId,
+                    Tag = tag.Trim().ToLowerInvariant()
+                });
+        }
+
+        // ── DetailSections: replace all when provided ────────────────────────
         if (request.DetailSections is not null)
         {
-            var existing = await _detailSections.GetAllAsync(
-                s => s.ProgramId == request.ProgramId,
-                cancellationToken);
-
-            foreach (var old in existing)
+            foreach (var old in await _detailSections.GetAllAsync(
+                s => s.ProgramId == request.ProgramId, cancellationToken))
                 _detailSections.Remove(old);
 
             foreach (var section in request.DetailSections)

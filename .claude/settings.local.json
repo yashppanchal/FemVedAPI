@@ -3,7 +3,8 @@
     "allow": [
       "Bash(dotnet --version:*)",
       "Bash(dotnet new:*)",
-      "Bash(dotnet add:*)"
+      "Bash(dotnet add:*)",
+      "Bash(ls \"c:\\\\Users\\\\YASH-HOME\\\\source\\\\repos\\\\FemvedAPI\\\\FemVedAPI\\\\src\\\\FemVed.Domain\\\\Entities\"\" | grep -i \"what|who|tag \")"
     ]
   }
 }

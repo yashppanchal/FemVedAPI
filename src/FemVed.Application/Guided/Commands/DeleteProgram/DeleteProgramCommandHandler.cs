@@ -6,13 +6,15 @@ using FemVed.Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Generic;
 
 namespace FemVed.Application.Guided.Commands.DeleteProgram;
 
 /// <summary>
 /// Handles <see cref="DeleteProgramCommand"/>.
-/// Sets IsDeleted = true, IsActive = false on the program, and writes an audit log entry.
+/// Cascades the soft-delete to all ProgramDurations (IsActive=false).
 /// Non-admin callers must own the program (Expert.UserId == request.UserId).
+/// All changes are saved in a single transaction.
 /// </summary>
 public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramCommand>
 {
@@ -21,6 +23,7 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
 
     private readonly IRepository<Program> _programs;
     private readonly IRepository<Expert> _experts;
+    private readonly IRepository<ProgramDuration> _durations;
     private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
     private readonly IMemoryCache _cache;
@@ -30,6 +33,7 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
     public DeleteProgramCommandHandler(
         IRepository<Program> programs,
         IRepository<Expert> experts,
+        IRepository<ProgramDuration> durations,
         IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
         IMemoryCache cache,
@@ -37,13 +41,14 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
     {
         _programs  = programs;
         _experts   = experts;
+        _durations = durations;
         _auditLogs = auditLogs;
         _uow       = uow;
         _cache     = cache;
         _logger    = logger;
     }
 
-    /// <summary>Soft-deletes the program and logs the action.</summary>
+    /// <summary>Soft-deletes the program and cascades to all durations.</summary>
     /// <exception cref="NotFoundException">Thrown when the program does not exist or is already deleted.</exception>
     /// <exception cref="ForbiddenException">Thrown when a non-admin caller does not own the program.</exception>
     public async Task Handle(DeleteProgramCommand request, CancellationToken cancellationToken)
@@ -68,11 +73,24 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
 
         var before = JsonSerializer.Serialize(new { program.IsDeleted, program.IsActive, program.Status });
 
+        // ── 1. Mark program ──────────────────────────────────────────────────
         program.IsDeleted = true;
         program.IsActive  = false;
         program.UpdatedAt = DateTimeOffset.UtcNow;
         _programs.Update(program);
 
+        // ── 2. Cascade to durations (no IsDeleted — deactivate only) ────────
+        var durations = await _durations.GetAllAsync(
+            d => d.ProgramId == request.ProgramId && d.IsActive, cancellationToken);
+
+        foreach (var dur in durations)
+        {
+            dur.IsActive  = false;
+            dur.UpdatedAt = DateTimeOffset.UtcNow;
+            _durations.Update(dur);
+        }
+
+        // ── Audit log ────────────────────────────────────────────────────────
         await _auditLogs.AddAsync(new AdminAuditLog
         {
             Id          = Guid.NewGuid(),
@@ -81,16 +99,23 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
             EntityType  = "programs",
             EntityId    = program.Id,
             BeforeValue = before,
-            AfterValue  = JsonSerializer.Serialize(new { IsDeleted = true, IsActive = false }),
+            AfterValue  = JsonSerializer.Serialize(new
+            {
+                IsDeleted = true, IsActive = false,
+                CascadedDurations = durations.Count
+            }),
             IpAddress   = request.IpAddress,
             CreatedAt   = DateTimeOffset.UtcNow
         });
 
+        // ── Single transaction save ──────────────────────────────────────────
         await _uow.SaveChangesAsync(cancellationToken);
 
         foreach (var loc in KnownLocationCodes)
             _cache.Remove($"{GetGuidedTreeQueryHandler.CacheKeyPrefix}{loc}");
 
-        _logger.LogInformation("DeleteProgram: program {ProgramId} soft-deleted", program.Id);
+        _logger.LogInformation(
+            "DeleteProgram: program {ProgramId} soft-deleted with cascade — {Durations} durations deactivated",
+            program.Id, durations.Count);
     }
 }
