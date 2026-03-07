@@ -77,8 +77,8 @@ public sealed class PauseEnrollmentCommandHandler : IRequestHandler<PauseEnrollm
         {
             // Expert path
             var expert = await _experts.FirstOrDefaultAsync(
-                e => e.UserId == request.PerformedByUserId && !e.IsDeleted, cancellationToken)
-                ?? throw new ForbiddenException("You do not have an expert profile.");
+                e => e.UserId == request.PerformedByUserId && !e.IsDeleted && e.IsActive, cancellationToken)
+                ?? throw new ForbiddenException("You do not have an active expert profile.");
 
             if (expert.Id != record.ExpertId)
                 throw new ForbiddenException("You can only pause enrollments for your own programs.");

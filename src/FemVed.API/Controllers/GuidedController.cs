@@ -293,9 +293,12 @@ public sealed class GuidedController : ControllerBase
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
+        var isAdmin = User.IsInRole("Admin");
         var id = await _mediator.Send(
             new CreateProgramCommand(
                 userId,
+                isAdmin,
+                request.ExpertId,
                 request.CategoryId,
                 request.Name,
                 request.Slug,
@@ -815,7 +818,9 @@ public record UpdateCategoryRequest(
     List<string>? KeyAreas);
 
 /// <summary>HTTP request body for POST /api/v1/guided/programs.</summary>
+/// <param name="ExpertId">Required when called by Admin — the expert to create the program for. Ignored for Expert callers.</param>
 public record CreateProgramRequest(
+    Guid? ExpertId,
     Guid CategoryId,
     string Name,
     string Slug,

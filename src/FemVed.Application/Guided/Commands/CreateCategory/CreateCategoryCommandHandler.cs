@@ -1,7 +1,9 @@
+using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace FemVed.Application.Guided.Commands.CreateCategory;
@@ -12,11 +14,15 @@ namespace FemVed.Application.Guided.Commands.CreateCategory;
 /// </summary>
 public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategoryCommand, Guid>
 {
+    private static readonly string[] KnownLocationCodes =
+        ["IN", "GB", "US", "AU", "AE", "NZ", "IE", "DE", "FR", "NL", "SG", "MY", "ZA", "LK"];
+
     private readonly IRepository<GuidedDomain> _domains;
     private readonly IRepository<GuidedCategory> _categories;
     private readonly IRepository<CategoryWhatsIncluded> _whatsIncluded;
     private readonly IRepository<CategoryKeyArea> _keyAreas;
     private readonly IUnitOfWork _uow;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<CreateCategoryCommandHandler> _logger;
 
     /// <summary>Initialises the handler with required services.</summary>
@@ -26,14 +32,16 @@ public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategor
         IRepository<CategoryWhatsIncluded> whatsIncluded,
         IRepository<CategoryKeyArea> keyAreas,
         IUnitOfWork uow,
+        IMemoryCache cache,
         ILogger<CreateCategoryCommandHandler> logger)
     {
-        _domains = domains;
-        _categories = categories;
+        _domains       = domains;
+        _categories    = categories;
         _whatsIncluded = whatsIncluded;
-        _keyAreas = keyAreas;
-        _uow = uow;
-        _logger = logger;
+        _keyAreas      = keyAreas;
+        _uow           = uow;
+        _cache         = cache;
+        _logger        = logger;
     }
 
     /// <summary>Creates a new category with all child records.</summary>
@@ -102,6 +110,9 @@ public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategor
         }
 
         await _uow.SaveChangesAsync(cancellationToken);
+
+        foreach (var loc in KnownLocationCodes)
+            _cache.Remove($"{GetGuidedTreeQueryHandler.CacheKeyPrefix}{loc}");
 
         _logger.LogInformation("Category {CategoryId} created with slug {Slug}", category.Id, category.Slug);
         return category.Id;

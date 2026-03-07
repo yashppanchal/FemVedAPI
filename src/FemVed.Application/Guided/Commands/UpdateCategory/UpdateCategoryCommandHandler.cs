@@ -1,7 +1,9 @@
+using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace FemVed.Application.Guided.Commands.UpdateCategory;
@@ -13,10 +15,14 @@ namespace FemVed.Application.Guided.Commands.UpdateCategory;
 /// </summary>
 public sealed class UpdateCategoryCommandHandler : IRequestHandler<UpdateCategoryCommand>
 {
+    private static readonly string[] KnownLocationCodes =
+        ["IN", "GB", "US", "AU", "AE", "NZ", "IE", "DE", "FR", "NL", "SG", "MY", "ZA", "LK"];
+
     private readonly IRepository<GuidedCategory> _categories;
     private readonly IRepository<CategoryWhatsIncluded> _whatsIncluded;
     private readonly IRepository<CategoryKeyArea> _keyAreas;
     private readonly IUnitOfWork _uow;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<UpdateCategoryCommandHandler> _logger;
 
     /// <summary>Initialises the handler with required services.</summary>
@@ -25,13 +31,15 @@ public sealed class UpdateCategoryCommandHandler : IRequestHandler<UpdateCategor
         IRepository<CategoryWhatsIncluded> whatsIncluded,
         IRepository<CategoryKeyArea> keyAreas,
         IUnitOfWork uow,
+        IMemoryCache cache,
         ILogger<UpdateCategoryCommandHandler> logger)
     {
-        _categories = categories;
+        _categories    = categories;
         _whatsIncluded = whatsIncluded;
-        _keyAreas = keyAreas;
-        _uow = uow;
-        _logger = logger;
+        _keyAreas      = keyAreas;
+        _uow           = uow;
+        _cache         = cache;
+        _logger        = logger;
     }
 
     /// <summary>Applies partial updates to the category.</summary>
@@ -82,6 +90,10 @@ public sealed class UpdateCategoryCommandHandler : IRequestHandler<UpdateCategor
         }
 
         await _uow.SaveChangesAsync(cancellationToken);
+
+        foreach (var loc in KnownLocationCodes)
+            _cache.Remove($"{GetGuidedTreeQueryHandler.CacheKeyPrefix}{loc}");
+
         _logger.LogInformation("Category {CategoryId} updated", request.CategoryId);
     }
 }

@@ -5,6 +5,7 @@ using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using Program = FemVed.Domain.Entities.Program;
 
 namespace FemVed.Application.Payments.Commands.InitiateOrder;
 
@@ -17,10 +18,12 @@ public sealed class InitiateOrderCommandHandler
     : IRequestHandler<InitiateOrderCommand, InitiateOrderResponse>
 {
     private readonly IRepository<User> _users;
+    private readonly IRepository<Program> _programs;
     private readonly IRepository<ProgramDuration> _durations;
     private readonly IRepository<DurationPrice> _prices;
     private readonly IRepository<Coupon> _coupons;
     private readonly IRepository<Order> _orders;
+    private readonly IRepository<UserProgramAccess> _access;
     private readonly IPaymentGatewayFactory _gatewayFactory;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<InitiateOrderCommandHandler> _logger;
@@ -28,19 +31,23 @@ public sealed class InitiateOrderCommandHandler
     /// <summary>Initialises the handler with required services.</summary>
     public InitiateOrderCommandHandler(
         IRepository<User> users,
+        IRepository<Program> programs,
         IRepository<ProgramDuration> durations,
         IRepository<DurationPrice> prices,
         IRepository<Coupon> coupons,
         IRepository<Order> orders,
+        IRepository<UserProgramAccess> access,
         IPaymentGatewayFactory gatewayFactory,
         IUnitOfWork uow,
         ILogger<InitiateOrderCommandHandler> logger)
     {
         _users = users;
+        _programs = programs;
         _durations = durations;
         _prices = prices;
         _coupons = coupons;
         _orders = orders;
+        _access = access;
         _gatewayFactory = gatewayFactory;
         _uow = uow;
         _logger = logger;
@@ -51,7 +58,10 @@ public sealed class InitiateOrderCommandHandler
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Gateway-specific order tokens and metadata.</returns>
     /// <exception cref="NotFoundException">Thrown if user, duration, or price record is not found.</exception>
-    /// <exception cref="DomainException">Thrown for invalid coupon or no price for user's location.</exception>
+    /// <exception cref="DomainException">
+    /// Thrown when the program is not published, the user already has an active enrollment,
+    /// the coupon is invalid/expired/exhausted, or no price exists for the user's location.
+    /// </exception>
     public async Task<InitiateOrderResponse> Handle(
         InitiateOrderCommand request,
         CancellationToken cancellationToken)
@@ -80,11 +90,33 @@ public sealed class InitiateOrderCommandHandler
         // Priority: (1) explicit request body value, (2) default GB
         var locationCode = request.CountryCode?.ToString() ?? "GB";
 
-        // ── 3. Load duration & price ─────────────────────────────────────────
+        // ── 3. Load duration, verify program is PUBLISHED, guard duplicate purchase ──
         var duration = await _durations.FirstOrDefaultAsync(
             d => d.Id == request.DurationId && d.IsActive,
             cancellationToken)
             ?? throw new NotFoundException("ProgramDuration", request.DurationId);
+
+        // Fix 1: only PUBLISHED programs can be purchased
+        var program = await _programs.FirstOrDefaultAsync(
+            p => p.Id == duration.ProgramId && !p.IsDeleted,
+            cancellationToken)
+            ?? throw new NotFoundException("Program", duration.ProgramId);
+
+        if (program.Status != ProgramStatus.Published)
+            throw new DomainException("This program is not currently available for purchase.");
+
+        // Fix 5: prevent duplicate active enrollment in the same program
+        var alreadyHasAccess = await _access.AnyAsync(
+            a => a.UserId == request.UserId
+              && a.ProgramId == duration.ProgramId
+              && a.Status != UserProgramAccessStatus.Completed
+              && a.Status != UserProgramAccessStatus.Cancelled,
+            cancellationToken);
+
+        if (alreadyHasAccess)
+            throw new DomainException(
+                "You already have an active enrollment in this program. " +
+                "Complete or cancel your current enrollment before purchasing again.");
 
         var price = await _prices.FirstOrDefaultAsync(
             dp => dp.DurationId == request.DurationId

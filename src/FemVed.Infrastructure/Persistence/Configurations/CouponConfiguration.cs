@@ -31,5 +31,10 @@ internal sealed class CouponConfiguration : IEntityTypeConfiguration<Coupon>
         builder.Property(c => c.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
 
         builder.HasIndex(c => c.Code).IsUnique().HasDatabaseName("uq_coupons_code");
+
+        // DB-level guard: used_count can never exceed max_uses, even under concurrent load
+        builder.ToTable(t => t.HasCheckConstraint(
+            "ck_coupons_used_count_within_max",
+            "max_uses IS NULL OR used_count <= max_uses"));
     }
 }

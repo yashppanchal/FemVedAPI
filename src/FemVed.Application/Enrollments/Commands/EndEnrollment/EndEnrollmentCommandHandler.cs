@@ -77,8 +77,8 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
         {
             // Expert path
             var expert = await _experts.FirstOrDefaultAsync(
-                e => e.UserId == request.PerformedByUserId && !e.IsDeleted, cancellationToken)
-                ?? throw new ForbiddenException("You do not have an expert profile.");
+                e => e.UserId == request.PerformedByUserId && !e.IsDeleted && e.IsActive, cancellationToken)
+                ?? throw new ForbiddenException("You do not have an active expert profile.");
 
             if (expert.Id != record.ExpertId)
                 throw new ForbiddenException("You can only end enrollments for your own programs.");
@@ -114,10 +114,14 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
         _logger.LogInformation("EndEnrollment: access {AccessId} → COMPLETED", record.Id);
 
         // ── Notify enrolled user ──────────────────────────────────────────────
-        await SendSessionEmailAsync(record, "session_ended", cancellationToken);
+        await SendUserEmailAsync(record, "session_ended", cancellationToken);
+
+        // ── Fix 12/13: Notify expert when user self-ends enrollment ───────────
+        if (performedByRole == "USER")
+            await SendExpertNotificationEmailAsync(record, cancellationToken);
     }
 
-    private async Task SendSessionEmailAsync(
+    private async Task SendUserEmailAsync(
         UserProgramAccess record,
         string templateKey,
         CancellationToken cancellationToken)
@@ -142,6 +146,42 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
         catch (Exception ex)
         {
             _logger.LogError(ex, "EndEnrollment: failed to send '{Template}' email — enrollment update is still saved", templateKey);
+        }
+    }
+
+    private async Task SendExpertNotificationEmailAsync(
+        UserProgramAccess record,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var expertProfile = await _experts.FirstOrDefaultAsync(e => e.Id == record.ExpertId, cancellationToken);
+            if (expertProfile is null) return;
+
+            var expertUser = await _users.FirstOrDefaultAsync(u => u.Id == expertProfile.UserId, cancellationToken);
+            if (expertUser is null) return;
+
+            var enrolledUser = await _users.FirstOrDefaultAsync(u => u.Id == record.UserId, cancellationToken);
+            var userName = enrolledUser is not null
+                ? $"{enrolledUser.FirstName} {enrolledUser.LastName}"
+                : "A user";
+
+            await _emailService.SendAsync(
+                toEmail:      expertUser.Email,
+                toName:       $"{expertUser.FirstName} {expertUser.LastName}",
+                templateKey:  "expert_enrollment_ended",
+                templateData: new Dictionary<string, object>
+                {
+                    ["expert_first_name"] = expertUser.FirstName,
+                    ["user_name"]         = userName
+                },
+                cancellationToken: cancellationToken);
+
+            _logger.LogInformation("EndEnrollment: expert enrollment-ended notification sent to expert user {ExpertUserId}", expertUser.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "EndEnrollment: failed to send expert notification email — enrollment update is still saved");
         }
     }
 }

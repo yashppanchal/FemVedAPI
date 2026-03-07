@@ -1,8 +1,10 @@
 using System.Text.Json;
+using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace FemVed.Application.Guided.Commands.UpdateDomain;
@@ -13,9 +15,13 @@ namespace FemVed.Application.Guided.Commands.UpdateDomain;
 /// </summary>
 public sealed class UpdateDomainCommandHandler : IRequestHandler<UpdateDomainCommand>
 {
+    private static readonly string[] KnownLocationCodes =
+        ["IN", "GB", "US", "AU", "AE", "NZ", "IE", "DE", "FR", "NL", "SG", "MY", "ZA", "LK"];
+
     private readonly IRepository<GuidedDomain> _domains;
     private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<UpdateDomainCommandHandler> _logger;
 
     /// <summary>Initialises the handler with required services.</summary>
@@ -23,11 +29,13 @@ public sealed class UpdateDomainCommandHandler : IRequestHandler<UpdateDomainCom
         IRepository<GuidedDomain> domains,
         IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
+        IMemoryCache cache,
         ILogger<UpdateDomainCommandHandler> logger)
     {
         _domains   = domains;
         _auditLogs = auditLogs;
         _uow       = uow;
+        _cache     = cache;
         _logger    = logger;
     }
 
@@ -77,6 +85,10 @@ public sealed class UpdateDomainCommandHandler : IRequestHandler<UpdateDomainCom
         });
 
         await _uow.SaveChangesAsync(cancellationToken);
+
+        foreach (var loc in KnownLocationCodes)
+            _cache.Remove($"{GetGuidedTreeQueryHandler.CacheKeyPrefix}{loc}");
+
         _logger.LogInformation("UpdateDomain: domain {DomainId} updated", domain.Id);
     }
 }

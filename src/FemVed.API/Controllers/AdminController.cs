@@ -22,7 +22,9 @@ using FemVed.Application.Admin.DTOs;
 using FemVed.Application.Admin.Queries.GetAdminSummary;
 using FemVed.Application.Admin.Queries.GetAllCoupons;
 using FemVed.Application.Admin.Queries.GetAllExperts;
+using FemVed.Application.Admin.Queries.GetAllEnrollments;
 using FemVed.Application.Admin.Queries.GetAllOrders;
+using FemVed.Application.Admin.Queries.GetAllPrograms;
 using FemVed.Application.Admin.Queries.GetAllUsers;
 using FemVed.Application.Admin.Queries.GetAuditLog;
 using FemVed.Application.Admin.Queries.GetGdprRequests;
@@ -424,6 +426,57 @@ public sealed class AdminController : ControllerBase
     public async Task<IActionResult> GetAllOrders(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllOrdersQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    // ── Programs (Admin) ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all programs across all experts, including DRAFT, PENDING_REVIEW, PUBLISHED, and ARCHIVED.
+    /// This is the primary entry point for the admin review workflow.
+    /// Optionally filter by lifecycle status.
+    /// </summary>
+    /// <param name="status">
+    /// Optional lifecycle status filter: Draft, PendingReview, Published, or Archived.
+    /// Omit to return all statuses.
+    /// </param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the flat list of programs.</returns>
+    [HttpGet("programs")]
+    [ProducesResponseType(typeof(List<AdminProgramDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllPrograms(
+        [FromQuery] string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetAllProgramsQuery(status), cancellationToken);
+        return Ok(result);
+    }
+
+    // ── Enrollments (Admin) ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns all enrollments across all experts, newest first.
+    /// Required to discover <c>accessId</c> values for session management actions
+    /// (start, pause, resume, end).
+    /// Optionally filter by access status.
+    /// </summary>
+    /// <param name="status">
+    /// Optional access-status filter: NotStarted, Active, Paused, Completed, or Cancelled.
+    /// Omit to return all statuses.
+    /// </param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the flat list of enrollments.</returns>
+    [HttpGet("enrollments")]
+    [ProducesResponseType(typeof(List<EnrollmentDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetAllEnrollments(
+        [FromQuery] string? status = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _mediator.Send(new GetAllEnrollmentsQuery(status), cancellationToken);
         return Ok(result);
     }
 

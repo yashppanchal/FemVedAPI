@@ -35,7 +35,7 @@ public sealed class CreateCouponCommandHandler : IRequestHandler<CreateCouponCom
     {
         _logger.LogInformation("CreateCoupon: admin {AdminId} creating coupon {Code}", request.AdminUserId, request.Code);
 
-        var code = request.Code.ToUpperInvariant();
+        var code = request.Code.Trim().ToUpperInvariant();
 
         var exists = await _coupons.AnyAsync(c => c.Code == code, cancellationToken);
         if (exists)

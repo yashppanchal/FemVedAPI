@@ -1,8 +1,10 @@
+using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
 namespace FemVed.Application.Guided.Commands.UpdateProgram;
@@ -14,6 +16,9 @@ namespace FemVed.Application.Guided.Commands.UpdateProgram;
 /// </summary>
 public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramCommand>
 {
+    private static readonly string[] KnownLocationCodes =
+        ["IN", "GB", "US", "AU", "AE", "NZ", "IE", "DE", "FR", "NL", "SG", "MY", "ZA", "LK"];
+
     private readonly IRepository<Domain.Entities.Program> _programs;
     private readonly IRepository<Domain.Entities.Expert> _experts;
     private readonly IRepository<ProgramDetailSection> _detailSections;
@@ -21,6 +26,7 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
     private readonly IRepository<ProgramWhoIsThisFor> _whoIsThisFor;
     private readonly IRepository<ProgramTag> _tags;
     private readonly IUnitOfWork _uow;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<UpdateProgramCommandHandler> _logger;
 
     /// <summary>Initialises the handler with required services.</summary>
@@ -32,6 +38,7 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         IRepository<ProgramWhoIsThisFor> whoIsThisFor,
         IRepository<ProgramTag> tags,
         IUnitOfWork uow,
+        IMemoryCache cache,
         ILogger<UpdateProgramCommandHandler> logger)
     {
         _programs       = programs;
@@ -41,6 +48,7 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         _whoIsThisFor   = whoIsThisFor;
         _tags           = tags;
         _uow            = uow;
+        _cache          = cache;
         _logger         = logger;
     }
 
@@ -144,6 +152,13 @@ public sealed class UpdateProgramCommandHandler : IRequestHandler<UpdateProgramC
         }
 
         await _uow.SaveChangesAsync(cancellationToken);
+
+        if (program.Status == ProgramStatus.Published)
+        {
+            foreach (var loc in KnownLocationCodes)
+                _cache.Remove($"{GetGuidedTreeQueryHandler.CacheKeyPrefix}{loc}");
+        }
+
         _logger.LogInformation("Program {ProgramId} updated successfully", request.ProgramId);
     }
 }

@@ -2,11 +2,11 @@ using System.Text.Json;
 using FemVed.Application.Interfaces;
 using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Domain.Entities;
+using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Caching.Memory;
-using System.Collections.Generic;
 
 namespace FemVed.Application.Guided.Commands.DeleteProgram;
 
@@ -24,6 +24,7 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
     private readonly IRepository<Program> _programs;
     private readonly IRepository<Expert> _experts;
     private readonly IRepository<ProgramDuration> _durations;
+    private readonly IRepository<UserProgramAccess> _access;
     private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
     private readonly IMemoryCache _cache;
@@ -34,6 +35,7 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
         IRepository<Program> programs,
         IRepository<Expert> experts,
         IRepository<ProgramDuration> durations,
+        IRepository<UserProgramAccess> access,
         IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
         IMemoryCache cache,
@@ -42,6 +44,7 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
         _programs  = programs;
         _experts   = experts;
         _durations = durations;
+        _access    = access;
         _auditLogs = auditLogs;
         _uow       = uow;
         _cache     = cache;
@@ -70,6 +73,18 @@ public sealed class DeleteProgramCommandHandler : IRequestHandler<DeleteProgramC
             if (expert.Id != program.ExpertId)
                 throw new ForbiddenException("You can only delete your own programs.");
         }
+
+        // ── Fix 8: guard against active enrollments ──────────────────────────
+        var hasActiveEnrollments = await _access.AnyAsync(
+            a => a.ProgramId == request.ProgramId
+              && a.Status != UserProgramAccessStatus.Completed
+              && a.Status != UserProgramAccessStatus.Cancelled,
+            cancellationToken);
+
+        if (hasActiveEnrollments)
+            throw new DomainException(
+                "Cannot delete a program that has active enrollments. " +
+                "Complete or cancel all enrollments first.");
 
         var before = JsonSerializer.Serialize(new { program.IsDeleted, program.IsActive, program.Status });
 

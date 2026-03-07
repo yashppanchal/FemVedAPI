@@ -64,10 +64,23 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
     {
         _logger.LogInformation("Creating program with slug {Slug}", request.Slug);
 
-        var expert = await _experts.FirstOrDefaultAsync(
-            e => e.UserId == request.RequestingUserId && !e.IsDeleted && e.IsActive,
-            cancellationToken)
-            ?? throw new NotFoundException("Expert profile not found for this user. Only registered experts can create programs.");
+        Domain.Entities.Expert expert;
+        if (request.IsAdmin)
+        {
+            if (request.ExpertId is null)
+                throw new DomainException("ExpertId is required when creating a program as Admin.");
+
+            expert = await _experts.FirstOrDefaultAsync(
+                e => e.Id == request.ExpertId && !e.IsDeleted, cancellationToken)
+                ?? throw new NotFoundException(nameof(Domain.Entities.Expert), request.ExpertId.Value);
+        }
+        else
+        {
+            expert = await _experts.FirstOrDefaultAsync(
+                e => e.UserId == request.RequestingUserId && !e.IsDeleted && e.IsActive,
+                cancellationToken)
+                ?? throw new NotFoundException("Expert profile not found for this user. Only registered experts can create programs.");
+        }
 
         var categoryExists = await _categories.AnyAsync(c => c.Id == request.CategoryId && c.IsActive && !c.IsDeleted, cancellationToken);
         if (!categoryExists)

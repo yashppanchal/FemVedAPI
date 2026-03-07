@@ -1,4 +1,5 @@
 using FemVed.Application.Interfaces;
+using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
 using MediatR;
@@ -14,6 +15,8 @@ public sealed class SubmitProgramForReviewCommandHandler : IRequestHandler<Submi
 {
     private readonly IRepository<Domain.Entities.Program> _programs;
     private readonly IRepository<Domain.Entities.Expert> _experts;
+    private readonly IRepository<ProgramDuration> _durations;
+    private readonly IRepository<DurationPrice> _prices;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<SubmitProgramForReviewCommandHandler> _logger;
 
@@ -21,13 +24,17 @@ public sealed class SubmitProgramForReviewCommandHandler : IRequestHandler<Submi
     public SubmitProgramForReviewCommandHandler(
         IRepository<Domain.Entities.Program> programs,
         IRepository<Domain.Entities.Expert> experts,
+        IRepository<ProgramDuration> durations,
+        IRepository<DurationPrice> prices,
         IUnitOfWork uow,
         ILogger<SubmitProgramForReviewCommandHandler> logger)
     {
-        _programs = programs;
-        _experts = experts;
-        _uow = uow;
-        _logger = logger;
+        _programs  = programs;
+        _experts   = experts;
+        _durations = durations;
+        _prices    = prices;
+        _uow       = uow;
+        _logger    = logger;
     }
 
     /// <summary>Submits the program for Admin review.</summary>
@@ -58,6 +65,22 @@ public sealed class SubmitProgramForReviewCommandHandler : IRequestHandler<Submi
 
         if (program.Status != ProgramStatus.Draft)
             throw new DomainException($"Only DRAFT programs can be submitted for review. Current status: {program.Status}.");
+
+        // ── Fix 9: ensure at least one active duration with at least one active price exists ──
+        var activeDurations = await _durations.GetAllAsync(
+            d => d.ProgramId == request.ProgramId && d.IsActive, cancellationToken);
+
+        if (activeDurations.Count == 0)
+            throw new DomainException(
+                "Program must have at least one active duration before it can be submitted for review.");
+
+        var activeDurationIds = activeDurations.Select(d => d.Id).ToList();
+        var hasPrices = await _prices.AnyAsync(
+            p => activeDurationIds.Contains(p.DurationId) && p.IsActive, cancellationToken);
+
+        if (!hasPrices)
+            throw new DomainException(
+                "Program must have at least one active price configured across its durations before it can be submitted for review.");
 
         program.Status = ProgramStatus.PendingReview;
         program.UpdatedAt = DateTimeOffset.UtcNow;

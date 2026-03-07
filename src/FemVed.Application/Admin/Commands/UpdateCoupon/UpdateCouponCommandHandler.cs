@@ -52,7 +52,7 @@ public sealed class UpdateCouponCommandHandler : IRequestHandler<UpdateCouponCom
 
         if (request.Code is not null)
         {
-            var newCode = request.Code.ToUpperInvariant();
+            var newCode = request.Code.Trim().ToUpperInvariant();
             if (newCode != coupon.Code)
             {
                 var codeConflict = await _coupons.AnyAsync(c => c.Code == newCode && c.Id != coupon.Id, cancellationToken);

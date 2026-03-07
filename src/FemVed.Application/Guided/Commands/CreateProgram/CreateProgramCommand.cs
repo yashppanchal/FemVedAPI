@@ -28,10 +28,13 @@ public record DurationInput(string Label, short Weeks, int SortOrder, List<Durat
 public record DurationPriceInput(string LocationCode, decimal Amount, string? CurrencyCode = null, string? CurrencySymbol = null);
 
 /// <summary>
-/// Creates a new program as DRAFT. Expert creates for their own profile.
-/// The requesting user's expert profile ID is resolved from <paramref name="RequestingUserId"/>.
+/// Creates a new program as DRAFT.
+/// Experts create for their own profile (ExpertId resolved from RequestingUserId).
+/// Admins must provide ExpertId explicitly to create on behalf of a specific expert.
 /// </summary>
-/// <param name="RequestingUserId">Authenticated user ID — used to resolve the expert profile.</param>
+/// <param name="RequestingUserId">Authenticated user ID — used to resolve the expert profile when IsAdmin is false.</param>
+/// <param name="IsAdmin">When true, ExpertId must be provided and the program is created for that expert.</param>
+/// <param name="ExpertId">Required when IsAdmin is true. The expert ID to create the program for.</param>
 /// <param name="CategoryId">The category this program belongs to.</param>
 /// <param name="Name">Full program name.</param>
 /// <param name="Slug">Unique URL slug, e.g. "break-stress-hormone-health-triangle".</param>
@@ -46,6 +49,8 @@ public record DurationPriceInput(string LocationCode, decimal Amount, string? Cu
 /// <param name="DetailSections">Heading + description sections for the program detail page.</param>
 public record CreateProgramCommand(
     Guid RequestingUserId,
+    bool IsAdmin,
+    Guid? ExpertId,
     Guid CategoryId,
     string Name,
     string Slug,
