@@ -93,6 +93,9 @@ public class AppDbContext : DbContext
     /// <summary>GDPR data-erasure requests.</summary>
     public DbSet<GdprDeletionRequest> GdprDeletionRequests => Set<GdprDeletionRequest>();
 
+    /// <summary>Expert payout records — funds transferred from platform to experts.</summary>
+    public DbSet<ExpertPayout> ExpertPayouts => Set<ExpertPayout>();
+
     // ── Model configuration ──────────────────────────────────────────────────
 
     /// <inheritdoc />

@@ -28,6 +28,13 @@ using FemVed.Application.Admin.Queries.GetAllPrograms;
 using FemVed.Application.Admin.Queries.GetAllUsers;
 using FemVed.Application.Admin.Queries.GetAuditLog;
 using FemVed.Application.Admin.Queries.GetGdprRequests;
+using FemVed.Application.Admin.Queries.GetSalesAnalytics;
+using FemVed.Application.Admin.Queries.GetProgramAnalytics;
+using FemVed.Application.Admin.Queries.GetUserAnalytics;
+using FemVed.Application.Admin.Queries.GetExpertPayoutAnalytics;
+using FemVed.Application.Admin.Queries.GetExpertPayoutHistory;
+using FemVed.Application.Admin.Queries.GetExpertPayoutBalance;
+using FemVed.Application.Admin.Commands.RecordExpertPayout;
 using FemVed.Application.Payments.DTOs;
 using FemVed.Domain.Enums;
 using MediatR;
@@ -259,6 +266,7 @@ public sealed class AdminController : ControllerBase
                 request.YearsExperience,
                 request.Credentials,
                 request.LocationCountry,
+                request.CommissionRate,
                 GetCurrentUserId(),
                 GetIpAddress()),
             cancellationToken);
@@ -299,6 +307,7 @@ public sealed class AdminController : ControllerBase
                 request.YearsExperience,
                 request.Credentials,
                 request.LocationCountry,
+                request.CommissionRate,
                 GetCurrentUserId(),
                 GetIpAddress()),
             cancellationToken);
@@ -691,6 +700,149 @@ public sealed class AdminController : ControllerBase
         return Ok(result);
     }
 
+    // ── Analytics ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns aggregated sales analytics: revenue by currency, gateway, country, and monthly trends.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with sales analytics data.</returns>
+    [HttpGet("analytics/sales")]
+    [ProducesResponseType(typeof(SalesAnalyticsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetSalesAnalytics(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetSalesAnalyticsQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns per-program and per-expert performance analytics including revenue, enrollments,
+    /// expert share, and platform commission.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with program analytics data.</returns>
+    [HttpGet("analytics/programs")]
+    [ProducesResponseType(typeof(ProgramAnalyticsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetProgramAnalytics(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetProgramAnalyticsQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns user acquisition and cohort analytics: registration trends, buyer conversion rates,
+    /// repeat purchase ratios, and 30/60/90-day cohort purchase rates.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with user analytics data.</returns>
+    [HttpGet("analytics/users")]
+    [ProducesResponseType(typeof(UserAnalyticsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetUserAnalytics(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetUserAnalyticsQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns expert payout balances: total earned, expert share, total paid, and outstanding balance
+    /// for every expert, grouped by currency.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with list of expert payout balance summaries.</returns>
+    [HttpGet("analytics/expert-payouts")]
+    [ProducesResponseType(typeof(List<ExpertPayoutBalanceDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetExpertPayoutAnalytics(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetExpertPayoutAnalyticsQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    // ── Expert Payouts ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the complete financial summary for a single expert:
+    /// total revenue collected from their programs, their payout share (commissionRate %),
+    /// platform profit, amount already paid, and outstanding balance — all per currency.
+    /// Use this as the primary "pay this expert" dashboard view.
+    /// </summary>
+    /// <param name="expertId">Target expert profile ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the expert's full financial balance sheet.</returns>
+    [HttpGet("expert-payouts/{expertId:guid}/balance")]
+    [ProducesResponseType(typeof(ExpertPayoutBalanceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetExpertPayoutBalance(
+        Guid expertId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetExpertPayoutBalanceQuery(expertId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns all payout records for a specific expert, newest first.
+    /// </summary>
+    /// <param name="expertId">Target expert profile ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the list of payout records (may be empty).</returns>
+    [HttpGet("expert-payouts/{expertId:guid}")]
+    [ProducesResponseType(typeof(List<ExpertPayoutRecordDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetExpertPayoutHistory(
+        Guid expertId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetExpertPayoutHistoryQuery(expertId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Records a payment made from the platform to an expert.
+    /// Creates one row in <c>expert_payouts</c> and writes an audit log entry.
+    /// The outstanding balance is always computed dynamically (earned minus paid).
+    /// </summary>
+    /// <param name="request">Payout details.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>201 Created with the payout record.</returns>
+    [HttpPost("expert-payouts")]
+    [ProducesResponseType(typeof(ExpertPayoutRecordDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RecordExpertPayout(
+        [FromBody] RecordExpertPayoutRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new RecordExpertPayoutCommand(
+                request.ExpertId,
+                request.Amount,
+                request.CurrencyCode,
+                request.PaidAt,
+                request.PaymentReference,
+                request.Notes,
+                GetCurrentUserId(),
+                GetIpAddress()),
+            cancellationToken);
+        return CreatedAtAction(nameof(GetExpertPayoutHistory), new { expertId = result.ExpertId }, result);
+    }
+
     // ── Audit Log ──────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -803,7 +955,9 @@ public record CreateExpertRequest(
     /// <summary>Degrees and certifications, e.g. ["BAMS", "MD Ayurveda"]. Optional.</summary>
     List<string>? Credentials,
     /// <summary>Country where the expert is based. Optional.</summary>
-    string? LocationCountry);
+    string? LocationCountry,
+    /// <summary>Expert commission rate as a percentage. Defaults to 80.00 (expert earns 80% of revenue).</summary>
+    decimal CommissionRate = 80.00m);
 
 /// <summary>HTTP request body for PUT /api/v1/admin/experts/{expertId}. All fields optional.</summary>
 public record UpdateExpertRequest(
@@ -828,7 +982,24 @@ public record UpdateExpertRequest(
     /// <summary>Replaces all credentials. Null = no change.</summary>
     List<string>? Credentials,
     /// <summary>New country. Null = no change.</summary>
-    string? LocationCountry);
+    string? LocationCountry,
+    /// <summary>New commission rate as a percentage, e.g. 75.00. Null = no change.</summary>
+    decimal? CommissionRate);
+
+/// <summary>HTTP request body for POST /api/v1/admin/expert-payouts.</summary>
+public record RecordExpertPayoutRequest(
+    /// <summary>UUID of the expert receiving the payment.</summary>
+    Guid ExpertId,
+    /// <summary>Amount transferred. Must be greater than 0.</summary>
+    decimal Amount,
+    /// <summary>ISO 4217 currency code, e.g. "GBP".</summary>
+    string CurrencyCode,
+    /// <summary>UTC timestamp when the funds were actually transferred.</summary>
+    DateTimeOffset PaidAt,
+    /// <summary>Optional bank wire ref, PayPal transaction ID, etc. Max 255 chars.</summary>
+    string? PaymentReference,
+    /// <summary>Optional admin notes about this payment.</summary>
+    string? Notes);
 
 /// <summary>HTTP request body for POST /api/v1/admin/gdpr-requests/{requestId}/process.</summary>
 public record ProcessGdprRequestBody(

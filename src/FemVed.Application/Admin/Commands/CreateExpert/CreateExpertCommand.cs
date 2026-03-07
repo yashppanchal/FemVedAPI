@@ -18,6 +18,7 @@ namespace FemVed.Application.Admin.Commands.CreateExpert;
 /// <param name="YearsExperience">Years of clinical/professional experience (optional).</param>
 /// <param name="Credentials">Degrees and certifications, e.g. ["BAMS", "MD Ayurveda"] (optional).</param>
 /// <param name="LocationCountry">Country where the expert is based (optional).</param>
+/// <param name="CommissionRate">Expert commission rate as a percentage. Defaults to 80.00 (expert earns 80% of revenue).</param>
 /// <param name="AdminUserId">Admin performing the action — written to the audit log.</param>
 /// <param name="IpAddress">Client IP address — written to the audit log.</param>
 public record CreateExpertCommand(
@@ -33,5 +34,6 @@ public record CreateExpertCommand(
     short? YearsExperience,
     List<string>? Credentials,
     string? LocationCountry,
+    decimal CommissionRate,
     Guid AdminUserId,
     string? IpAddress) : IRequest<Guid>;

@@ -7,6 +7,7 @@ namespace FemVed.Application.Admin.DTOs;
 /// <param name="DisplayName">Public display name.</param>
 /// <param name="Title">Professional title.</param>
 /// <param name="LocationCountry">Country where the expert is based.</param>
+/// <param name="CommissionRate">Expert revenue share as a percentage, e.g. 80.00 means expert earns 80%.</param>
 /// <param name="IsActive">Whether the expert is visible in the catalog.</param>
 /// <param name="IsDeleted">Whether the expert profile has been soft-deleted.</param>
 /// <param name="CreatedAt">UTC profile creation timestamp.</param>
@@ -17,6 +18,7 @@ public record AdminExpertDto(
     string DisplayName,
     string Title,
     string? LocationCountry,
+    decimal CommissionRate,
     bool IsActive,
     bool IsDeleted,
     DateTimeOffset CreatedAt);

@@ -72,6 +72,7 @@ public sealed class CreateExpertCommandHandler : IRequestHandler<CreateExpertCom
             YearsExperience     = request.YearsExperience,
             Credentials         = request.Credentials?.Select(c => c.Trim()).ToArray(),
             LocationCountry     = request.LocationCountry?.Trim(),
+            CommissionRate      = request.CommissionRate,
             IsActive            = true,
             IsDeleted           = false,
             CreatedAt           = DateTimeOffset.UtcNow,

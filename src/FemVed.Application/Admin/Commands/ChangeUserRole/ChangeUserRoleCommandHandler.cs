@@ -70,15 +70,16 @@ public sealed class ChangeUserRoleCommandHandler : IRequestHandler<ChangeUserRol
             {
                 var expert = new Expert
                 {
-                    Id          = Guid.NewGuid(),
-                    UserId      = user.Id,
-                    DisplayName = $"{user.FirstName} {user.LastName}".Trim(),
-                    Title       = string.Empty,
-                    Bio         = string.Empty,
-                    IsActive    = true,
-                    IsDeleted   = false,
-                    CreatedAt   = DateTimeOffset.UtcNow,
-                    UpdatedAt   = DateTimeOffset.UtcNow
+                    Id             = Guid.NewGuid(),
+                    UserId         = user.Id,
+                    DisplayName    = $"{user.FirstName} {user.LastName}".Trim(),
+                    Title          = string.Empty,
+                    Bio            = string.Empty,
+                    CommissionRate = 80.00m,   // platform default — admin can update via PUT /admin/experts/{id}
+                    IsActive       = true,
+                    IsDeleted      = false,
+                    CreatedAt      = DateTimeOffset.UtcNow,
+                    UpdatedAt      = DateTimeOffset.UtcNow
                 };
                 await _experts.AddAsync(expert);
                 _logger.LogInformation("ChangeUserRole: expert profile auto-created for user {UserId}", user.Id);

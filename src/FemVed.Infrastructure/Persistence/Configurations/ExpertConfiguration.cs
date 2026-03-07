@@ -28,6 +28,7 @@ internal sealed class ExpertConfiguration : IEntityTypeConfiguration<Expert>
         builder.Property(e => e.YearsExperience).HasColumnName("years_experience").HasColumnType("smallint");
         builder.Property(e => e.Credentials).HasColumnName("credentials").HasColumnType("text[]");
         builder.Property(e => e.LocationCountry).HasColumnName("location_country").HasMaxLength(100);
+        builder.Property(e => e.CommissionRate).HasColumnName("commission_rate").HasPrecision(5, 2).HasDefaultValue(80.00m);
         builder.Property(e => e.IsActive).HasColumnName("is_active").HasDefaultValue(true);
         builder.Property(e => e.IsDeleted).HasColumnName("is_deleted").HasDefaultValue(false);
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
@@ -56,6 +57,7 @@ internal sealed class ExpertConfiguration : IEntityTypeConfiguration<Expert>
                 YearsExperience = 25,
                 Credentials = new[] { "BAMS", "MD Ayurveda", "GCSRT - Harvard Medical School" },
                 LocationCountry = "India",
+                CommissionRate = 80.00m,
                 IsActive = true, IsDeleted = false, CreatedAt = Seeded, UpdatedAt = Seeded
             },
             new Expert
@@ -72,6 +74,7 @@ internal sealed class ExpertConfiguration : IEntityTypeConfiguration<Expert>
                 YearsExperience = 20,
                 Credentials = new[] { "Bachelor of Health Science in Naturopathy" },
                 LocationCountry = "United Kingdom",
+                CommissionRate = 80.00m,
                 IsActive = true, IsDeleted = false, CreatedAt = Seeded, UpdatedAt = Seeded
             }
         );

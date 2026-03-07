@@ -55,6 +55,7 @@ public sealed class GetMyExpertProfileQueryHandler : IRequestHandler<GetMyExpert
             YearsExperience:    expert.YearsExperience,
             Credentials:        expert.Credentials,
             LocationCountry:    expert.LocationCountry,
+            CommissionRate:     expert.CommissionRate,
             IsActive:           expert.IsActive,
             CreatedAt:          expert.CreatedAt);
     }

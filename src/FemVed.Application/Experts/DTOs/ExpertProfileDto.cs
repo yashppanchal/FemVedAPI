@@ -17,6 +17,7 @@ namespace FemVed.Application.Experts.DTOs;
 /// <param name="YearsExperience">Years of clinical/professional experience.</param>
 /// <param name="Credentials">Degrees and certifications.</param>
 /// <param name="LocationCountry">Country where the expert is based.</param>
+/// <param name="CommissionRate">Expert revenue share as a percentage, e.g. 80.00 means the expert earns 80% of each sale.</param>
 /// <param name="IsActive">Whether the expert is visible in the catalog.</param>
 /// <param name="CreatedAt">UTC account creation timestamp.</param>
 public record ExpertProfileDto(
@@ -33,5 +34,6 @@ public record ExpertProfileDto(
     short? YearsExperience,
     string[]? Credentials,
     string? LocationCountry,
+    decimal CommissionRate,
     bool IsActive,
     DateTimeOffset CreatedAt);

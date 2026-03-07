@@ -50,7 +50,8 @@ public sealed class UpdateExpertCommandHandler : IRequestHandler<UpdateExpertCom
             expert.Title,
             expert.Bio,
             expert.LocationCountry,
-            expert.YearsExperience
+            expert.YearsExperience,
+            expert.CommissionRate
         });
 
         if (request.DisplayName is not null)         expert.DisplayName         = request.DisplayName.Trim();
@@ -64,6 +65,7 @@ public sealed class UpdateExpertCommandHandler : IRequestHandler<UpdateExpertCom
         if (request.YearsExperience is not null)     expert.YearsExperience     = request.YearsExperience;
         if (request.Credentials is not null)         expert.Credentials         = request.Credentials.Select(c => c.Trim()).ToArray();
         if (request.LocationCountry is not null)     expert.LocationCountry     = request.LocationCountry.Trim();
+        if (request.CommissionRate is not null)      expert.CommissionRate      = request.CommissionRate.Value;
         expert.UpdatedAt = DateTimeOffset.UtcNow;
         _experts.Update(expert);
 
@@ -81,7 +83,8 @@ public sealed class UpdateExpertCommandHandler : IRequestHandler<UpdateExpertCom
                 expert.Title,
                 expert.Bio,
                 expert.LocationCountry,
-                expert.YearsExperience
+                expert.YearsExperience,
+                expert.CommissionRate
             }),
             IpAddress   = request.IpAddress,
             CreatedAt   = DateTimeOffset.UtcNow

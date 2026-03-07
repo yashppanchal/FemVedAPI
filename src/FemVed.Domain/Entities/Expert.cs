@@ -45,6 +45,12 @@ public class Expert
     /// <summary>Country where the expert is based, e.g. "India".</summary>
     public string? LocationCountry { get; set; }
 
+    /// <summary>
+    /// Percentage of program revenue paid to this expert (0–100).
+    /// E.g. 80.00 = expert keeps 80 %, platform keeps 20 %. Default: 80.00.
+    /// </summary>
+    public decimal CommissionRate { get; set; } = 80.00m;
+
     /// <summary>Whether this expert is visible in the catalog.</summary>
     public bool IsActive { get; set; } = true;
 

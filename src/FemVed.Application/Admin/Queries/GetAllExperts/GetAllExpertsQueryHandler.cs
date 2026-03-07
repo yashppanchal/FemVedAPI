@@ -47,6 +47,7 @@ public sealed class GetAllExpertsQueryHandler : IRequestHandler<GetAllExpertsQue
                     DisplayName:     e.DisplayName,
                     Title:           e.Title,
                     LocationCountry: e.LocationCountry,
+                    CommissionRate:  e.CommissionRate,
                     IsActive:        e.IsActive,
                     IsDeleted:       e.IsDeleted,
                     CreatedAt:       e.CreatedAt);

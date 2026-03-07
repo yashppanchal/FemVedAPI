@@ -18,6 +18,7 @@ namespace FemVed.Application.Admin.Commands.UpdateExpert;
 /// <param name="YearsExperience">New years of experience (optional).</param>
 /// <param name="Credentials">Replaces all credential entries (optional).</param>
 /// <param name="LocationCountry">New country (optional).</param>
+/// <param name="CommissionRate">New expert commission rate as a percentage, e.g. 80.00 means expert earns 80% of revenue (optional).</param>
 /// <param name="AdminUserId">Admin performing the action — written to the audit log.</param>
 /// <param name="IpAddress">Client IP address — written to the audit log.</param>
 public record UpdateExpertCommand(
@@ -33,5 +34,6 @@ public record UpdateExpertCommand(
     short? YearsExperience,
     List<string>? Credentials,
     string? LocationCountry,
+    decimal? CommissionRate,
     Guid AdminUserId,
     string? IpAddress) : IRequest;
