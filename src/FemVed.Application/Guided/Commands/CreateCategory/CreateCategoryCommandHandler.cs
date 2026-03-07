@@ -46,7 +46,7 @@ public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategor
     {
         _logger.LogInformation("Creating category with slug {Slug} in domain {DomainId}", request.Slug, request.DomainId);
 
-        var domainExists = await _domains.AnyAsync(d => d.Id == request.DomainId, cancellationToken);
+        var domainExists = await _domains.AnyAsync(d => d.Id == request.DomainId && !d.IsDeleted, cancellationToken);
         if (!domainExists)
             throw new NotFoundException(nameof(GuidedDomain), request.DomainId);
 

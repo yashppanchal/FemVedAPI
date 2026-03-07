@@ -68,7 +68,7 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
             cancellationToken)
             ?? throw new NotFoundException("Expert profile not found for this user. Only registered experts can create programs.");
 
-        var categoryExists = await _categories.AnyAsync(c => c.Id == request.CategoryId && c.IsActive, cancellationToken);
+        var categoryExists = await _categories.AnyAsync(c => c.Id == request.CategoryId && c.IsActive && !c.IsDeleted, cancellationToken);
         if (!categoryExists)
             throw new NotFoundException(nameof(GuidedCategory), request.CategoryId);
 
