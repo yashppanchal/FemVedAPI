@@ -58,13 +58,18 @@ public static class InfrastructureServiceExtensions
             // e.g. SENDGRID_TEMPLATE_PURCHASE_SUCCESS=d-abc123
             opts.TemplateIds = new Dictionary<string, string>
             {
-                ["purchase_success"]      = configuration["SENDGRID_TEMPLATE_PURCHASE_SUCCESS"]      ?? string.Empty,
-                ["purchase_failed"]       = configuration["SENDGRID_TEMPLATE_PURCHASE_FAILED"]       ?? string.Empty,
-                ["program_reminder"]      = configuration["SENDGRID_TEMPLATE_PROGRAM_REMINDER"]      ?? string.Empty,
-                ["expert_new_enrollment"] = configuration["SENDGRID_TEMPLATE_EXPERT_NEW_ENROLLMENT"] ?? string.Empty,
-                ["password_reset"]        = configuration["SENDGRID_TEMPLATE_PASSWORD_RESET"]        ?? string.Empty,
-                ["email_verify"]          = configuration["SENDGRID_TEMPLATE_EMAIL_VERIFY"]          ?? string.Empty,
-                ["expert_progress_update"]= configuration["SENDGRID_TEMPLATE_EXPERT_PROGRESS_UPDATE"]?? string.Empty,
+                ["purchase_success"]         = configuration["SENDGRID_TEMPLATE_PURCHASE_SUCCESS"]         ?? string.Empty,
+                ["purchase_failed"]          = configuration["SENDGRID_TEMPLATE_PURCHASE_FAILED"]          ?? string.Empty,
+                ["program_reminder"]         = configuration["SENDGRID_TEMPLATE_PROGRAM_REMINDER"]         ?? string.Empty,
+                ["expert_new_enrollment"]    = configuration["SENDGRID_TEMPLATE_EXPERT_NEW_ENROLLMENT"]    ?? string.Empty,
+                ["password_reset"]           = configuration["SENDGRID_TEMPLATE_PASSWORD_RESET"]           ?? string.Empty,
+                ["email_verify"]             = configuration["SENDGRID_TEMPLATE_EMAIL_VERIFY"]             ?? string.Empty,
+                ["expert_progress_update"]   = configuration["SENDGRID_TEMPLATE_EXPERT_PROGRESS_UPDATE"]   ?? string.Empty,
+                ["session_started"]          = configuration["SENDGRID_TEMPLATE_SESSION_STARTED"]          ?? string.Empty,
+                ["session_paused"]           = configuration["SENDGRID_TEMPLATE_SESSION_PAUSED"]           ?? string.Empty,
+                ["session_resumed"]          = configuration["SENDGRID_TEMPLATE_SESSION_RESUMED"]          ?? string.Empty,
+                ["session_ended"]            = configuration["SENDGRID_TEMPLATE_SESSION_ENDED"]            ?? string.Empty,
+                ["expert_enrollment_ended"]  = configuration["SENDGRID_TEMPLATE_EXPERT_ENROLLMENT_ENDED"]  ?? string.Empty,
             };
         });
 
