@@ -138,12 +138,14 @@ try
     // 3. Request logging
     app.UseMiddleware<RequestLoggingMiddleware>();
 
-    // 4. Swagger — served at root (https://api.femved.com/)
-    app.UseSwagger();
+    // 4. Swagger
+    // UI:   https://api.femved.com/docs
+    // JSON: https://api.femved.com/openapi.json
+    app.UseSwagger(c => c.RouteTemplate = "openapi.json");
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "FemVed API v1");
-        c.RoutePrefix = string.Empty; // Swagger UI at root "/"
+        c.SwaggerEndpoint("/openapi.json", "FemVed API v1");
+        c.RoutePrefix = "docs";
     });
 
     // 5. Forwarded headers — reads X-Forwarded-For and X-Forwarded-Proto from
