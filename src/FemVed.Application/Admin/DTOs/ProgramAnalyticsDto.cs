@@ -22,7 +22,7 @@ public record ProgramAnalyticsDto(
 /// <param name="Revenue">Revenue per currency from paid orders.</param>
 public record ProgramStatsDto(
     Guid ProgramId,
-    string ProgramName,
+    string? ProgramName,
     string ExpertName,
     string CategoryName,
     string Status,

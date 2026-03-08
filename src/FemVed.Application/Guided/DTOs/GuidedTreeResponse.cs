@@ -39,9 +39,9 @@ public record GuidedCategoryDto(
 /// <param name="CategoryPageKeyAreas">Key support area bullet points.</param>
 public record CategoryPageDataDto(
     string? CategoryPageDataImage,
-    string CategoryType,
-    string CategoryHeroTitle,
-    string CategoryHeroSubtext,
+    string? CategoryType,
+    string? CategoryHeroTitle,
+    string? CategoryHeroSubtext,
     string? CategoryCtaLabel,
     string? CategoryCtaTo,
     List<string> WhatsIncludedInCategory,
@@ -63,8 +63,8 @@ public record CategoryPageDataDto(
 /// <param name="ProgramPageDisplayDetails">Full detail page content.</param>
 public record ProgramInCategoryDto(
     Guid ProgramId,
-    string ProgramName,
-    string ProgramGridDescription,
+    string? ProgramName,
+    string? ProgramGridDescription,
     string? ProgramGridImage,
     Guid ExpertId,
     string ExpertName,
@@ -90,7 +90,7 @@ public record ProgramDurationDto(
 /// <param name="WhoIsThisFor">Target audience bullet points.</param>
 /// <param name="DetailSections">Ordered heading + description sections on the program detail page.</param>
 public record ProgramPageDisplayDetailsDto(
-    string Overview,
+    string? Overview,
     List<string> WhatYouGet,
     List<string> WhoIsThisFor,
     List<ProgramDetailSectionDto> DetailSections);

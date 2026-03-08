@@ -20,7 +20,7 @@ namespace FemVed.Application.Admin.DTOs;
 /// <param name="UpdatedAt">UTC last-update timestamp.</param>
 public record AdminProgramDto(
     Guid ProgramId,
-    string Name,
+    string? Name,
     string Slug,
     string Status,
     bool IsActive,

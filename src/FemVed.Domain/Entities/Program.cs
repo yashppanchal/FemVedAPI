@@ -18,20 +18,20 @@ public class Program
     /// <summary>FK to the expert who created this program.</summary>
     public Guid ExpertId { get; set; }
 
-    /// <summary>Full program name shown in the catalog.</summary>
-    public string Name { get; set; } = string.Empty;
+    /// <summary>Full program name shown in the catalog. Nullable — omitted fields render nothing in UI.</summary>
+    public string? Name { get; set; }
 
     /// <summary>URL slug, e.g. "break-stress-hormone-health-triangle". Must be unique.</summary>
     public string Slug { get; set; } = string.Empty;
 
-    /// <summary>Short description shown in the program grid card (max 500 chars).</summary>
-    public string GridDescription { get; set; } = string.Empty;
+    /// <summary>Short description shown in the program grid card (max 500 chars). Nullable — omitted fields render nothing in UI.</summary>
+    public string? GridDescription { get; set; }
 
     /// <summary>Grid card image URL (hosted on Cloudflare R2).</summary>
     public string? GridImageUrl { get; set; }
 
-    /// <summary>Full program overview shown on the detail page.</summary>
-    public string Overview { get; set; } = string.Empty;
+    /// <summary>Full program overview shown on the detail page. Nullable — omitted fields render nothing in UI.</summary>
+    public string? Overview { get; set; }
 
     /// <summary>Current lifecycle status.</summary>
     public ProgramStatus Status { get; set; } = ProgramStatus.Draft;

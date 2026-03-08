@@ -116,7 +116,7 @@ public sealed class ProgramReminderJob : BackgroundService
             var templateData = new Dictionary<string, object>
             {
                 ["firstName"]   = user.FirstName,
-                ["programName"] = program.Name,
+                ["programName"] = program.Name ?? string.Empty,
                 ["startDate"]   = startDateLabel
             };
 
@@ -161,7 +161,7 @@ public sealed class ProgramReminderJob : BackgroundService
                     await waService.SendAsync(
                         user.FullMobile,
                         "program_reminder_wa",
-                        [user.FirstName, program.Name, startDateLabel],
+                        [user.FirstName, program.Name ?? string.Empty, startDateLabel],
                         ct);
                 }
                 catch (Exception ex)

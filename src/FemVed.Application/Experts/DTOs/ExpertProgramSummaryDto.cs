@@ -15,7 +15,7 @@ namespace FemVed.Application.Experts.DTOs;
 /// <param name="UpdatedAt">UTC timestamp of the last update.</param>
 public record ExpertProgramSummaryDto(
     Guid ProgramId,
-    string Name,
+    string? Name,
     string Slug,
     string Status,
     string? GridImageUrl,

@@ -13,8 +13,8 @@ public sealed class CreateProgramCommandValidator : AbstractValidator<CreateProg
             .NotEmpty().WithMessage("Category ID is required.");
 
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Program name is required.")
-            .MaximumLength(300).WithMessage("Program name must not exceed 300 characters.");
+            .MaximumLength(300).WithMessage("Program name must not exceed 300 characters.")
+            .When(x => x.Name is not null);
 
         RuleFor(x => x.Slug)
             .NotEmpty().WithMessage("Slug is required.")
@@ -22,11 +22,10 @@ public sealed class CreateProgramCommandValidator : AbstractValidator<CreateProg
             .Matches(@"^[a-z0-9]+(?:-[a-z0-9]+)*$").WithMessage("Slug must be lowercase letters, digits, and hyphens only.");
 
         RuleFor(x => x.GridDescription)
-            .NotEmpty().WithMessage("Grid description is required.")
-            .MaximumLength(500).WithMessage("Grid description must not exceed 500 characters.");
+            .MaximumLength(500).WithMessage("Grid description must not exceed 500 characters.")
+            .When(x => x.GridDescription is not null);
 
-        RuleFor(x => x.Overview)
-            .NotEmpty().WithMessage("Overview is required.");
+        // Overview — optional display field
 
         RuleForEach(x => x.DetailSections).ChildRules(section =>
         {
@@ -34,11 +33,9 @@ public sealed class CreateProgramCommandValidator : AbstractValidator<CreateProg
                 .NotEmpty().WithMessage("Section heading is required.");
             section.RuleFor(s => s.Description)
                 .NotEmpty().WithMessage("Section description is required.");
-        });
+        }).When(x => x.DetailSections is { Count: > 0 });
 
-        RuleFor(x => x.Durations)
-            .NotEmpty().WithMessage("At least one duration is required.");
-
+        // Durations — optional at creation; add via POST /programs/{id}/durations
         RuleForEach(x => x.Durations).ChildRules(duration =>
         {
             duration.RuleFor(d => d.Label).NotEmpty().WithMessage("Duration label is required.");

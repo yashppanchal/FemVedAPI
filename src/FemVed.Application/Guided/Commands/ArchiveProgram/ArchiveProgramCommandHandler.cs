@@ -73,7 +73,7 @@ public sealed class ArchiveProgramCommandHandler : IRequestHandler<ArchiveProgra
         _logger.LogInformation("Program {ProgramId} archived. Tree cache evicted.", request.ProgramId);
 
         // ── Fix 14: notify active enrollees ──────────────────────────────────
-        await NotifyActiveEnrolleesAsync(request.ProgramId, program.Name, cancellationToken);
+        await NotifyActiveEnrolleesAsync(request.ProgramId, program.Name ?? string.Empty, cancellationToken);
     }
 
     private async Task NotifyActiveEnrolleesAsync(

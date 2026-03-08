@@ -98,11 +98,11 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
             Id = Guid.NewGuid(),
             CategoryId = request.CategoryId,
             ExpertId = expert.Id,
-            Name = request.Name.Trim(),
+            Name = request.Name?.Trim(),
             Slug = request.Slug.Trim().ToLowerInvariant(),
-            GridDescription = request.GridDescription.Trim(),
+            GridDescription = request.GridDescription?.Trim(),
             GridImageUrl = request.GridImageUrl?.Trim(),
-            Overview = request.Overview.Trim(),
+            Overview = request.Overview?.Trim(),
             Status = ProgramStatus.Draft,
             SortOrder = request.SortOrder,
             IsActive = true,
@@ -113,7 +113,7 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
 
         await _programs.AddAsync(program);
 
-        foreach (var dur in request.Durations)
+        foreach (var dur in request.Durations ?? [])
         {
             var duration = new ProgramDuration
             {

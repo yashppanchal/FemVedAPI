@@ -21,9 +21,9 @@ internal sealed class GuidedCategoryConfiguration : IEntityTypeConfiguration<Gui
         builder.Property(c => c.ParentId).HasColumnName("parent_id");
         builder.Property(c => c.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
         builder.Property(c => c.Slug).HasColumnName("slug").HasMaxLength(200).IsRequired();
-        builder.Property(c => c.CategoryType).HasColumnName("category_type").HasMaxLength(100).IsRequired();
-        builder.Property(c => c.HeroTitle).HasColumnName("hero_title").HasMaxLength(300).IsRequired();
-        builder.Property(c => c.HeroSubtext).HasColumnName("hero_subtext").IsRequired();
+        builder.Property(c => c.CategoryType).HasColumnName("category_type").HasMaxLength(100);
+        builder.Property(c => c.HeroTitle).HasColumnName("hero_title").HasMaxLength(300);
+        builder.Property(c => c.HeroSubtext).HasColumnName("hero_subtext");
         builder.Property(c => c.CtaLabel).HasColumnName("cta_label").HasMaxLength(100);
         builder.Property(c => c.CtaLink).HasColumnName("cta_link").HasMaxLength(300);
         builder.Property(c => c.PageHeader).HasColumnName("page_header").HasMaxLength(300);

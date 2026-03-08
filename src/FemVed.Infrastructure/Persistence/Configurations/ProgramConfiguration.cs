@@ -22,11 +22,11 @@ internal sealed class ProgramConfiguration : IEntityTypeConfiguration<Program>
         builder.Property(p => p.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(p => p.CategoryId).HasColumnName("category_id").IsRequired();
         builder.Property(p => p.ExpertId).HasColumnName("expert_id").IsRequired();
-        builder.Property(p => p.Name).HasColumnName("name").HasMaxLength(300).IsRequired();
+        builder.Property(p => p.Name).HasColumnName("name").HasMaxLength(300);
         builder.Property(p => p.Slug).HasColumnName("slug").HasMaxLength(300).IsRequired();
-        builder.Property(p => p.GridDescription).HasColumnName("grid_description").HasMaxLength(500).IsRequired();
+        builder.Property(p => p.GridDescription).HasColumnName("grid_description").HasMaxLength(500);
         builder.Property(p => p.GridImageUrl).HasColumnName("grid_image_url");
-        builder.Property(p => p.Overview).HasColumnName("overview").IsRequired();
+        builder.Property(p => p.Overview).HasColumnName("overview");
         builder.Property(p => p.Status)
             .HasColumnName("status")
             .HasMaxLength(30)

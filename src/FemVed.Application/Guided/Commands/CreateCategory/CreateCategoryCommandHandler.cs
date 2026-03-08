@@ -72,9 +72,9 @@ public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategor
             ParentId = request.ParentId,
             Name = request.Name.Trim(),
             Slug = request.Slug.Trim().ToLowerInvariant(),
-            CategoryType = request.CategoryType.Trim(),
-            HeroTitle = request.HeroTitle.Trim(),
-            HeroSubtext = request.HeroSubtext.Trim(),
+            CategoryType = request.CategoryType?.Trim(),
+            HeroTitle = request.HeroTitle?.Trim(),
+            HeroSubtext = request.HeroSubtext?.Trim(),
             CtaLabel = request.CtaLabel?.Trim(),
             CtaLink = request.CtaLink?.Trim(),
             PageHeader = request.PageHeader?.Trim(),
@@ -87,24 +87,26 @@ public sealed class CreateCategoryCommandHandler : IRequestHandler<CreateCategor
 
         await _categories.AddAsync(category);
 
-        for (var i = 0; i < request.WhatsIncluded.Count; i++)
+        var whatsIncluded = request.WhatsIncluded ?? [];
+        for (var i = 0; i < whatsIncluded.Count; i++)
         {
             await _whatsIncluded.AddAsync(new CategoryWhatsIncluded
             {
                 Id = Guid.NewGuid(),
                 CategoryId = category.Id,
-                ItemText = request.WhatsIncluded[i].Trim(),
+                ItemText = whatsIncluded[i].Trim(),
                 SortOrder = i
             });
         }
 
-        for (var i = 0; i < request.KeyAreas.Count; i++)
+        var keyAreas = request.KeyAreas ?? [];
+        for (var i = 0; i < keyAreas.Count; i++)
         {
             await _keyAreas.AddAsync(new CategoryKeyArea
             {
                 Id = Guid.NewGuid(),
                 CategoryId = category.Id,
-                AreaText = request.KeyAreas[i].Trim(),
+                AreaText = keyAreas[i].Trim(),
                 SortOrder = i
             });
         }

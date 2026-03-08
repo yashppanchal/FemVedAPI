@@ -21,14 +21,14 @@ public class GuidedCategory
     /// <summary>URL slug, e.g. "hormonal-health-support". Must be unique.</summary>
     public string Slug { get; set; } = string.Empty;
 
-    /// <summary>Short label type used in card/grid display, e.g. "Hormonal Health Support".</summary>
-    public string CategoryType { get; set; } = string.Empty;
+    /// <summary>Short label type used in card/grid display, e.g. "Hormonal Health Support". Nullable — omitted fields render nothing in UI.</summary>
+    public string? CategoryType { get; set; }
 
-    /// <summary>Hero section headline, e.g. "Get Guided Hormonal Care".</summary>
-    public string HeroTitle { get; set; } = string.Empty;
+    /// <summary>Hero section headline, e.g. "Get Guided Hormonal Care". Nullable — omitted fields render nothing in UI.</summary>
+    public string? HeroTitle { get; set; }
 
-    /// <summary>Hero section supporting copy.</summary>
-    public string HeroSubtext { get; set; } = string.Empty;
+    /// <summary>Hero section supporting copy. Nullable — omitted fields render nothing in UI.</summary>
+    public string? HeroSubtext { get; set; }
 
     /// <summary>Call-to-action button label, e.g. "Book Your Program".</summary>
     public string? CtaLabel { get; set; }
