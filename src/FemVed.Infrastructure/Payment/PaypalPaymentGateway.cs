@@ -71,8 +71,8 @@ public sealed class PaypalPaymentGateway : IPaymentGateway
                 {
                     experience_context = new
                     {
-                        return_url = _options.ReturnUrl,
-                        cancel_url = _options.CancelUrl
+                        return_url = $"{_options.ReturnUrl}?orderId={request.InternalOrderId}",
+                        cancel_url = $"{_options.CancelUrl}?orderId={request.InternalOrderId}"
                     }
                 }
             }

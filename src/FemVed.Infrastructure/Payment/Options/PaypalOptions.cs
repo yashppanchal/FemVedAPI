@@ -18,9 +18,9 @@ public sealed class PaypalOptions
     /// <summary>PayPal webhook ID required for server-side signature verification.</summary>
     public string WebhookId { get; set; } = string.Empty;
 
-    /// <summary>Return URL after payer approves the PayPal order.</summary>
-    public string ReturnUrl { get; set; } = "https://femved.com/payment/success";
+    /// <summary>Return URL after payer approves the PayPal order. The orderId query param is appended automatically.</summary>
+    public string ReturnUrl { get; set; } = "https://femved.com/payment/processing";
 
-    /// <summary>Cancel URL if payer cancels the PayPal order.</summary>
+    /// <summary>Cancel URL if payer cancels the PayPal order. The orderId query param is appended automatically.</summary>
     public string CancelUrl { get; set; } = "https://femved.com/payment/cancel";
 }
