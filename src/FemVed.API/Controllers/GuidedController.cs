@@ -69,6 +69,10 @@ public sealed class GuidedController : ControllerBase
         var result = await _mediator.Send(
             new GetGuidedTreeQuery(DetectLocationCode(countryCode)),
             cancellationToken);
+        // Allow browsers and CDNs to cache per country code for 10 min.
+        // stale-while-revalidate lets Cloudflare serve the old response while
+        // revalidating in the background, eliminating perceived latency.
+        Response.Headers.Append("Cache-Control", "public, max-age=600, stale-while-revalidate=120");
         return Ok(result);
     }
 
