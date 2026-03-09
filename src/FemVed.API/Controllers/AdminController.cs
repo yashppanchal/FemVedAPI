@@ -37,7 +37,6 @@ using FemVed.Application.Admin.Queries.GetExpertPayoutAnalytics;
 using FemVed.Application.Admin.Queries.GetExpertPayoutHistory;
 using FemVed.Application.Admin.Queries.GetExpertPayoutBalance;
 using FemVed.Application.Admin.Commands.RecordExpertPayout;
-using FemVed.Application.Payments.DTOs;
 using FemVed.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -493,7 +492,7 @@ public sealed class AdminController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK with the list of orders.</returns>
     [HttpGet("orders")]
-    [ProducesResponseType(typeof(List<OrderDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<AdminOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAllOrders(CancellationToken cancellationToken)

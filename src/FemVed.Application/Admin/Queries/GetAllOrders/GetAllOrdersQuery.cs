@@ -1,7 +1,7 @@
-using FemVed.Application.Payments.DTOs;
+using FemVed.Application.Admin.DTOs;
 using MediatR;
 
 namespace FemVed.Application.Admin.Queries.GetAllOrders;
 
-/// <summary>Returns all orders across all users, ordered by creation date descending.</summary>
-public record GetAllOrdersQuery : IRequest<List<OrderDto>>;
+/// <summary>Returns all orders across all users, enriched with user name, program name, duration label, and coupon code. Ordered by creation date descending.</summary>
+public record GetAllOrdersQuery : IRequest<List<AdminOrderDto>>;
