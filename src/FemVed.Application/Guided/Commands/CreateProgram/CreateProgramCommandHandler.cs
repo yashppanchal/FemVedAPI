@@ -158,28 +158,30 @@ public sealed class CreateProgramCommandHandler : IRequestHandler<CreateProgramC
             }
         }
 
-        for (var i = 0; i < request.WhatYouGet.Count; i++)
+        var whatYouGet = request.WhatYouGet ?? [];
+        for (var i = 0; i < whatYouGet.Count; i++)
             await _whatYouGet.AddAsync(new ProgramWhatYouGet
             {
                 Id = Guid.NewGuid(), ProgramId = program.Id,
-                ItemText = request.WhatYouGet[i].Trim(), SortOrder = i
+                ItemText = whatYouGet[i].Trim(), SortOrder = i
             });
 
-        for (var i = 0; i < request.WhoIsThisFor.Count; i++)
+        var whoIsThisFor = request.WhoIsThisFor ?? [];
+        for (var i = 0; i < whoIsThisFor.Count; i++)
             await _whoIsThisFor.AddAsync(new ProgramWhoIsThisFor
             {
                 Id = Guid.NewGuid(), ProgramId = program.Id,
-                ItemText = request.WhoIsThisFor[i].Trim(), SortOrder = i
+                ItemText = whoIsThisFor[i].Trim(), SortOrder = i
             });
 
-        foreach (var tag in request.Tags)
+        foreach (var tag in request.Tags ?? [])
             await _tags.AddAsync(new ProgramTag
             {
                 Id = Guid.NewGuid(), ProgramId = program.Id,
                 Tag = tag.Trim().ToLowerInvariant()
             });
 
-        foreach (var section in request.DetailSections)
+        foreach (var section in request.DetailSections ?? [])
             await _detailSections.AddAsync(new ProgramDetailSection
             {
                 Id = Guid.NewGuid(), ProgramId = program.Id,
