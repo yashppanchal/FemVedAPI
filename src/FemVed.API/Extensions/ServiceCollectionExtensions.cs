@@ -84,7 +84,7 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Adds authorization policies: AdminOnly, ExpertOrAdmin, and the default authenticated policy.
+    /// Adds authorization policies: AdminOnly, ExpertOrAdmin, UserOnly, and the default authenticated policy.
     /// </summary>
     public static IServiceCollection AddAuthorizationPolicies(this IServiceCollection services)
     {
@@ -97,6 +97,10 @@ public static class ServiceCollectionExtensions
             options.AddPolicy("ExpertOrAdmin", policy =>
                 policy.RequireAuthenticatedUser()
                       .RequireRole("Expert", "Admin"));
+
+            options.AddPolicy("UserOnly", policy =>
+                policy.RequireAuthenticatedUser()
+                      .RequireRole("User"));
         });
 
         return services;

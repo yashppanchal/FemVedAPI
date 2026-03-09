@@ -40,7 +40,7 @@ public sealed class OrdersController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>201 Created with gateway-specific tokens (paymentSessionId or approvalUrl).</returns>
     [HttpPost("initiate")]
-    [Authorize]
+    [Authorize(Policy = "UserOnly")]
     [ProducesResponseType(typeof(InitiateOrderResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -137,7 +137,7 @@ public sealed class OrdersController : ControllerBase
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK with mutation confirmation payload.</returns>
     [HttpPost("{id:guid}/cancel")]
-    [Authorize]
+    [Authorize(Policy = "UserOnly")]
     [ProducesResponseType(typeof(OrderMutationResultResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
