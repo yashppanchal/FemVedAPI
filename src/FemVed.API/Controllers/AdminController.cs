@@ -19,6 +19,7 @@ using FemVed.Application.Admin.Commands.DeleteUser;
 using FemVed.Application.Admin.Commands.ProcessGdprRequest;
 using FemVed.Application.Admin.Commands.UpdateCoupon;
 using FemVed.Application.Admin.Commands.UpdateExpert;
+using FemVed.Application.Admin.Commands.UpsertExpertByUserId;
 using FemVed.Application.Admin.DTOs;
 using FemVed.Application.Admin.Queries.GetAdminSummary;
 using FemVed.Application.Admin.Queries.GetAllCoupons;
@@ -313,6 +314,48 @@ public sealed class AdminController : ControllerBase
                 GetIpAddress()),
             cancellationToken);
         return Ok(new AdminUpdateResultResponse(expertId, true));
+    }
+
+    /// <summary>
+    /// Creates or updates the expert profile for a given user account, identified by user ID.
+    /// Designed to be called immediately after promoting a user to the Expert role.
+    /// The role change auto-creates a minimal profile; this endpoint enriches it with
+    /// admin-supplied details. All fields are optional — only non-null values are applied.
+    /// </summary>
+    /// <param name="userId">The user whose expert profile will be created or updated.</param>
+    /// <param name="request">Profile fields to set. All optional.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("users/{userId:guid}/expert-profile")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpsertExpertProfile(
+        Guid userId,
+        [FromBody] UpsertExpertProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _mediator.Send(
+            new UpsertExpertByUserIdCommand(
+                userId,
+                request.DisplayName,
+                request.Title,
+                request.Bio,
+                request.GridDescription,
+                request.DetailedDescription,
+                request.ProfileImageUrl,
+                request.GridImageUrl,
+                request.Specialisations,
+                request.YearsExperience,
+                request.Credentials,
+                request.LocationCountry,
+                GetCurrentUserId(),
+                GetIpAddress()),
+            cancellationToken);
+        return Ok();
     }
 
     // ── Coupons ────────────────────────────────────────────────────────────────
@@ -1006,6 +1049,31 @@ public record UpdateExpertRequest(
     string? LocationCountry,
     /// <summary>New commission rate as a percentage, e.g. 75.00. Null = no change.</summary>
     decimal? CommissionRate);
+
+/// <summary>HTTP request body for POST /api/v1/admin/users/{userId}/expert-profile. All fields optional.</summary>
+public record UpsertExpertProfileRequest(
+    /// <summary>Public display name. Null = no change.</summary>
+    string? DisplayName,
+    /// <summary>Professional title. Null = no change.</summary>
+    string? Title,
+    /// <summary>Full biography. Null = no change.</summary>
+    string? Bio,
+    /// <summary>Short bio for grid cards (max 500 chars). Null = no change.</summary>
+    string? GridDescription,
+    /// <summary>Detailed long-form description. Null = no change.</summary>
+    string? DetailedDescription,
+    /// <summary>Profile photo URL. Null = no change.</summary>
+    string? ProfileImageUrl,
+    /// <summary>Grid card image URL. Null = no change.</summary>
+    string? GridImageUrl,
+    /// <summary>Areas of specialisation. Null = no change.</summary>
+    List<string>? Specialisations,
+    /// <summary>Years of clinical experience. Null = no change.</summary>
+    short? YearsExperience,
+    /// <summary>Degrees and certifications. Null = no change.</summary>
+    List<string>? Credentials,
+    /// <summary>Country where the expert is based. Null = no change.</summary>
+    string? LocationCountry);
 
 /// <summary>HTTP request body for POST /api/v1/admin/expert-payouts.</summary>
 public record RecordExpertPayoutRequest(
