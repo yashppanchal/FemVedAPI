@@ -29,7 +29,7 @@ public class Repository<T> : IRepository<T> where T : class
     /// <inheritdoc />
     public async Task<IReadOnlyList<T>> GetAllAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
-        IQueryable<T> query = _dbSet;
+        IQueryable<T> query = _dbSet.AsNoTracking();
         if (predicate != null)
             query = query.Where(predicate);
         return await query.ToListAsync(cancellationToken);
