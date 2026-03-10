@@ -58,7 +58,7 @@ public sealed class CashfreePaymentGateway : IPaymentGateway
             }
         };
 
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/orders")
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "orders")
         {
             Content = JsonContent.Create(body)
         };
@@ -145,7 +145,7 @@ public sealed class CashfreePaymentGateway : IPaymentGateway
         };
 
         using var httpRequest = new HttpRequestMessage(
-            HttpMethod.Post, $"/orders/{request.GatewayOrderId}/refunds")
+            HttpMethod.Post, $"orders/{request.GatewayOrderId}/refunds")
         {
             Content = JsonContent.Create(body)
         };

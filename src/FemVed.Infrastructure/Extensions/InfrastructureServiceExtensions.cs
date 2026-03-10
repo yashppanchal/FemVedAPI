@@ -118,7 +118,8 @@ public static class InfrastructureServiceExtensions
         services.AddHttpClient("cashfree", (sp, client) =>
         {
             var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CashfreeOptions>>().Value;
-            client.BaseAddress = new Uri(opts.BaseUrl);
+            var baseUrl = opts.BaseUrl.TrimEnd('/') + "/";
+            client.BaseAddress = new Uri(baseUrl);
             client.DefaultRequestHeaders.Accept.Add(
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         });
