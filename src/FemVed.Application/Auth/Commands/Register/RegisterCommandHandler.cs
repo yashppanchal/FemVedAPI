@@ -68,16 +68,7 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
             ? null
             : $"{request.CountryCode}{request.MobileNumber}";
 
-        if (!string.IsNullOrEmpty(fullMobile))
-        {
-            var phoneTaken = await _users.AnyAsync(
-                u => u.FullMobile == fullMobile && !u.IsDeleted, cancellationToken);
-            if (phoneTaken)
-                throw new ValidationException(new Dictionary<string, string[]>
-                {
-                    { "mobileNumber", ["An account with this mobile number already exists."] }
-                });
-        }
+        // Phone uniqueness check disabled — multiple accounts may share the same number (MVP toggle)
 
         var user = new User
         {

@@ -3,6 +3,8 @@
 .env
 *.env
 !.env.example
+appsettings.Development.json
+appsettings.*.json
 
 ## ── .NET / ASP.NET Core ──────────────────────────────────────────────────────
 bin/

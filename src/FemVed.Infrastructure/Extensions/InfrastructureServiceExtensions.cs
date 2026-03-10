@@ -99,6 +99,8 @@ public static class InfrastructureServiceExtensions
             opts.BaseUrl      = configuration["CASHFREE_BASE_URL"]      ?? throw new InvalidOperationException("CASHFREE_BASE_URL is not set.");
             opts.ClientId     = configuration["CASHFREE_CLIENT_ID"]     ?? throw new InvalidOperationException("CASHFREE_CLIENT_ID is not set.");
             opts.ClientSecret = configuration["CASHFREE_CLIENT_SECRET"] ?? throw new InvalidOperationException("CASHFREE_CLIENT_SECRET is not set.");
+            if (!string.IsNullOrWhiteSpace(configuration["CASHFREE_RETURN_URL"]))
+                opts.ReturnUrl = configuration["CASHFREE_RETURN_URL"]!;
         });
 
         services.Configure<PaypalOptions>(opts =>
