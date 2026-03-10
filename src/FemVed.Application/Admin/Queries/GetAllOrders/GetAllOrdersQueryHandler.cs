@@ -55,18 +55,17 @@ public sealed class GetAllOrdersQueryHandler : IRequestHandler<GetAllOrdersQuery
         var durationIds = orders.Select(o => o.DurationId).Distinct().ToHashSet();
         var couponIds   = orders.Where(o => o.CouponId.HasValue).Select(o => o.CouponId!.Value).Distinct().ToHashSet();
 
-        // Batch load related entities
-        var usersTask     = _users.GetAllAsync(u => userIds.Contains(u.Id), cancellationToken);
-        var durationsTask = _durations.GetAllAsync(d => durationIds.Contains(d.Id), cancellationToken);
-        var couponsTask   = couponIds.Count > 0
-            ? _coupons.GetAllAsync(c => couponIds.Contains(c.Id), cancellationToken)
-            : Task.FromResult<IReadOnlyList<Coupon>>(Array.Empty<Coupon>());
+        // Load related entities sequentially — EF Core DbContext is not thread-safe,
+        // so concurrent Task.WhenAll calls on the same context cause InvalidOperationException.
+        var users     = await _users.GetAllAsync(u => userIds.Contains(u.Id), cancellationToken);
+        var durations = await _durations.GetAllAsync(d => durationIds.Contains(d.Id), cancellationToken);
+        var coupons   = couponIds.Count > 0
+            ? await _coupons.GetAllAsync(c => couponIds.Contains(c.Id), cancellationToken)
+            : (IReadOnlyList<Coupon>)Array.Empty<Coupon>();
 
-        await Task.WhenAll(usersTask, durationsTask, couponsTask);
-
-        var userMap     = (await usersTask).ToDictionary(u => u.Id);
-        var durationMap = (await durationsTask).ToDictionary(d => d.Id);
-        var couponMap   = (await couponsTask).ToDictionary(c => c.Id);
+        var userMap     = users.ToDictionary(u => u.Id);
+        var durationMap = durations.ToDictionary(d => d.Id);
+        var couponMap   = coupons.ToDictionary(c => c.Id);
 
         // Batch load programs via duration ProgramIds
         var programIds = durationMap.Values.Select(d => d.ProgramId).Distinct().ToHashSet();
