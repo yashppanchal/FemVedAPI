@@ -50,7 +50,7 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
     public async Task Handle(ProcessCashfreeWebhookCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Processing CashFree webhook");
-
+        _logger.LogInformation("Cashfree webhook payload: {Payload}", request.RawPayload);
         // ── 1. Verify signature ──────────────────────────────────────────────
         var gateway = _gatewayFactory.GetGatewayByType(PaymentGateway.CashFree);
         var headers = new Dictionary<string, string>
@@ -73,7 +73,18 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
         var root = doc.RootElement;
 
         var eventType = root.GetProperty("type").GetString() ?? string.Empty;
-        var orderNode = root.GetProperty("data").GetProperty("order");
+        if (!root.TryGetProperty("data", out var dataNode))
+        {
+            _logger.LogWarning("Cashfree webhook missing data node");
+            return;
+        }
+
+        if (!dataNode.TryGetProperty("order", out var orderNode))
+        {
+            _logger.LogWarning("Cashfree webhook missing order node");
+            return;
+        }
+        //var orderNode = root.GetProperty("data").GetProperty("order");
         var internalOrderId = orderNode.GetProperty("order_id").GetString() ?? string.Empty;
 
         if (!Guid.TryParse(internalOrderId, out var orderId))
@@ -98,11 +109,34 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
                 _logger.LogInformation("Order {OrderId} already marked Paid — skipping duplicate webhook", orderId);
                 return;
             }
-
-            var paymentNode = root.GetProperty("data").GetProperty("payment");
-            order.GatewayPaymentId = paymentNode.TryGetProperty("cf_payment_id", out var cfId)
-                ? cfId.ToString()
+            //var paymentNode = root.GetProperty("data").GetProperty("payment");
+            JsonElement paymentNode = default;
+            if (dataNode.TryGetProperty("payment", out var pNode))
+            {
+                paymentNode = pNode;
+            }
+           
+            // order.GatewayPaymentId = paymentNode.TryGetProperty("cf_payment_id", out var cfId)
+            //     ? cfId.ToString()
+            //     : null;
+            var cfPaymentId = paymentNode.TryGetProperty("cf_payment_id", out var cfId)
+                ? cfId.GetString()
                 : null;
+
+            if (!string.IsNullOrEmpty(order.GatewayPaymentId) &&
+                order.GatewayPaymentId == cfPaymentId)
+            {
+                _logger.LogInformation("Duplicate webhook received for payment {PaymentId}", cfPaymentId);
+                return;
+            }
+            var paymentStatus = paymentNode.GetProperty("payment_status").GetString();
+
+            if (!string.Equals(paymentStatus, "SUCCESS", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Webhook event success but payment_status is {Status}", paymentStatus);
+                return;
+            }
+            order.GatewayPaymentId = cfPaymentId;
             order.GatewayResponse = request.RawPayload;
             order.Status = OrderStatus.Paid;
             order.UpdatedAt = DateTimeOffset.UtcNow;
@@ -126,6 +160,16 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
             _logger.LogInformation("Order {OrderId} marked as Failed — event: {EventType}", orderId, eventType);
 
             await _publisher.Publish(new OrderFailedEvent(order.Id, order.UserId), cancellationToken);
+        }
+        else if (eventType == "REFUND_SUCCESS_WEBHOOK")
+        {
+            _logger.LogInformation("Refund successful for order {OrderId}", orderId);
+
+            order.Status = OrderStatus.Refunded;
+            order.UpdatedAt = DateTimeOffset.UtcNow;
+
+            _orders.Update(order);
+            await _uow.SaveChangesAsync(cancellationToken);
         }
         else
         {
