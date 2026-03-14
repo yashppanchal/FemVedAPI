@@ -3,6 +3,25 @@
 
 ---
 
+## 0. AI CONTEXT RULES — READ BEFORE ANYTHING ELSE
+
+This repository has a pre-built AI context system at `../ai-context/` (one level above `FemVedAPI/`).
+
+**Use it in this order every session:**
+
+1. **Always read `ai-context/project.md` first** — project purpose, tech stack, architecture, patterns, business rules.
+2. **Use `ai-context/code-index.md` to locate files** — never glob or search the repo to find a file that is already indexed here.
+3. **Prefer module context files from `ai-context/modules/`** — read the relevant module file (`auth.md`, `payments.md`, etc.) before opening any source files in that area.
+4. **Never scan the full repository unless explicitly requested** — the context files are the starting point.
+5. **Only open files directly related to the current task** — do not read files speculatively.
+6. **When new modules are created, update `ai-context/modules/`** with a new module file.
+7. **When new services are added, update `ai-context/services.md`** with the service description.
+8. **Log major structural changes in `ai-context/changes.md`** — use the date-based entry format defined there.
+
+**Goal:** Minimise token usage and avoid repeated repository analysis across sessions.
+
+---
+
 ## 1. WHAT THIS PROJECT IS
 
 FemVed is an enterprise-grade women's wellness platform. This repo is the **.NET 10 backend API only**.

@@ -15,6 +15,7 @@ using FemVed.Application.Admin.Commands.ActivateCoupon;
 using FemVed.Application.Admin.Commands.DeactivateCoupon;
 using FemVed.Application.Admin.Commands.DeactivateExpert;
 using FemVed.Application.Admin.Commands.DeactivateUser;
+using FemVed.Application.Admin.Commands.ChangeUserEmail;
 using FemVed.Application.Admin.Commands.DeleteUser;
 using FemVed.Application.Admin.Commands.ProcessGdprRequest;
 using FemVed.Application.Admin.Commands.UpdateCoupon;
@@ -178,6 +179,32 @@ public sealed class AdminController : ControllerBase
             new ChangeUserRoleCommand(request.UserId, request.RoleId, GetCurrentUserId(), GetIpAddress()),
             cancellationToken);
         return Ok(new AdminChangeRoleResultResponse(request.UserId, request.RoleId, true));
+    }
+
+    /// <summary>
+    /// Changes the email address of the specified user account.
+    /// Validates the new email is not already taken and writes an audit log entry.
+    /// </summary>
+    /// <param name="userId">Target user ID.</param>
+    /// <param name="request">Request body containing the new email address.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the updated user record.</returns>
+    [HttpPut("users/{userId:guid}/email")]
+    [ProducesResponseType(typeof(AdminUserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ChangeUserEmail(
+        Guid userId,
+        [FromBody] ChangeUserEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new ChangeUserEmailCommand(userId, request.NewEmail, GetCurrentUserId(), GetIpAddress()),
+            cancellationToken);
+        return Ok(result);
     }
 
     // ── Experts ────────────────────────────────────────────────────────────────
@@ -1127,3 +1154,7 @@ public record AdminGdprProcessResultResponse(Guid RequestId, string Action, bool
 /// <summary>HTTP request body for POST /api/v1/admin/enrollments/{accessId}/comments.</summary>
 /// <param name="UpdateNote">The comment text (10–2000 characters).</param>
 public record AdminSendCommentRequest(string UpdateNote);
+
+/// <summary>HTTP request body for PUT /api/v1/admin/users/{userId}/email.</summary>
+/// <param name="NewEmail">The new email address to assign to the user account.</param>
+public record ChangeUserEmailRequest(string NewEmail);
