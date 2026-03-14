@@ -3,6 +3,7 @@ using FemVed.Application.Interfaces;
 using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace FemVed.Application.Payments.Events;
@@ -24,10 +25,14 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
     private readonly IRepository<UserProgramAccess> _access;
     private readonly IRepository<User> _users;
     private readonly IRepository<Expert> _experts;
+    private readonly IRepository<Order> _orders;
+    private readonly IRepository<Program> _programs;
+    private readonly IRepository<ProgramDuration> _durations;
     private readonly IRepository<NotificationLog> _notificationLogs;
     private readonly IEmailService _emailService;
     private readonly IWhatsAppService _whatsAppService;
     private readonly IUnitOfWork _uow;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<OrderPaidEventHandler> _logger;
 
     /// <summary>Initialises the handler with all required services.</summary>
@@ -35,19 +40,27 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         IRepository<UserProgramAccess> access,
         IRepository<User> users,
         IRepository<Expert> experts,
+        IRepository<Order> orders,
+        IRepository<Program> programs,
+        IRepository<ProgramDuration> durations,
         IRepository<NotificationLog> notificationLogs,
         IEmailService emailService,
         IWhatsAppService whatsAppService,
         IUnitOfWork uow,
+        IConfiguration configuration,
         ILogger<OrderPaidEventHandler> logger)
     {
         _access           = access;
         _users            = users;
         _experts          = experts;
+        _orders           = orders;
+        _programs         = programs;
+        _durations        = durations;
         _notificationLogs = notificationLogs;
         _emailService     = emailService;
         _whatsAppService  = whatsAppService;
         _uow              = uow;
+        _configuration    = configuration;
         _logger           = logger;
     }
 
@@ -63,31 +76,60 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         // ── 1. Create UserProgramAccess (idempotent) ─────────────────────────
         await EnsureUserProgramAccessAsync(notification, cancellationToken);
 
-        // ── Load recipients ──────────────────────────────────────────────────
-        var user   = await _users.FirstOrDefaultAsync(u => u.Id == notification.UserId, cancellationToken);
-        var expert = await _experts.FirstOrDefaultAsync(e => e.Id == notification.ExpertId, cancellationToken);
+        // ── Load all related data ────────────────────────────────────────────
+        var user     = await _users.FirstOrDefaultAsync(u => u.Id == notification.UserId, cancellationToken);
+        var expert   = await _experts.FirstOrDefaultAsync(e => e.Id == notification.ExpertId, cancellationToken);
+        var order    = await _orders.FirstOrDefaultAsync(o => o.Id == notification.OrderId, cancellationToken);
+        var program  = await _programs.FirstOrDefaultAsync(p => p.Id == notification.ProgramId, cancellationToken);
+        var duration = await _durations.FirstOrDefaultAsync(d => d.Id == notification.DurationId, cancellationToken);
 
         User? expertUser = null;
         if (expert is not null)
-        {
             expertUser = await _users.FirstOrDefaultAsync(u => u.Id == expert.UserId, cancellationToken);
-        }
+
+        var appBaseUrl    = _configuration["APP_BASE_URL"] ?? "https://femved.com";
+        var dashboardUrl  = $"{appBaseUrl}/dashboard";
+        var programName   = program?.Name ?? "Your Program";
+        var durationLabel = duration?.Label ?? string.Empty;
+        var expertName    = expertUser is not null
+            ? $"{expertUser.FirstName} {expertUser.LastName}"
+            : expert?.DisplayName ?? "Your Expert";
+        var amountFormatted = order is not null
+            ? FormatAmount(order.AmountPaid, order.CurrencyCode)
+            : string.Empty;
+        var discountFormatted = order is not null && order.DiscountAmount > 0
+            ? FormatAmount(order.DiscountAmount, order.CurrencyCode)
+            : string.Empty;
+        var purchaseDate = (order?.CreatedAt ?? DateTimeOffset.UtcNow)
+            .ToString("dddd, d MMMM yyyy");
+        var year = DateTimeOffset.UtcNow.Year.ToString();
 
         // ── 2. purchase_success email → user ─────────────────────────────────
         if (user is not null)
         {
             var userEmailData = new Dictionary<string, object>
             {
-                ["first_name"] = user.FirstName,
-                ["order_id"]   = notification.OrderId.ToString()
+                ["first_name"]        = user.FirstName,
+                ["order_id"]          = notification.OrderId.ToString(),
+                ["program_name"]      = programName,
+                ["expert_name"]       = expertName,
+                ["duration_label"]    = durationLabel,
+                ["amount_paid"]       = amountFormatted,
+                ["currency_code"]     = order?.CurrencyCode ?? string.Empty,
+                ["discount_amount"]   = discountFormatted,
+                ["has_discount"]      = !string.IsNullOrEmpty(discountFormatted),
+                ["payment_gateway"]   = order?.PaymentGateway.ToString().ToUpperInvariant() ?? string.Empty,
+                ["purchase_date"]     = purchaseDate,
+                ["dashboard_url"]     = dashboardUrl,
+                ["year"]              = year
             };
 
             await SendEmailWithLogAsync(
-                toEmail:     user.Email,
-                toName:      $"{user.FirstName} {user.LastName}",
-                templateKey: "purchase_success",
+                toEmail:      user.Email,
+                toName:       $"{user.FirstName} {user.LastName}",
+                templateKey:  "purchase_success",
                 templateData: userEmailData,
-                userId:      user.Id,
+                userId:       user.Id,
                 cancellationToken: cancellationToken);
         }
         else
@@ -99,10 +141,10 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         if (user is not null && user.WhatsAppOptIn && !string.IsNullOrEmpty(user.FullMobile))
         {
             await SendWhatsAppWithLogAsync(
-                toNumber:      user.FullMobile,
-                templateName:  "purchase_confirmation_wa",
-                templateParams: new[] { user.FirstName, notification.OrderId.ToString() },
-                userId:        user.Id,
+                toNumber:       user.FullMobile,
+                templateName:   "purchase_confirmation_wa",
+                templateParams: new[] { user.FirstName, programName, amountFormatted },
+                userId:         user.Id,
                 cancellationToken: cancellationToken);
         }
 
@@ -113,17 +155,21 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             {
                 ["expert_first_name"] = expertUser.FirstName,
                 ["order_id"]          = notification.OrderId.ToString(),
-                ["program_id"]        = notification.ProgramId.ToString(),
+                ["program_name"]      = programName,
+                ["duration_label"]    = durationLabel,
                 ["user_name"]         = user is not null ? $"{user.FirstName} {user.LastName}" : "a new user",
-                ["user_email"]        = user?.Email ?? string.Empty
+                ["user_email"]        = user?.Email ?? string.Empty,
+                ["purchase_date"]     = purchaseDate,
+                ["dashboard_url"]     = $"{appBaseUrl}/expert/dashboard",
+                ["year"]              = year
             };
 
             await SendEmailWithLogAsync(
-                toEmail:     expertUser.Email,
-                toName:      $"{expertUser.FirstName} {expertUser.LastName}",
-                templateKey: "expert_new_enrollment",
+                toEmail:      expertUser.Email,
+                toName:       $"{expertUser.FirstName} {expertUser.LastName}",
+                templateKey:  "expert_new_enrollment",
                 templateData: expertEmailData,
-                userId:      expertUser.Id,
+                userId:       expertUser.Id,
                 cancellationToken: cancellationToken);
         }
         else
@@ -134,11 +180,15 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         // ── 5. admin_new_enrollment email → aditi@femved.com ─────────────────
         var adminEnrollmentData = new Dictionary<string, object>
         {
-            ["user_name"]    = user is not null ? $"{user.FirstName} {user.LastName}" : "Unknown user",
-            ["user_email"]   = user?.Email ?? string.Empty,
-            ["expert_name"]  = expertUser is not null ? $"{expertUser.FirstName} {expertUser.LastName}" : "Unknown expert",
-            ["program_id"]   = notification.ProgramId.ToString(),
-            ["order_id"]     = notification.OrderId.ToString()
+            ["user_name"]      = user is not null ? $"{user.FirstName} {user.LastName}" : "Unknown user",
+            ["user_email"]     = user?.Email ?? string.Empty,
+            ["expert_name"]    = expertName,
+            ["program_name"]   = programName,
+            ["duration_label"] = durationLabel,
+            ["amount_paid"]    = amountFormatted,
+            ["order_id"]       = notification.OrderId.ToString(),
+            ["purchase_date"]  = purchaseDate,
+            ["year"]           = year
         };
 
         foreach (var adminEmail in new[] { "aditi@femved.com", "femvedwellness@gmail.com" })
@@ -261,6 +311,26 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             errorMsg:    errorMsg,
             payload:     null,            // no PII in WhatsApp payload log
             cancellationToken: cancellationToken);
+    }
+
+    /// <summary>Returns the currency symbol for a given ISO currency code.</summary>
+    private static string GetCurrencySymbol(string currencyCode) => currencyCode switch
+    {
+        "GBP" => "£",
+        "USD" => "$",
+        "INR" => "₹",
+        "AUD" => "A$",
+        "AED" => "د.إ",
+        _     => currencyCode
+    };
+
+    /// <summary>Formats an amount with its currency symbol (e.g. "£320.00", "₹33,000").</summary>
+    private static string FormatAmount(decimal amount, string currencyCode)
+    {
+        var symbol = GetCurrencySymbol(currencyCode);
+        return currencyCode == "INR"
+            ? $"{symbol}{amount:N0}"
+            : $"{symbol}{amount:N2}";
     }
 
     /// <summary>Persists a <see cref="NotificationLog"/> audit record. Failures here are swallowed so they never surface to the caller.</summary>
