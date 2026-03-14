@@ -158,7 +158,7 @@ public sealed class ScheduledProgramStartJob : BackgroundService
                 Id              = Guid.NewGuid(),
                 AccessId        = access.Id,
                 Action          = SessionAction.Started,
-                PerformedBy     = null,
+                PerformedBy     = Guid.Empty,
                 PerformedByRole = "SYSTEM",
                 Note            = "Auto-started by scheduled job",
                 CreatedAt       = now
