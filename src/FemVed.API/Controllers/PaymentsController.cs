@@ -1,5 +1,6 @@
 using FemVed.Application.Payments.Commands.ProcessCashfreeWebhook;
 using FemVed.Application.Payments.Commands.ProcessPaypalWebhook;
+using FemVed.Application.Payments.Commands.ProcessStripeWebhook;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -77,6 +78,30 @@ public sealed class PaymentsController : ControllerBase
             new ProcessPaypalWebhookCommand(
                 rawBody, authAlgo, certUrl,
                 transmissionId, transmissionSig, transmissionTime),
+            cancellationToken);
+
+        return Ok();
+    }
+
+    /// <summary>
+    /// Receives a Stripe webhook event (checkout.session.completed, charge.refunded, etc.).
+    /// Signature is verified via HMAC-SHA256 using the Stripe-Signature header before any DB update.
+    /// Returns 200 OK for all events (including unrecognised ones) so Stripe does not retry.
+    /// Returns 401 Unauthorized if the signature is invalid.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success; 401 if signature invalid.</returns>
+    [HttpPost("stripe/webhook")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> StripeWebhook(CancellationToken cancellationToken)
+    {
+        var rawBody         = await ReadRawBodyAsync(cancellationToken);
+        var stripeSignature = Request.Headers["Stripe-Signature"].FirstOrDefault() ?? string.Empty;
+
+        await _mediator.Send(
+            new ProcessStripeWebhookCommand(rawBody, stripeSignature),
             cancellationToken);
 
         return Ok();

@@ -142,8 +142,26 @@ public static class InfrastructureServiceExtensions
                 new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         });
 
+        services.Configure<StripeOptions>(opts =>
+        {
+            opts.SecretKey     = configuration["STRIPE_SECRET_KEY"]     ?? string.Empty;
+            opts.WebhookSecret = configuration["STRIPE_WEBHOOK_SECRET"] ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(configuration["STRIPE_RETURN_URL"]))
+                opts.ReturnUrl = configuration["STRIPE_RETURN_URL"]!;
+            if (!string.IsNullOrWhiteSpace(configuration["STRIPE_CANCEL_URL"]))
+                opts.CancelUrl = configuration["STRIPE_CANCEL_URL"]!;
+        });
+
+        services.AddHttpClient("stripe", client =>
+        {
+            client.BaseAddress = new Uri("https://api.stripe.com");
+            client.DefaultRequestHeaders.Accept.Add(
+                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+        });
+
         services.AddScoped<CashfreePaymentGateway>();
         services.AddScoped<PaypalPaymentGateway>();
+        services.AddScoped<StripePaymentGateway>();
         services.AddScoped<IPaymentGatewayFactory, PaymentGatewayFactory>();
 
         // ── Health checks ─────────────────────────────────────────────────────

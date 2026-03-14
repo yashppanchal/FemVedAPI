@@ -7,7 +7,7 @@ namespace FemVed.Infrastructure.Payment;
 /// <summary>
 /// Implements <see cref="IPaymentGatewayFactory"/>.
 /// Selects <see cref="CashfreePaymentGateway"/> for Indian customers (IN),
-/// and <see cref="PaypalPaymentGateway"/> for all other locations.
+/// <see cref="PaypalPaymentGateway"/> or <see cref="StripePaymentGateway"/> for all other locations.
 /// </summary>
 public sealed class PaymentGatewayFactory : IPaymentGatewayFactory
 {
@@ -34,6 +34,7 @@ public sealed class PaymentGatewayFactory : IPaymentGatewayFactory
         {
             PaymentGateway.CashFree => _serviceProvider.GetRequiredService<CashfreePaymentGateway>(),
             PaymentGateway.PayPal   => _serviceProvider.GetRequiredService<PaypalPaymentGateway>(),
+            PaymentGateway.Stripe   => _serviceProvider.GetRequiredService<StripePaymentGateway>(),
             _ => throw new ArgumentOutOfRangeException(nameof(gatewayType), gatewayType, "Unknown payment gateway type.")
         };
     }

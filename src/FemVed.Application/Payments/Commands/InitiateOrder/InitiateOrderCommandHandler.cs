@@ -167,6 +167,11 @@ public sealed class InitiateOrderCommandHandler
 
         // Priority: (1) explicit request body gateway, (2) default PayPal
         var gatewayEnum = request.Gateway ?? PaymentGateway.PayPal;
+
+        // Server-side enforcement: Stripe does not support INR — India must use CashFree
+        if (gatewayEnum == PaymentGateway.Stripe && locationCode == "IN")
+            throw new DomainException("Stripe is not available for Indian customers. Please use CashFree.");
+
         var gateway = _gatewayFactory.GetGatewayByType(gatewayEnum);
 
         // ── 5. Persist order (Pending) ───────────────────────────────────────
@@ -253,7 +258,7 @@ public sealed class InitiateOrderCommandHandler
             PaymentSessionId: order.PaymentGateway == PaymentGateway.CashFree
                 ? order.GatewayResponse
                 : null,
-            ApprovalUrl: order.PaymentGateway == PaymentGateway.PayPal
+            ApprovalUrl: order.PaymentGateway == PaymentGateway.PayPal || order.PaymentGateway == PaymentGateway.Stripe
                 ? order.GatewayResponse
                 : null);
 }
