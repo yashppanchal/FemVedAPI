@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using FemVed.Application.Admin.DTOs;
+using ExpertProgramSummaryDto = FemVed.Application.Experts.DTOs.ExpertProgramSummaryDto;
 using FemVed.Application.Enrollments.Commands.ApproveStartDate;
 using FemVed.Application.Enrollments.Commands.DeclineStartDate;
 using FemVed.Application.Enrollments.Commands.EndEnrollment;
