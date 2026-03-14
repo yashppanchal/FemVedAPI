@@ -98,8 +98,9 @@ public sealed class ApproveStartDateCommandHandler : IRequestHandler<ApproveStar
             var startLabel = record.ScheduledStartAt?.ToString("MMMM d, yyyy") ?? string.Empty;
             var templateData = new Dictionary<string, object>
             {
-                ["first_name"] = user.FirstName,
-                ["start_date"] = startLabel
+                ["firstName"] = user.FirstName,
+                ["startDate"] = startLabel,
+                ["year"]      = DateTimeOffset.UtcNow.Year.ToString()
             };
 
             await _emailService.SendAsync(

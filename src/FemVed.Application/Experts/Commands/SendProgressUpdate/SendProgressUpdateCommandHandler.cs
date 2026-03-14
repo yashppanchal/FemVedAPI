@@ -111,8 +111,9 @@ public sealed class SendProgressUpdateCommandHandler : IRequestHandler<SendProgr
                     templateKey:  "expert_progress_update",
                     templateData: new Dictionary<string, object>
                     {
-                        ["first_name"]  = enrolledUser.FirstName,
-                        ["update_note"] = request.UpdateNote
+                        ["firstName"]  = enrolledUser.FirstName,
+                        ["updateNote"] = request.UpdateNote,
+                        ["year"]       = DateTimeOffset.UtcNow.Year.ToString()
                     },
                     cancellationToken: cancellationToken);
 

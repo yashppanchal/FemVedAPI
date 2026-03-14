@@ -56,8 +56,9 @@ public sealed class OrderFailedEventHandler : INotificationHandler<OrderFailedEv
 
         var templateData = new Dictionary<string, object>
         {
-            ["first_name"] = user.FirstName,
-            ["order_id"]   = notification.OrderId.ToString()
+            ["firstName"] = user.FirstName,
+            ["orderId"]   = notification.OrderId.ToString(),
+            ["year"]      = DateTimeOffset.UtcNow.Year.ToString()
         };
 
         var status       = NotificationStatus.Sent;
@@ -111,9 +112,10 @@ public sealed class OrderFailedEventHandler : INotificationHandler<OrderFailedEv
         // ── admin_purchase_failed email → all admin addresses ────────────────
         var adminFailedData = new Dictionary<string, object>
         {
-            ["user_name"]  = $"{user.FirstName} {user.LastName}",
-            ["user_email"] = user.Email,
-            ["order_id"]   = notification.OrderId.ToString()
+            ["userName"]  = $"{user.FirstName} {user.LastName}",
+            ["userEmail"] = user.Email,
+            ["orderId"]   = notification.OrderId.ToString(),
+            ["year"]      = DateTimeOffset.UtcNow.Year.ToString()
         };
         foreach (var adminEmail in new[] { "aditi@femved.com", "femvedwellness@gmail.com" })
         {

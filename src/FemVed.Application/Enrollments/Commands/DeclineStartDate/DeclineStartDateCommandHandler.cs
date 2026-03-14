@@ -91,7 +91,8 @@ public sealed class DeclineStartDateCommandHandler : IRequestHandler<DeclineStar
 
             var templateData = new Dictionary<string, object>
             {
-                ["first_name"] = user.FirstName
+                ["firstName"] = user.FirstName,
+                ["year"]      = DateTimeOffset.UtcNow.Year.ToString()
             };
 
             await _emailService.SendAsync(

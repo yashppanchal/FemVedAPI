@@ -109,19 +109,19 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         {
             var userEmailData = new Dictionary<string, object>
             {
-                ["first_name"]        = user.FirstName,
-                ["order_id"]          = notification.OrderId.ToString(),
-                ["program_name"]      = programName,
-                ["expert_name"]       = expertName,
-                ["duration_label"]    = durationLabel,
-                ["amount_paid"]       = amountFormatted,
-                ["currency_code"]     = order?.CurrencyCode ?? string.Empty,
-                ["discount_amount"]   = discountFormatted,
-                ["has_discount"]      = !string.IsNullOrEmpty(discountFormatted),
-                ["payment_gateway"]   = order?.PaymentGateway.ToString().ToUpperInvariant() ?? string.Empty,
-                ["purchase_date"]     = purchaseDate,
-                ["dashboard_url"]     = dashboardUrl,
-                ["year"]              = year
+                ["firstName"]       = user.FirstName,
+                ["orderId"]         = notification.OrderId.ToString(),
+                ["programName"]     = programName,
+                ["expertName"]      = expertName,
+                ["durationLabel"]   = durationLabel,
+                ["amountPaid"]      = amountFormatted,
+                ["currencyCode"]    = order?.CurrencyCode ?? string.Empty,
+                ["discountAmount"]  = discountFormatted,
+                ["hasDiscount"]     = !string.IsNullOrEmpty(discountFormatted),
+                ["paymentGateway"]  = order?.PaymentGateway.ToString().ToUpperInvariant() ?? string.Empty,
+                ["purchaseDate"]    = purchaseDate,
+                ["dashboardUrl"]    = dashboardUrl,
+                ["year"]            = year
             };
 
             await SendEmailWithLogAsync(
@@ -153,15 +153,15 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         {
             var expertEmailData = new Dictionary<string, object>
             {
-                ["expert_first_name"] = expertUser.FirstName,
-                ["order_id"]          = notification.OrderId.ToString(),
-                ["program_name"]      = programName,
-                ["duration_label"]    = durationLabel,
-                ["user_name"]         = user is not null ? $"{user.FirstName} {user.LastName}" : "a new user",
-                ["user_email"]        = user?.Email ?? string.Empty,
-                ["purchase_date"]     = purchaseDate,
-                ["dashboard_url"]     = $"{appBaseUrl}/expert/dashboard",
-                ["year"]              = year
+                ["expertFirstName"] = expertUser.FirstName,
+                ["orderId"]         = notification.OrderId.ToString(),
+                ["programName"]     = programName,
+                ["durationLabel"]   = durationLabel,
+                ["userName"]        = user is not null ? $"{user.FirstName} {user.LastName}" : "a new user",
+                ["userEmail"]       = user?.Email ?? string.Empty,
+                ["purchaseDate"]    = purchaseDate,
+                ["dashboardUrl"]    = $"{appBaseUrl}/expert/dashboard",
+                ["year"]            = year
             };
 
             await SendEmailWithLogAsync(
@@ -180,15 +180,15 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         // ── 5. admin_new_enrollment email → aditi@femved.com ─────────────────
         var adminEnrollmentData = new Dictionary<string, object>
         {
-            ["user_name"]      = user is not null ? $"{user.FirstName} {user.LastName}" : "Unknown user",
-            ["user_email"]     = user?.Email ?? string.Empty,
-            ["expert_name"]    = expertName,
-            ["program_name"]   = programName,
-            ["duration_label"] = durationLabel,
-            ["amount_paid"]    = amountFormatted,
-            ["order_id"]       = notification.OrderId.ToString(),
-            ["purchase_date"]  = purchaseDate,
-            ["year"]           = year
+            ["userName"]      = user is not null ? $"{user.FirstName} {user.LastName}" : "Unknown user",
+            ["userEmail"]     = user?.Email ?? string.Empty,
+            ["expertName"]    = expertName,
+            ["programName"]   = programName,
+            ["durationLabel"] = durationLabel,
+            ["amountPaid"]    = amountFormatted,
+            ["orderId"]       = notification.OrderId.ToString(),
+            ["purchaseDate"]  = purchaseDate,
+            ["year"]          = year
         };
 
         foreach (var adminEmail in new[] { "aditi@femved.com", "femvedwellness@gmail.com" })

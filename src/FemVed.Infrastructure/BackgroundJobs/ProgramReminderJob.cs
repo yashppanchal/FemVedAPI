@@ -117,7 +117,8 @@ public sealed class ProgramReminderJob : BackgroundService
             {
                 ["firstName"]   = user.FirstName,
                 ["programName"] = program.Name ?? string.Empty,
-                ["startDate"]   = startDateLabel
+                ["startDate"]   = startDateLabel,
+                ["year"]        = DateTimeOffset.UtcNow.Year.ToString()
             };
 
             // Email reminder

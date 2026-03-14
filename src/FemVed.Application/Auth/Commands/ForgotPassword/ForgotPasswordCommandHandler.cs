@@ -86,9 +86,10 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
                 "password_reset",
                 new Dictionary<string, object>
                 {
-                    { "first_name", user.FirstName },
-                    { "reset_link", resetLink },
-                    { "expiry_minutes", 60 }
+                    { "firstName", user.FirstName },
+                    { "resetUrl", resetLink },
+                    { "expiryMinutes", "60" },
+                    { "year", DateTimeOffset.UtcNow.Year.ToString() }
                 },
                 cancellationToken);
 

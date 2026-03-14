@@ -124,8 +124,9 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
                 "email_verify",
                 new Dictionary<string, object>
                 {
-                    { "first_name", user.FirstName },
-                    { "verify_link", verifyLink }
+                    { "firstName", user.FirstName },
+                    { "verifyUrl", verifyLink },
+                    { "year", DateTimeOffset.UtcNow.Year.ToString() }
                 },
                 cancellationToken);
         }
