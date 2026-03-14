@@ -60,13 +60,13 @@ public sealed class GetAllEnrollmentsQueryHandler : IRequestHandler<GetAllEnroll
         // Load access records with optional filters
         List<UserProgramAccess> accessRecords;
         if (statusFilter.HasValue && request.ExpertId.HasValue)
-            accessRecords = await _access.GetAllAsync(a => a.Status == statusFilter.Value && a.ExpertId == request.ExpertId.Value, cancellationToken);
+            accessRecords = (await _access.GetAllAsync(a => a.Status == statusFilter.Value && a.ExpertId == request.ExpertId.Value, cancellationToken)).ToList();
         else if (statusFilter.HasValue)
-            accessRecords = await _access.GetAllAsync(a => a.Status == statusFilter.Value, cancellationToken);
+            accessRecords = (await _access.GetAllAsync(a => a.Status == statusFilter.Value, cancellationToken)).ToList();
         else if (request.ExpertId.HasValue)
-            accessRecords = await _access.GetAllAsync(a => a.ExpertId == request.ExpertId.Value, cancellationToken);
+            accessRecords = (await _access.GetAllAsync(a => a.ExpertId == request.ExpertId.Value, cancellationToken)).ToList();
         else
-            accessRecords = await _access.GetAllAsync(cancellationToken: cancellationToken);
+            accessRecords = (await _access.GetAllAsync(cancellationToken: cancellationToken)).ToList();
 
         if (accessRecords.Count == 0)
         {
