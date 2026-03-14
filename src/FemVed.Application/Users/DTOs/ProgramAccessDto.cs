@@ -16,6 +16,10 @@ namespace FemVed.Application.Users.DTOs;
 /// <param name="PausedAt">UTC timestamp when the program was last paused (null if never paused or since resumed).</param>
 /// <param name="CompletedAt">UTC timestamp when the program was completed or ended (null if not completed).</param>
 /// <param name="PurchasedAt">UTC timestamp when access was granted (order paid).</param>
+/// <param name="ScheduledStartAt">UTC timestamp when the program is scheduled to auto-start (null if not scheduled).</param>
+/// <param name="EndDate">Calculated end date: StartedAt plus duration in weeks, extended by any pause time (null until started).</param>
+/// <param name="RequestedStartDate">User's preferred start date submitted via request-start (null if none submitted).</param>
+/// <param name="StartRequestStatus">Status of the start date request: Pending, Approved, or Declined (null if no request).</param>
 public record ProgramAccessDto(
     Guid AccessId,
     Guid OrderId,
@@ -29,4 +33,8 @@ public record ProgramAccessDto(
     DateTimeOffset? StartedAt,
     DateTimeOffset? PausedAt,
     DateTimeOffset? CompletedAt,
-    DateTimeOffset PurchasedAt);
+    DateTimeOffset PurchasedAt,
+    DateTimeOffset? ScheduledStartAt,
+    DateTimeOffset? EndDate,
+    DateTimeOffset? RequestedStartDate,
+    string? StartRequestStatus);

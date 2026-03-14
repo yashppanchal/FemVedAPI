@@ -85,6 +85,11 @@ public sealed class ResumeEnrollmentCommandHandler : IRequestHandler<ResumeEnrol
 
         // ── State transition ──────────────────────────────────────────────────
         var now = DateTimeOffset.UtcNow;
+
+        // Extend end date by however long the program was paused
+        if (record.EndDate.HasValue && record.PausedAt.HasValue)
+            record.EndDate = record.EndDate.Value.Add(now - record.PausedAt.Value);
+
         record.Status    = UserProgramAccessStatus.Active;
         record.PausedAt  = null;        // clear the pause timestamp on resume
         record.UpdatedAt = now;

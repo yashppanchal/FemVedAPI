@@ -113,7 +113,9 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             {
                 ["expert_first_name"] = expertUser.FirstName,
                 ["order_id"]          = notification.OrderId.ToString(),
-                ["program_id"]        = notification.ProgramId.ToString()
+                ["program_id"]        = notification.ProgramId.ToString(),
+                ["user_name"]         = user is not null ? $"{user.FirstName} {user.LastName}" : "a new user",
+                ["user_email"]        = user?.Email ?? string.Empty
             };
 
             await SendEmailWithLogAsync(
@@ -128,6 +130,25 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         {
             _logger.LogWarning("OrderPaidEventHandler: expert user not found for expert {ExpertId}, skipping expert_new_enrollment email", notification.ExpertId);
         }
+
+        // ── 5. admin_new_enrollment email → aditi@femved.com ─────────────────
+        var adminEnrollmentData = new Dictionary<string, object>
+        {
+            ["user_name"]    = user is not null ? $"{user.FirstName} {user.LastName}" : "Unknown user",
+            ["user_email"]   = user?.Email ?? string.Empty,
+            ["expert_name"]  = expertUser is not null ? $"{expertUser.FirstName} {expertUser.LastName}" : "Unknown expert",
+            ["program_id"]   = notification.ProgramId.ToString(),
+            ["order_id"]     = notification.OrderId.ToString()
+        };
+
+        foreach (var adminEmail in new[] { "aditi@femved.com", "femvedwellness@gmail.com" })
+            await SendEmailWithLogAsync(
+                toEmail:      adminEmail,
+                toName:       "FemVed Admin",
+                templateKey:  "admin_new_enrollment",
+                templateData: adminEnrollmentData,
+                userId:       notification.UserId,
+                cancellationToken: cancellationToken);
 
         _logger.LogInformation("OrderPaidEvent handled successfully for order {OrderId}", notification.OrderId);
     }

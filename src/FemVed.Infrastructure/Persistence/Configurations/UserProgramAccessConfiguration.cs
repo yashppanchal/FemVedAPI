@@ -51,6 +51,12 @@ internal sealed class UserProgramAccessConfiguration : IEntityTypeConfiguration<
             .HasMaxLength(30)
             .HasConversion(StatusConverter);
         builder.Property(a => a.ReminderSent).HasColumnName("reminder_sent").HasDefaultValue(false);
+        builder.Property(a => a.ScheduledStartAt).HasColumnName("scheduled_start_at");
+        builder.Property(a => a.StartReminderSentAt).HasColumnName("start_reminder_sent_at");
+        builder.Property(a => a.RequestedStartDate).HasColumnName("requested_start_date");
+        builder.Property(a => a.StartRequestStatus).HasColumnName("start_request_status").HasMaxLength(20)
+            .HasConversion(v => v.HasValue ? v.Value.ToString() : null, v => v == null ? (Domain.Enums.StartRequestStatus?)null : Enum.Parse<Domain.Enums.StartRequestStatus>(v));
+        builder.Property(a => a.EndDate).HasColumnName("end_date");
         builder.Property(a => a.StartedAt).HasColumnName("started_at");
         builder.Property(a => a.PausedAt).HasColumnName("paused_at");
         builder.Property(a => a.CompletedAt).HasColumnName("completed_at");

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FemVed.Application.Enrollments.Commands.EndEnrollment;
 using FemVed.Application.Enrollments.Commands.PauseEnrollment;
+using FemVed.Application.Enrollments.Commands.RequestStartDate;
 using FemVed.Application.Payments.DTOs;
 using FemVed.Application.Payments.Queries.GetMyOrders;
 using FemVed.Application.Payments.Queries.GetMyRefunds;
@@ -131,6 +132,33 @@ public sealed class UsersController : ControllerBase
     // ── Session Lifecycle (User) ──────────────────────────────────────────────
 
     /// <summary>
+    /// Submits a preferred start date request for a NotStarted enrollment.
+    /// The expert or admin must then approve or decline the request.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record.</param>
+    /// <param name="request">The preferred start date as an ISO-8601 date string (e.g. "2026-04-01").</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/request-start")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RequestStartDate(
+        Guid accessId,
+        [FromBody] RequestStartDateRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!DateOnly.TryParse(request.RequestedStartDate, out var date))
+            return BadRequest("Invalid requestedStartDate format. Use ISO-8601 (e.g. \"2026-04-01\").");
+
+        var userId = GetCurrentUserId();
+        await _mediator.Send(new RequestStartDateCommand(accessId, userId, date), cancellationToken);
+        return Ok(new { AccessId = accessId, Status = "Pending" });
+    }
+
+    /// <summary>
     /// Pauses one of the user's own active enrollments — transitions it from ACTIVE to PAUSED.
     /// Emails the user a <c>session_paused</c> notification.
     /// </summary>
@@ -215,6 +243,10 @@ public sealed class UsersController : ControllerBase
 }
 
 // ── Request body records ──────────────────────────────────────────────────────
+
+/// <summary>HTTP request body for POST /api/v1/users/me/enrollments/{accessId}/request-start.</summary>
+/// <param name="RequestedStartDate">ISO-8601 date string (e.g. "2026-04-01").</param>
+public record RequestStartDateRequest(string RequestedStartDate);
 
 /// <summary>HTTP request body for PUT /api/v1/users/me.</summary>
 /// <param name="FirstName">Updated first name.</param>

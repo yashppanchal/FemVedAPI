@@ -32,6 +32,21 @@ public class UserProgramAccess
     /// <summary>Whether the 24-hour program reminder has been sent.</summary>
     public bool ReminderSent { get; set; }
 
+    /// <summary>UTC date the program is scheduled to auto-start (null = not scheduled / already started).</summary>
+    public DateTimeOffset? ScheduledStartAt { get; set; }
+
+    /// <summary>UTC timestamp when the 24-hour pre-start reminder email was sent (null = not yet sent).</summary>
+    public DateTimeOffset? StartReminderSentAt { get; set; }
+
+    /// <summary>Preferred start date requested by the user (null if no request made).</summary>
+    public DateTimeOffset? RequestedStartDate { get; set; }
+
+    /// <summary>Status of the user's start date request: Pending, Approved, or Declined (null if no request made).</summary>
+    public StartRequestStatus? StartRequestStatus { get; set; }
+
+    /// <summary>Calculated end date: StartedAt plus the purchased duration in weeks, extended by any pause time.</summary>
+    public DateTimeOffset? EndDate { get; set; }
+
     /// <summary>UTC timestamp when the expert started the program for this user.</summary>
     public DateTimeOffset? StartedAt { get; set; }
 

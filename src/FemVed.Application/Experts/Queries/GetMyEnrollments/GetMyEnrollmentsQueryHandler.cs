@@ -9,7 +9,7 @@ namespace FemVed.Application.Experts.Queries.GetMyEnrollments;
 /// <summary>
 /// Handles <see cref="GetMyEnrollmentsQuery"/>.
 /// Loads all UserProgramAccess records for the expert, then batch-fetches
-/// users, programs, and durations to build the enrollment DTOs.
+/// users, programs, durations, and the expert entity to build the enrollment DTOs.
 /// </summary>
 public sealed class GetMyEnrollmentsQueryHandler : IRequestHandler<GetMyEnrollmentsQuery, List<EnrollmentDto>>
 {
@@ -17,6 +17,7 @@ public sealed class GetMyEnrollmentsQueryHandler : IRequestHandler<GetMyEnrollme
     private readonly IRepository<User> _users;
     private readonly IRepository<Program> _programs;
     private readonly IRepository<ProgramDuration> _durations;
+    private readonly IRepository<Expert> _experts;
     private readonly ILogger<GetMyEnrollmentsQueryHandler> _logger;
 
     /// <summary>Initialises the handler with required repositories.</summary>
@@ -25,13 +26,15 @@ public sealed class GetMyEnrollmentsQueryHandler : IRequestHandler<GetMyEnrollme
         IRepository<User> users,
         IRepository<Program> programs,
         IRepository<ProgramDuration> durations,
+        IRepository<Expert> experts,
         ILogger<GetMyEnrollmentsQueryHandler> logger)
     {
-        _access   = access;
-        _users    = users;
-        _programs = programs;
+        _access    = access;
+        _users     = users;
+        _programs  = programs;
         _durations = durations;
-        _logger   = logger;
+        _experts   = experts;
+        _logger    = logger;
     }
 
     /// <summary>Returns all enrollments for the authenticated expert, newest first.</summary>
@@ -60,6 +63,7 @@ public sealed class GetMyEnrollmentsQueryHandler : IRequestHandler<GetMyEnrollme
         var users     = await _users.GetAllAsync(u => userIds.Contains(u.Id), cancellationToken);
         var programs  = await _programs.GetAllAsync(p => programIds.Contains(p.Id), cancellationToken);
         var durations = await _durations.GetAllAsync(d => durationIds.Contains(d.Id), cancellationToken);
+        var expert    = await _experts.FirstOrDefaultAsync(e => e.Id == request.ExpertId, cancellationToken);
 
         var userMap     = users.ToDictionary(u => u.Id);
         var programMap  = programs.ToDictionary(p => p.Id);
@@ -74,22 +78,28 @@ public sealed class GetMyEnrollmentsQueryHandler : IRequestHandler<GetMyEnrollme
                 durationMap.TryGetValue(a.DurationId, out var dur);
 
                 return new EnrollmentDto(
-                    AccessId:      a.Id,
-                    OrderId:       a.OrderId,
-                    UserId:        a.UserId,
-                    UserFirstName: user?.FirstName  ?? string.Empty,
-                    UserLastName:  user?.LastName   ?? string.Empty,
-                    UserEmail:     user?.Email      ?? string.Empty,
-                    ProgramId:     a.ProgramId,
-                    ProgramName:   prog?.Name       ?? "Unknown Program",
-                    DurationLabel: dur?.Label       ?? "Unknown Duration",
-                    AccessStatus:  a.Status.ToString(),
-                    StartedAt:     a.StartedAt,
-                    PausedAt:      a.PausedAt,
-                    CompletedAt:   a.CompletedAt,
-                    EndedBy:       a.EndedBy,
-                    EndedByRole:   a.EndedByRole,
-                    EnrolledAt:    a.CreatedAt);
+                    AccessId:         a.Id,
+                    OrderId:          a.OrderId,
+                    UserId:           a.UserId,
+                    UserFirstName:    user?.FirstName   ?? string.Empty,
+                    UserLastName:     user?.LastName    ?? string.Empty,
+                    UserEmail:        user?.Email       ?? string.Empty,
+                    ProgramId:        a.ProgramId,
+                    ProgramName:      prog?.Name        ?? "Unknown Program",
+                    DurationLabel:    dur?.Label        ?? "Unknown Duration",
+                    AccessStatus:     a.Status.ToString(),
+                    StartedAt:        a.StartedAt,
+                    PausedAt:         a.PausedAt,
+                    CompletedAt:      a.CompletedAt,
+                    EndedBy:          a.EndedBy,
+                    EndedByRole:         a.EndedByRole,
+                    EnrolledAt:          a.CreatedAt,
+                    ExpertId:            a.ExpertId,
+                    ExpertName:          expert?.DisplayName,
+                    ScheduledStartAt:    a.ScheduledStartAt,
+                    EndDate:             a.EndDate,
+                    RequestedStartDate:  a.RequestedStartDate,
+                    StartRequestStatus:  a.StartRequestStatus?.ToString());
             })
             .ToList();
 

@@ -107,5 +107,29 @@ public sealed class OrderFailedEventHandler : INotificationHandler<OrderFailedEv
                 "OrderFailedEventHandler: failed to persist NotificationLog for order {OrderId}",
                 notification.OrderId);
         }
+
+        // ── admin_purchase_failed email → all admin addresses ────────────────
+        var adminFailedData = new Dictionary<string, object>
+        {
+            ["user_name"]  = $"{user.FirstName} {user.LastName}",
+            ["user_email"] = user.Email,
+            ["order_id"]   = notification.OrderId.ToString()
+        };
+        foreach (var adminEmail in new[] { "aditi@femved.com", "femvedwellness@gmail.com" })
+        {
+            try
+            {
+                await _emailService.SendAsync(adminEmail, "FemVed Admin", "admin_purchase_failed", adminFailedData, cancellationToken);
+                _logger.LogInformation(
+                    "OrderFailedEventHandler: admin_purchase_failed email sent to {Admin} for order {OrderId}",
+                    adminEmail, notification.OrderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "OrderFailedEventHandler: failed to send admin_purchase_failed email to {Admin} for order {OrderId}",
+                    adminEmail, notification.OrderId);
+            }
+        }
     }
 }

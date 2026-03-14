@@ -74,19 +74,23 @@ public sealed class GetMyProgramAccessQueryHandler : IRequestHandler<GetMyProgra
                 durationMap.TryGetValue(a.DurationId, out var dur);
 
                 return new ProgramAccessDto(
-                    AccessId:        a.Id,
-                    OrderId:         a.OrderId,
-                    ProgramId:       a.ProgramId,
-                    ProgramName:     prog?.Name      ?? "Unknown Program",
-                    ProgramImageUrl: prog?.GridImageUrl,
-                    ExpertId:        a.ExpertId,
-                    ExpertName:      exp?.DisplayName ?? "Unknown Expert",
-                    DurationLabel:   dur?.Label       ?? "Unknown Duration",
-                    Status:          a.Status.ToString(),
-                    StartedAt:       a.StartedAt,
-                    PausedAt:        a.PausedAt,
-                    CompletedAt:     a.CompletedAt,
-                    PurchasedAt:     a.CreatedAt);
+                    AccessId:           a.Id,
+                    OrderId:            a.OrderId,
+                    ProgramId:          a.ProgramId,
+                    ProgramName:        prog?.Name      ?? "Unknown Program",
+                    ProgramImageUrl:    prog?.GridImageUrl,
+                    ExpertId:           a.ExpertId,
+                    ExpertName:         exp?.DisplayName ?? "Unknown Expert",
+                    DurationLabel:      dur?.Label       ?? "Unknown Duration",
+                    Status:             a.Status.ToString(),
+                    StartedAt:          a.StartedAt,
+                    PausedAt:           a.PausedAt,
+                    CompletedAt:        a.CompletedAt,
+                    PurchasedAt:        a.CreatedAt,
+                    ScheduledStartAt:   a.ScheduledStartAt,
+                    EndDate:            a.EndDate,
+                    RequestedStartDate: a.RequestedStartDate,
+                    StartRequestStatus: a.StartRequestStatus?.ToString());
             })
             .ToList();
 

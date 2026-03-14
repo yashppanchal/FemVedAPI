@@ -13,5 +13,8 @@ public enum SessionAction
     Resumed,
 
     /// <summary>Expert, admin, or user ended the program.</summary>
-    Ended
+    Ended,
+
+    /// <summary>Expert or admin scheduled the program to start on a future date.</summary>
+    Scheduled
 }

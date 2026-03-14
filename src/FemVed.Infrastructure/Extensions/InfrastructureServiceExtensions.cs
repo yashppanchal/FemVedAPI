@@ -65,11 +65,21 @@ public static class InfrastructureServiceExtensions
                 ["password_reset"]           = configuration["SENDGRID_TEMPLATE_PASSWORD_RESET"]           ?? string.Empty,
                 ["email_verify"]             = configuration["SENDGRID_TEMPLATE_EMAIL_VERIFY"]             ?? string.Empty,
                 ["expert_progress_update"]   = configuration["SENDGRID_TEMPLATE_EXPERT_PROGRESS_UPDATE"]   ?? string.Empty,
-                ["session_started"]          = configuration["SENDGRID_TEMPLATE_SESSION_STARTED"]          ?? string.Empty,
-                ["session_paused"]           = configuration["SENDGRID_TEMPLATE_SESSION_PAUSED"]           ?? string.Empty,
-                ["session_resumed"]          = configuration["SENDGRID_TEMPLATE_SESSION_RESUMED"]          ?? string.Empty,
-                ["session_ended"]            = configuration["SENDGRID_TEMPLATE_SESSION_ENDED"]            ?? string.Empty,
-                ["expert_enrollment_ended"]  = configuration["SENDGRID_TEMPLATE_EXPERT_ENROLLMENT_ENDED"]  ?? string.Empty,
+                ["session_started"]              = configuration["SENDGRID_TEMPLATE_SESSION_STARTED"]              ?? string.Empty,
+                ["session_paused"]               = configuration["SENDGRID_TEMPLATE_SESSION_PAUSED"]               ?? string.Empty,
+                ["session_resumed"]              = configuration["SENDGRID_TEMPLATE_SESSION_RESUMED"]              ?? string.Empty,
+                ["session_ended"]                = configuration["SENDGRID_TEMPLATE_SESSION_ENDED"]                ?? string.Empty,
+                ["expert_enrollment_ended"]      = configuration["SENDGRID_TEMPLATE_EXPERT_ENROLLMENT_ENDED"]      ?? string.Empty,
+                ["admin_new_enrollment"]         = configuration["SENDGRID_TEMPLATE_ADMIN_NEW_ENROLLMENT"]         ?? string.Empty,
+                ["admin_purchase_failed"]        = configuration["SENDGRID_TEMPLATE_ADMIN_PURCHASE_FAILED"]        ?? string.Empty,
+                ["session_started_expert"]       = configuration["SENDGRID_TEMPLATE_SESSION_STARTED_EXPERT"]       ?? string.Empty,
+                ["admin_session_started"]        = configuration["SENDGRID_TEMPLATE_ADMIN_SESSION_STARTED"]        ?? string.Empty,
+                ["session_scheduled"]            = configuration["SENDGRID_TEMPLATE_SESSION_SCHEDULED"]            ?? string.Empty,
+                ["session_scheduled_expert"]     = configuration["SENDGRID_TEMPLATE_SESSION_SCHEDULED_EXPERT"]     ?? string.Empty,
+                ["admin_session_scheduled"]      = configuration["SENDGRID_TEMPLATE_ADMIN_SESSION_SCHEDULED"]      ?? string.Empty,
+                ["session_start_reminder_24h"]   = configuration["SENDGRID_TEMPLATE_SESSION_START_REMINDER_24H"]   ?? string.Empty,
+                ["start_date_approved"]          = configuration["SENDGRID_TEMPLATE_START_DATE_APPROVED"]          ?? string.Empty,
+                ["start_date_declined"]          = configuration["SENDGRID_TEMPLATE_START_DATE_DECLINED"]          ?? string.Empty,
             };
         });
 
@@ -142,6 +152,7 @@ public static class InfrastructureServiceExtensions
 
         // ── Background jobs ───────────────────────────────────────────────────
         services.AddHostedService<ProgramReminderJob>();
+        services.AddHostedService<ScheduledProgramStartJob>();
 
         return services;
     }

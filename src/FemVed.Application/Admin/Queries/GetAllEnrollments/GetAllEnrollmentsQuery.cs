@@ -11,4 +11,9 @@ namespace FemVed.Application.Admin.Queries.GetAllEnrollments;
 /// <param name="StatusFilter">
 /// Optional access-status filter, e.g. "Active". Null = return all statuses.
 /// </param>
-public record GetAllEnrollmentsQuery(string? StatusFilter = null) : IRequest<List<EnrollmentDto>>;
+/// <param name="ExpertId">
+/// Optional expert ID filter. Null = return all experts.
+/// </param>
+public record GetAllEnrollmentsQuery(
+    string? StatusFilter = null,
+    Guid? ExpertId = null) : IRequest<List<EnrollmentDto>>;

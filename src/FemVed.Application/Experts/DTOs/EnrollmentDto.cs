@@ -1,8 +1,9 @@
 namespace FemVed.Application.Experts.DTOs;
 
 /// <summary>
-/// Response shape for a single enrollment entry returned by GET /api/v1/experts/me/enrollments.
-/// Contains everything an expert needs to identify an enrolled user and their program access.
+/// Response shape for a single enrollment entry returned by GET /api/v1/experts/me/enrollments
+/// and GET /api/v1/admin/enrollments.
+/// Contains everything needed to identify an enrolled user, their program access, and scheduling state.
 /// </summary>
 /// <param name="AccessId">UUID of the UserProgramAccess record (used for session actions and progress updates).</param>
 /// <param name="OrderId">UUID of the order that granted this access.</param>
@@ -20,6 +21,9 @@ namespace FemVed.Application.Experts.DTOs;
 /// <param name="EndedBy">UUID of the user who triggered the end action (null if not yet ended).</param>
 /// <param name="EndedByRole">Role of the user who ended the program: EXPERT, ADMIN, or USER (null if not yet ended).</param>
 /// <param name="EnrolledAt">UTC timestamp when the access was granted (order paid).</param>
+/// <param name="ExpertId">UUID of the expert delivering the program.</param>
+/// <param name="ExpertName">Display name of the expert (null if expert record not found).</param>
+/// <param name="ScheduledStartAt">UTC timestamp when the program is scheduled to auto-start (null if not scheduled).</param>
 public record EnrollmentDto(
     Guid AccessId,
     Guid OrderId,
@@ -36,4 +40,10 @@ public record EnrollmentDto(
     DateTimeOffset? CompletedAt,
     Guid? EndedBy,
     string? EndedByRole,
-    DateTimeOffset EnrolledAt);
+    DateTimeOffset EnrolledAt,
+    Guid ExpertId,
+    string? ExpertName,
+    DateTimeOffset? ScheduledStartAt,
+    DateTimeOffset? EndDate,
+    DateTimeOffset? RequestedStartDate,
+    string? StartRequestStatus);

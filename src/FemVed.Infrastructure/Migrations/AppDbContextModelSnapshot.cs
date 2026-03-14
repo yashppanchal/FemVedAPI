@@ -2485,6 +2485,27 @@ namespace FemVed.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("reminder_sent");
 
+                    b.Property<DateTimeOffset?>("ScheduledStartAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_start_at");
+
+                    b.Property<DateTimeOffset?>("StartReminderSentAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_reminder_sent_at");
+
+                    b.Property<DateTimeOffset?>("RequestedStartDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_start_date");
+
+                    b.Property<string?>("StartRequestStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("start_request_status");
+
+                    b.Property<DateTimeOffset?>("EndDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_date");
+
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("started_at");

@@ -1,5 +1,7 @@
 using System.Security.Claims;
 using FemVed.Application.Admin.DTOs;
+using FemVed.Application.Enrollments.Commands.ApproveStartDate;
+using FemVed.Application.Enrollments.Commands.DeclineStartDate;
 using FemVed.Application.Enrollments.Commands.EndEnrollment;
 using FemVed.Application.Enrollments.Commands.PauseEnrollment;
 using FemVed.Application.Enrollments.Commands.ResumeEnrollment;
@@ -175,12 +177,13 @@ public sealed class ExpertsController : ControllerBase
     // ── Session Lifecycle ─────────────────────────────────────────────────────
 
     /// <summary>
-    /// Starts an enrollment — transitions it from NOT_STARTED to ACTIVE.
+    /// Starts an enrollment — transitions it from NOT_STARTED to ACTIVE,
+    /// or schedules it for a future date when <c>scheduledDate</c> is provided.
     /// The enrollment must belong to the authenticated expert's own program.
-    /// Emails the enrolled user a <c>session_started</c> notification.
+    /// Emails all relevant parties a <c>session_started</c> or <c>session_scheduled</c> notification.
     /// </summary>
     /// <param name="accessId">UUID of the UserProgramAccess record to start.</param>
-    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="request">Optional note and optional scheduled date.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>200 OK on success.</returns>
     [HttpPost("me/enrollments/{accessId:guid}/start")]
@@ -191,14 +194,60 @@ public sealed class ExpertsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> StartEnrollment(
         Guid accessId,
-        [FromBody] SessionActionRequest? request,
+        [FromBody] StartEnrollmentRequest? request,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId        = GetCurrentUserId();
+        var scheduledDate = request?.ScheduledDate is not null
+            && DateOnly.TryParse(request.ScheduledDate, out var d) ? d : (DateOnly?)null;
         await _mediator.Send(
-            new StartEnrollmentCommand(accessId, userId, IsAdmin: false, request?.Note),
+            new StartEnrollmentCommand(accessId, userId, IsAdmin: false, request?.Note, scheduledDate),
             cancellationToken);
         return Ok(new SessionActionResponse(accessId, "started"));
+    }
+
+    /// <summary>
+    /// Approves a user's requested start date for a NotStarted enrollment.
+    /// Sets <c>StartRequestStatus = Approved</c> and <c>ScheduledStartAt</c> to the requested date.
+    /// The enrollment must belong to the authenticated expert's own program.
+    /// Emails the user a <c>start_date_approved</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/approve-start")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ApproveStartDate(Guid accessId, CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(new ApproveStartDateCommand(accessId, userId, IsAdmin: false), cancellationToken);
+        return Ok(new { AccessId = accessId, Status = "Approved" });
+    }
+
+    /// <summary>
+    /// Declines a user's requested start date for a NotStarted enrollment.
+    /// Sets <c>StartRequestStatus = Declined</c> and clears <c>RequestedStartDate</c>.
+    /// The enrollment must belong to the authenticated expert's own program.
+    /// Emails the user a <c>start_date_declined</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/decline-start")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> DeclineStartDate(Guid accessId, CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(new DeclineStartDateCommand(accessId, userId, IsAdmin: false), cancellationToken);
+        return Ok(new { AccessId = accessId, Status = "Declined" });
     }
 
     /// <summary>
