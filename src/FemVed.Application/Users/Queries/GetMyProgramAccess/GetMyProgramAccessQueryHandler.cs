@@ -82,6 +82,7 @@ public sealed class GetMyProgramAccessQueryHandler : IRequestHandler<GetMyProgra
                     ExpertId:           a.ExpertId,
                     ExpertName:         exp?.DisplayName ?? "Unknown Expert",
                     DurationLabel:      dur?.Label       ?? "Unknown Duration",
+                    DurationWeeks:      dur?.Weeks       ?? 0,
                     Status:             a.Status.ToString(),
                     StartedAt:          a.StartedAt,
                     PausedAt:           a.PausedAt,

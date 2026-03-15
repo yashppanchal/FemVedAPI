@@ -2,6 +2,7 @@ using System.Text.Json;
 using FemVed.Application.Interfaces;
 using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Domain.Entities;
+using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -24,6 +25,7 @@ public sealed class DeleteCategoryCommandHandler : IRequestHandler<DeleteCategor
     private readonly IRepository<GuidedCategory> _categories;
     private readonly IRepository<Domain.Entities.Program> _programs;
     private readonly IRepository<ProgramDuration> _durations;
+    private readonly IRepository<UserProgramAccess> _access;
     private readonly IRepository<AdminAuditLog> _auditLogs;
     private readonly IUnitOfWork _uow;
     private readonly IMemoryCache _cache;
@@ -34,6 +36,7 @@ public sealed class DeleteCategoryCommandHandler : IRequestHandler<DeleteCategor
         IRepository<GuidedCategory> categories,
         IRepository<Domain.Entities.Program> programs,
         IRepository<ProgramDuration> durations,
+        IRepository<UserProgramAccess> access,
         IRepository<AdminAuditLog> auditLogs,
         IUnitOfWork uow,
         IMemoryCache cache,
@@ -42,6 +45,7 @@ public sealed class DeleteCategoryCommandHandler : IRequestHandler<DeleteCategor
         _categories = categories;
         _programs   = programs;
         _durations  = durations;
+        _access     = access;
         _auditLogs  = auditLogs;
         _uow        = uow;
         _cache      = cache;
@@ -72,6 +76,20 @@ public sealed class DeleteCategoryCommandHandler : IRequestHandler<DeleteCategor
             p => p.CategoryId == request.CategoryId && !p.IsDeleted, cancellationToken);
 
         var programIds = new HashSet<Guid>(programs.Select(p => p.Id));
+
+        // ── 2a. Guard: block if any program has active enrollments ───────────
+        if (programIds.Count > 0)
+        {
+            var hasActive = await _access.AnyAsync(
+                a => programIds.Contains(a.ProgramId) &&
+                     a.Status != UserProgramAccessStatus.Completed &&
+                     a.Status != UserProgramAccessStatus.Cancelled,
+                cancellationToken);
+
+            if (hasActive)
+                throw new DomainException(
+                    "Cannot archive this category — one or more of its programs have active enrollments.");
+        }
 
         foreach (var prog in programs)
         {

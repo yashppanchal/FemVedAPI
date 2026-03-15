@@ -109,6 +109,7 @@ public sealed class GetAllEnrollmentsQueryHandler : IRequestHandler<GetAllEnroll
                     ProgramId:       a.ProgramId,
                     ProgramName:     prog?.Name        ?? "Unknown Program",
                     DurationLabel:   dur?.Label        ?? "Unknown Duration",
+                    DurationWeeks:   dur?.Weeks        ?? 0,
                     AccessStatus:    a.Status.ToString(),
                     StartedAt:       a.StartedAt,
                     PausedAt:        a.PausedAt,

@@ -31,6 +31,9 @@ internal sealed class ProgramSessionLogConfiguration : IEntityTypeConfiguration<
         builder.Property(l => l.Note).HasColumnName("note");
         builder.Property(l => l.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
 
+        builder.HasCheckConstraint("chk_psl_action",
+            "action IN ('STARTED', 'PAUSED', 'RESUMED', 'ENDED', 'SCHEDULED')");
+
         builder.HasIndex(l => l.AccessId).HasDatabaseName("idx_psl_access_id");
 
         builder.HasOne(l => l.Access)

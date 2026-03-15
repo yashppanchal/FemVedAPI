@@ -31,7 +31,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(u => u.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
 
-        builder.HasIndex(u => u.Email).IsUnique().HasDatabaseName("uq_users_email");
+        // Filtered unique index: allows the same email to be re-registered after a soft-delete
+        builder.HasIndex(u => u.Email).IsUnique().HasFilter("is_deleted = false").HasDatabaseName("uq_users_email_active");
         builder.HasIndex(u => u.RoleId).HasDatabaseName("idx_users_role_id");
         builder.HasIndex(u => u.CountryIsoCode).HasDatabaseName("idx_users_iso_code");
 

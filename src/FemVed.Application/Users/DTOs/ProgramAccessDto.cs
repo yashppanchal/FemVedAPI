@@ -11,6 +11,7 @@ namespace FemVed.Application.Users.DTOs;
 /// <param name="ExpertId">UUID of the delivering expert.</param>
 /// <param name="ExpertName">Expert's public display name.</param>
 /// <param name="DurationLabel">Human-readable duration, e.g. "6 weeks".</param>
+/// <param name="DurationWeeks">Numeric duration in weeks — used by the frontend to calculate projected end dates for scheduled programs.</param>
 /// <param name="Status">Access state: NotStarted, Active, Paused, Completed, or Cancelled.</param>
 /// <param name="StartedAt">UTC timestamp when the expert started the program (null if not yet started).</param>
 /// <param name="PausedAt">UTC timestamp when the program was last paused (null if never paused or since resumed).</param>
@@ -29,6 +30,7 @@ public record ProgramAccessDto(
     Guid ExpertId,
     string ExpertName,
     string DurationLabel,
+    int DurationWeeks,
     string Status,
     DateTimeOffset? StartedAt,
     DateTimeOffset? PausedAt,

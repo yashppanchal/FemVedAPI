@@ -2,6 +2,7 @@ using System.Security.Claims;
 using FemVed.Application.Enrollments.Commands.EndEnrollment;
 using FemVed.Application.Enrollments.Commands.PauseEnrollment;
 using FemVed.Application.Enrollments.Commands.RequestStartDate;
+using FemVed.Application.Enrollments.Commands.ResumeEnrollment;
 using FemVed.Application.Payments.DTOs;
 using FemVed.Application.Payments.Queries.GetMyOrders;
 using FemVed.Application.Payments.Queries.GetMyRefunds;
@@ -208,6 +209,32 @@ public sealed class UsersController : ControllerBase
             new EndEnrollmentCommand(accessId, userId, IsAdmin: false, IsUser: true, request?.Note),
             cancellationToken);
         return Ok(new SessionActionResponse(accessId, "ended"));
+    }
+
+    /// <summary>
+    /// Resumes one of the user's own paused enrollments — transitions it from PAUSED to ACTIVE.
+    /// Emails the user a <c>session_resumed</c> notification.
+    /// </summary>
+    /// <param name="accessId">UUID of the UserProgramAccess record to resume.</param>
+    /// <param name="request">Optional note to log against this action.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK on success.</returns>
+    [HttpPost("me/enrollments/{accessId:guid}/resume")]
+    [ProducesResponseType(typeof(SessionActionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ResumeEnrollment(
+        Guid accessId,
+        [FromBody] SessionActionRequest? request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new ResumeEnrollmentCommand(accessId, userId, IsAdmin: false, IsUser: true, request?.Note),
+            cancellationToken);
+        return Ok(new SessionActionResponse(accessId, "resumed"));
     }
 
     // ── GDPR ─────────────────────────────────────────────────────────────────

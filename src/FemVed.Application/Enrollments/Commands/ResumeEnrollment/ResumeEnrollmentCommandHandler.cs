@@ -67,6 +67,13 @@ public sealed class ResumeEnrollmentCommandHandler : IRequestHandler<ResumeEnrol
         {
             performedByRole = "ADMIN";
         }
+        else if (request.IsUser)
+        {
+            if (record.UserId != request.PerformedByUserId)
+                throw new ForbiddenException("You can only resume your own enrollments.");
+
+            performedByRole = "USER";
+        }
         else
         {
             var expert = await _experts.FirstOrDefaultAsync(

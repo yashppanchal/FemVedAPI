@@ -14,6 +14,7 @@ namespace FemVed.Application.Experts.DTOs;
 /// <param name="ProgramId">UUID of the program.</param>
 /// <param name="ProgramName">Display name of the program.</param>
 /// <param name="DurationLabel">Human-readable duration, e.g. "6 weeks".</param>
+/// <param name="DurationWeeks">Numeric duration in weeks — used by the frontend to calculate projected end dates for scheduled programs.</param>
 /// <param name="AccessStatus">Current access state: NotStarted, Active, Paused, Completed, or Cancelled.</param>
 /// <param name="StartedAt">UTC timestamp when the expert started the program (null if not yet started).</param>
 /// <param name="PausedAt">UTC timestamp when the program was last paused (null if never paused or since resumed).</param>
@@ -34,6 +35,7 @@ public record EnrollmentDto(
     Guid ProgramId,
     string ProgramName,
     string DurationLabel,
+    int DurationWeeks,
     string AccessStatus,
     DateTimeOffset? StartedAt,
     DateTimeOffset? PausedAt,
