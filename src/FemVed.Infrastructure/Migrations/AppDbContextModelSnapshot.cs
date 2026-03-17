@@ -2386,7 +2386,8 @@ namespace FemVed.Infrastructure.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique()
-                        .HasDatabaseName("uq_users_email");
+                        .HasDatabaseName("uq_users_email_active")
+                        .HasFilter("is_deleted = false");
 
                     b.HasIndex("RoleId")
                         .HasDatabaseName("idx_users_role_id");
