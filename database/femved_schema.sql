@@ -380,7 +380,7 @@ CREATE TABLE orders (
     CONSTRAINT fk_orders_duration_price FOREIGN KEY (duration_price_id) REFERENCES duration_prices (id),
     CONSTRAINT fk_orders_coupon         FOREIGN KEY (coupon_id)         REFERENCES coupons (id),
     CONSTRAINT chk_orders_status CHECK (status IN ('PENDING','PAID','FAILED','REFUNDED')),
-    CONSTRAINT chk_orders_gateway CHECK (payment_gateway IN ('CASHFREE','PAYPAL'))
+    CONSTRAINT chk_orders_gateway CHECK (payment_gateway IN ('CASHFREE','PAYPAL','STRIPE'))
 );
 
 CREATE INDEX idx_orders_user_id     ON orders (user_id);
