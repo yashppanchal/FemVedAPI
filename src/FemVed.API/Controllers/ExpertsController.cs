@@ -300,7 +300,7 @@ public sealed class ExpertsController : ControllerBase
     {
         var userId = GetCurrentUserId();
         await _mediator.Send(
-            new ResumeEnrollmentCommand(accessId, userId, IsAdmin: false, request?.Note),
+            new ResumeEnrollmentCommand(accessId, userId, IsAdmin: false, IsUser: false, request?.Note),
             cancellationToken);
         return Ok(new SessionActionResponse(accessId, "resumed"));
     }

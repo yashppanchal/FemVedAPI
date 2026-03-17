@@ -775,7 +775,7 @@ public sealed class AdminController : ControllerBase
     {
         var userId = GetCurrentUserId();
         await _mediator.Send(
-            new ResumeEnrollmentCommand(accessId, userId, IsAdmin: true, request?.Note),
+            new ResumeEnrollmentCommand(accessId, userId, IsAdmin: true, IsUser: false, request?.Note),
             cancellationToken);
         return Ok(new SessionActionResponse(accessId, "resumed"));
     }

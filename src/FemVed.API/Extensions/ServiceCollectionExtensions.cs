@@ -46,6 +46,7 @@ public static class ServiceCollectionExtensions
                 }
             });
 
+
             // Prevent schema ID collisions when two classes share the same name in different namespaces.
             options.CustomSchemaIds(type => type.FullName?.Replace(".", "_") ?? type.Name);
         });
