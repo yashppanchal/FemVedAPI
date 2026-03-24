@@ -6,6 +6,9 @@
 appsettings.Development.json
 appsettings.*.json
 
+## ── Launch profiles (contain env vars — use .env.local instead) ──────────────
+**/Properties/launchSettings.json
+
 ## ── .NET / ASP.NET Core ──────────────────────────────────────────────────────
 bin/
 obj/
