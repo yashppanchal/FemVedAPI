@@ -11,6 +11,14 @@ namespace FemVed.Application.Admin.DTOs;
 /// <param name="IsActive">Whether the expert is visible in the catalog.</param>
 /// <param name="IsDeleted">Whether the expert profile has been soft-deleted.</param>
 /// <param name="CreatedAt">UTC profile creation timestamp.</param>
+/// <param name="Bio">Expert's professional bio.</param>
+/// <param name="GridDescription">Short description for grid cards (max 500 chars).</param>
+/// <param name="DetailedDescription">Detailed bio for the program detail page.</param>
+/// <param name="ProfileImageUrl">Profile image URL.</param>
+/// <param name="GridImageUrl">Grid/card image URL.</param>
+/// <param name="Specialisations">List of specialisation areas.</param>
+/// <param name="Credentials">Professional credentials.</param>
+/// <param name="YearsExperience">Years of professional experience.</param>
 public record AdminExpertDto(
     Guid ExpertId,
     Guid UserId,
@@ -21,4 +29,12 @@ public record AdminExpertDto(
     decimal CommissionRate,
     bool IsActive,
     bool IsDeleted,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string? Bio,
+    string? GridDescription,
+    string? DetailedDescription,
+    string? ProfileImageUrl,
+    string? GridImageUrl,
+    string[]? Specialisations,
+    string[]? Credentials,
+    short? YearsExperience);

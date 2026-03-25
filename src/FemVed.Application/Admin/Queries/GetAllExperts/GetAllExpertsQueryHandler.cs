@@ -41,16 +41,24 @@ public sealed class GetAllExpertsQueryHandler : IRequestHandler<GetAllExpertsQue
             {
                 userMap.TryGetValue(e.UserId, out var user);
                 return new AdminExpertDto(
-                    ExpertId:        e.Id,
-                    UserId:          e.UserId,
-                    UserEmail:       user?.Email      ?? string.Empty,
-                    DisplayName:     e.DisplayName,
-                    Title:           e.Title,
-                    LocationCountry: e.LocationCountry,
-                    CommissionRate:  e.CommissionRate,
-                    IsActive:        e.IsActive,
-                    IsDeleted:       e.IsDeleted,
-                    CreatedAt:       e.CreatedAt);
+                    ExpertId:             e.Id,
+                    UserId:               e.UserId,
+                    UserEmail:            user?.Email      ?? string.Empty,
+                    DisplayName:          e.DisplayName,
+                    Title:                e.Title,
+                    LocationCountry:      e.LocationCountry,
+                    CommissionRate:       e.CommissionRate,
+                    IsActive:             e.IsActive,
+                    IsDeleted:            e.IsDeleted,
+                    CreatedAt:            e.CreatedAt,
+                    Bio:                  e.Bio,
+                    GridDescription:      e.GridDescription,
+                    DetailedDescription:  e.DetailedDescription,
+                    ProfileImageUrl:      e.ProfileImageUrl,
+                    GridImageUrl:         e.GridImageUrl,
+                    Specialisations:      e.Specialisations,
+                    Credentials:          e.Credentials,
+                    YearsExperience:      e.YearsExperience);
             })
             .ToList();
 
