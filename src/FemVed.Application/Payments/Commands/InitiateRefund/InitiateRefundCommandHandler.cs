@@ -78,8 +78,14 @@ public sealed class InitiateRefundCommandHandler : IRequestHandler<InitiateRefun
         // ── 3. Call gateway ──────────────────────────────────────────────────
         var gateway = _gatewayFactory.GetGatewayByType(order.PaymentGateway);
 
+        // CashFree expects the merchant order_id (our internal UUID) for refunds,
+        // not the cf_order_id stored in GatewayOrderId.
+        var refundOrderId = order.PaymentGateway == PaymentGateway.CashFree
+            ? order.Id.ToString()
+            : order.GatewayOrderId ?? string.Empty;
+
         var gatewayRequest = new GatewayRefundRequest(
-            GatewayOrderId: order.GatewayOrderId ?? string.Empty,
+            GatewayOrderId: refundOrderId,
             GatewayPaymentId: order.GatewayPaymentId,
             InternalRefundId: refund.Id.ToString(),
             Amount: request.RefundAmount,
