@@ -406,7 +406,7 @@ public sealed class GuidedController : ControllerBase
     }
 
     /// <summary>
-    /// Publishes a PENDING_REVIEW program (PENDING_REVIEW → PUBLISHED). Admin only.
+    /// Publishes a DRAFT or PENDING_REVIEW program (DRAFT/PENDING_REVIEW → PUBLISHED). Admin only.
     /// Evicts the guided tree cache immediately.
     /// </summary>
     /// <param name="id">Program ID.</param>

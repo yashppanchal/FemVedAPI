@@ -68,6 +68,40 @@ public class PublishProgramCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_DraftProgramWithDurationsAndPrices_PublishesSuccessfully()
+    {
+        // Arrange
+        var program  = MakeProgram(status: ProgramStatus.Draft);
+        var duration = new ProgramDuration { Id = Guid.NewGuid(), ProgramId = program.Id, Label = "6 weeks", IsActive = true };
+
+        _programs.Setup(r => r.FirstOrDefaultAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<Domain.Entities.Program, bool>>>(),
+                It.IsAny<CancellationToken>()))
+                 .ReturnsAsync(program);
+
+        _durations.Setup(r => r.GetAllAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<ProgramDuration, bool>>>(),
+                It.IsAny<CancellationToken>()))
+                  .ReturnsAsync([duration]);
+
+        _prices.Setup(r => r.AnyAsync(
+                It.IsAny<System.Linq.Expressions.Expression<Func<DurationPrice, bool>>>(),
+                It.IsAny<CancellationToken>()))
+               .ReturnsAsync(true);
+
+        _uow.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+
+        var handler = CreateHandler();
+
+        // Act
+        await handler.Handle(new PublishProgramCommand(program.Id), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ProgramStatus.Published, program.Status);
+        _programs.Verify(r => r.Update(It.Is<Domain.Entities.Program>(p => p.Status == ProgramStatus.Published)), Times.Once);
+    }
+
+    [Fact]
     public async Task Handle_ProgramNotFound_ThrowsNotFoundException()
     {
         // Arrange
@@ -84,7 +118,6 @@ public class PublishProgramCommandHandlerTests
     }
 
     [Theory]
-    [InlineData(ProgramStatus.Draft)]
     [InlineData(ProgramStatus.Published)]
     [InlineData(ProgramStatus.Archived)]
     public async Task Handle_WrongStatus_ThrowsDomainException(ProgramStatus status)

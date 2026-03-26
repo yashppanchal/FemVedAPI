@@ -63,8 +63,8 @@ public sealed class PublishProgramCommandHandler : IRequestHandler<PublishProgra
             cancellationToken)
             ?? throw new NotFoundException("Program", request.ProgramId);
 
-        if (program.Status != ProgramStatus.PendingReview)
-            throw new DomainException($"Only PENDING_REVIEW programs can be published. Current status: {program.Status}.");
+        if (program.Status != ProgramStatus.PendingReview && program.Status != ProgramStatus.Draft)
+            throw new DomainException($"Only DRAFT or PENDING_REVIEW programs can be published. Current status: {program.Status}.");
 
         // ── Completeness guard: must have at least one active duration ─────────
         var activeDurations = await _durations.GetAllAsync(
