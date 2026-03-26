@@ -27,6 +27,7 @@ using FemVed.Application.Guided.DTOs;
 using FemVed.Application.Guided.Queries.GetCategoryBySlug;
 using FemVed.Application.Guided.Queries.GetGuidedTree;
 using FemVed.Application.Guided.Queries.GetProgramBySlug;
+using FemVed.Application.Guided.Queries.GetPublicExperts;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -73,6 +74,22 @@ public sealed class GuidedController : ControllerBase
         // Allow browsers and CDNs to cache per country code for 10 min.
         // stale-while-revalidate lets Cloudflare serve the old response while
         // revalidating in the background, eliminating perceived latency.
+        Response.Headers.Append("Cache-Control", "public, max-age=600, stale-while-revalidate=120");
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Returns all active experts with basic display info for the public homepage.
+    /// Cached for 10 minutes. No authentication required.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the list of public expert cards.</returns>
+    [HttpGet("experts")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<PublicExpertDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPublicExperts(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetPublicExpertsQuery(), cancellationToken);
         Response.Headers.Append("Cache-Control", "public, max-age=600, stale-while-revalidate=120");
         return Ok(result);
     }
