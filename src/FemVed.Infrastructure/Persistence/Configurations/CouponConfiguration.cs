@@ -26,6 +26,7 @@ internal sealed class CouponConfiguration : IEntityTypeConfiguration<Coupon>
         builder.Property(c => c.UsedCount).HasColumnName("used_count").HasDefaultValue(0);
         builder.Property(c => c.ValidFrom).HasColumnName("valid_from");
         builder.Property(c => c.ValidUntil).HasColumnName("valid_until");
+        builder.Property(c => c.Scope).HasColumnName("scope").HasMaxLength(20).HasDefaultValue("ALL");
         builder.Property(c => c.IsActive).HasColumnName("is_active").HasDefaultValue(true);
         builder.Property(c => c.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(c => c.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");

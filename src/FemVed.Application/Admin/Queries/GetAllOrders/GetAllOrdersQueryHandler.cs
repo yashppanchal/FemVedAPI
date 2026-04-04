@@ -77,7 +77,7 @@ public sealed class GetAllOrdersQueryHandler : IRequestHandler<GetAllOrdersQuery
             .Select(o =>
             {
                 userMap.TryGetValue(o.UserId, out var user);
-                durationMap.TryGetValue(o.DurationId, out var duration);
+                durationMap.TryGetValue(o.DurationId.GetValueOrDefault(), out var duration);
                 var programName = duration is not null && programMap.TryGetValue(duration.ProgramId, out var prog)
                     ? prog.Name ?? string.Empty
                     : string.Empty;
@@ -92,7 +92,7 @@ public sealed class GetAllOrdersQueryHandler : IRequestHandler<GetAllOrdersQuery
                     UserEmail:      user?.Email ?? string.Empty,
                     ProgramId:      duration?.ProgramId ?? Guid.Empty,
                     ProgramName:    programName,
-                    DurationId:     o.DurationId,
+                    DurationId:     o.DurationId.GetValueOrDefault(),
                     DurationLabel:  duration?.Label ?? string.Empty,
                     Amount:         o.AmountPaid,
                     Currency:       o.CurrencyCode,

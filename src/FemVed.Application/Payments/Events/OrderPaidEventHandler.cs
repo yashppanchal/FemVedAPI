@@ -12,7 +12,7 @@ namespace FemVed.Application.Payments.Events;
 /// Handles <see cref="OrderPaidEvent"/>.
 /// Post-payment responsibilities (in order):
 /// <list type="number">
-///   <item>Create a <see cref="UserProgramAccess"/> record so the user can access the program (idempotent).</item>
+///   <item>Create a <see cref="UserProgramAccess"/> record (guided) or <see cref="UserLibraryAccess"/> record (library).</item>
 ///   <item>Send <c>purchase_success</c> email to the user via SendGrid.</item>
 ///   <item>Send <c>purchase_confirmation_wa</c> WhatsApp message to the user (if opted in and globally enabled).</item>
 ///   <item>Send <c>expert_new_enrollment</c> email to the expert via SendGrid.</item>
@@ -23,10 +23,12 @@ namespace FemVed.Application.Payments.Events;
 public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
 {
     private readonly IRepository<UserProgramAccess> _access;
+    private readonly IRepository<UserLibraryAccess> _libraryAccess;
     private readonly IRepository<User> _users;
     private readonly IRepository<Expert> _experts;
     private readonly IRepository<Order> _orders;
-    private readonly IRepository<Program> _programs;
+    private readonly IRepository<Domain.Entities.Program> _programs;
+    private readonly IRepository<LibraryVideo> _videos;
     private readonly IRepository<ProgramDuration> _durations;
     private readonly IRepository<NotificationLog> _notificationLogs;
     private readonly IEmailService _emailService;
@@ -38,10 +40,12 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
     /// <summary>Initialises the handler with all required services.</summary>
     public OrderPaidEventHandler(
         IRepository<UserProgramAccess> access,
+        IRepository<UserLibraryAccess> libraryAccess,
         IRepository<User> users,
         IRepository<Expert> experts,
         IRepository<Order> orders,
-        IRepository<Program> programs,
+        IRepository<Domain.Entities.Program> programs,
+        IRepository<LibraryVideo> videos,
         IRepository<ProgramDuration> durations,
         IRepository<NotificationLog> notificationLogs,
         IEmailService emailService,
@@ -51,10 +55,12 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         ILogger<OrderPaidEventHandler> logger)
     {
         _access           = access;
+        _libraryAccess    = libraryAccess;
         _users            = users;
         _experts          = experts;
         _orders           = orders;
         _programs         = programs;
+        _videos           = videos;
         _durations        = durations;
         _notificationLogs = notificationLogs;
         _emailService     = emailService;
@@ -64,24 +70,39 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
         _logger           = logger;
     }
 
-    /// <summary>Creates program access and triggers post-purchase notifications.</summary>
+    /// <summary>Creates access records and triggers post-purchase notifications.</summary>
     /// <param name="notification">The domain event payload.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task Handle(OrderPaidEvent notification, CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "OrderPaidEvent received: Order={OrderId}, User={UserId}, Program={ProgramId}, Expert={ExpertId}",
-            notification.OrderId, notification.UserId, notification.ProgramId, notification.ExpertId);
+            "OrderPaidEvent received: Order={OrderId}, User={UserId}, Source={Source}, Program={ProgramId}, Video={VideoId}, Expert={ExpertId}",
+            notification.OrderId, notification.UserId, notification.OrderSource,
+            notification.ProgramId, notification.VideoId, notification.ExpertId);
 
-        // ── 1. Create UserProgramAccess (idempotent) ─────────────────────────
-        await EnsureUserProgramAccessAsync(notification, cancellationToken);
+        // ── 1. Create access record (idempotent) ────────────────────────────
+        string contentName;
+        if (notification.OrderSource == OrderSource.Library && notification.VideoId.HasValue)
+        {
+            await EnsureUserLibraryAccessAsync(notification, cancellationToken);
+            var video = await _videos.FirstOrDefaultAsync(v => v.Id == notification.VideoId.Value, cancellationToken);
+            contentName = video?.Title ?? "Your Video";
+        }
+        else
+        {
+            await EnsureUserProgramAccessAsync(notification, cancellationToken);
+            var program = await _programs.FirstOrDefaultAsync(p => p.Id == notification.ProgramId, cancellationToken);
+            contentName = program?.Name ?? "Your Program";
+        }
 
-        // ── Load all related data ────────────────────────────────────────────
+        // ── Load related data ────────────────────────────────────────────────
         var user     = await _users.FirstOrDefaultAsync(u => u.Id == notification.UserId, cancellationToken);
         var expert   = await _experts.FirstOrDefaultAsync(e => e.Id == notification.ExpertId, cancellationToken);
         var order    = await _orders.FirstOrDefaultAsync(o => o.Id == notification.OrderId, cancellationToken);
-        var program  = await _programs.FirstOrDefaultAsync(p => p.Id == notification.ProgramId, cancellationToken);
-        var duration = await _durations.FirstOrDefaultAsync(d => d.Id == notification.DurationId, cancellationToken);
+
+        ProgramDuration? duration = null;
+        if (notification.DurationId.HasValue)
+            duration = await _durations.FirstOrDefaultAsync(d => d.Id == notification.DurationId.Value, cancellationToken);
 
         User? expertUser = null;
         if (expert is not null)
@@ -89,7 +110,6 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
 
         var appBaseUrl    = _configuration["APP_BASE_URL"] ?? "https://femved.com";
         var dashboardUrl  = $"{appBaseUrl}/dashboard";
-        var programName   = program?.Name ?? "Your Program";
         var durationLabel = duration?.Label ?? string.Empty;
         var expertName    = expertUser is not null
             ? $"{expertUser.FirstName} {expertUser.LastName}"
@@ -111,7 +131,7 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             {
                 ["firstName"]       = user.FirstName,
                 ["orderId"]         = notification.OrderId.ToString(),
-                ["programName"]     = programName,
+                ["programName"]     = contentName,
                 ["expertName"]      = expertName,
                 ["durationLabel"]   = durationLabel,
                 ["amountPaid"]      = amountFormatted,
@@ -121,7 +141,8 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
                 ["paymentGateway"]  = order?.PaymentGateway.ToString().ToUpperInvariant() ?? string.Empty,
                 ["purchaseDate"]    = purchaseDate,
                 ["dashboardUrl"]    = dashboardUrl,
-                ["year"]            = year
+                ["year"]            = year,
+                ["orderSource"]     = notification.OrderSource.ToString().ToUpperInvariant()
             };
 
             await SendEmailWithLogAsync(
@@ -143,7 +164,7 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             await SendWhatsAppWithLogAsync(
                 toNumber:       user.FullMobile,
                 templateName:   "purchase_confirmation_wa",
-                templateParams: new[] { user.FirstName, programName, amountFormatted },
+                templateParams: new[] { user.FirstName, contentName, amountFormatted },
                 userId:         user.Id,
                 cancellationToken: cancellationToken);
         }
@@ -155,13 +176,14 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             {
                 ["expertFirstName"] = expertUser.FirstName,
                 ["orderId"]         = notification.OrderId.ToString(),
-                ["programName"]     = programName,
+                ["programName"]     = contentName,
                 ["durationLabel"]   = durationLabel,
                 ["userName"]        = user is not null ? $"{user.FirstName} {user.LastName}" : "a new user",
                 ["userEmail"]       = user?.Email ?? string.Empty,
                 ["purchaseDate"]    = purchaseDate,
                 ["dashboardUrl"]    = $"{appBaseUrl}/expert/dashboard",
-                ["year"]            = year
+                ["year"]            = year,
+                ["orderSource"]     = notification.OrderSource.ToString().ToUpperInvariant()
             };
 
             await SendEmailWithLogAsync(
@@ -183,12 +205,13 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             ["userName"]      = user is not null ? $"{user.FirstName} {user.LastName}" : "Unknown user",
             ["userEmail"]     = user?.Email ?? string.Empty,
             ["expertName"]    = expertName,
-            ["programName"]   = programName,
+            ["programName"]   = contentName,
             ["durationLabel"] = durationLabel,
             ["amountPaid"]    = amountFormatted,
             ["orderId"]       = notification.OrderId.ToString(),
             ["purchaseDate"]  = purchaseDate,
-            ["year"]          = year
+            ["year"]          = year,
+            ["orderSource"]   = notification.OrderSource.ToString().ToUpperInvariant()
         };
 
         foreach (var adminEmail in new[] { "aditi@femved.com", "femvedwellness@gmail.com" })
@@ -222,10 +245,10 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             Id        = Guid.NewGuid(),
             UserId    = notification.UserId,
             OrderId   = notification.OrderId,
-            ProgramId = notification.ProgramId,
-            DurationId = notification.DurationId,
+            ProgramId = notification.ProgramId!.Value,
+            DurationId = notification.DurationId!.Value,
             ExpertId  = notification.ExpertId,
-            Status    = UserProgramAccessStatus.NotStarted,   // Expert must explicitly start the program
+            Status    = UserProgramAccessStatus.NotStarted,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
@@ -235,6 +258,36 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
 
         _logger.LogInformation("UserProgramAccess created for user {UserId}, program {ProgramId}",
             notification.UserId, notification.ProgramId);
+    }
+
+    /// <summary>Creates a <see cref="UserLibraryAccess"/> record if one does not already exist for the order.</summary>
+    private async Task EnsureUserLibraryAccessAsync(OrderPaidEvent notification, CancellationToken cancellationToken)
+    {
+        var existing = await _libraryAccess.FirstOrDefaultAsync(
+            a => a.OrderId == notification.OrderId, cancellationToken);
+
+        if (existing is not null)
+        {
+            _logger.LogInformation("UserLibraryAccess already exists for order {OrderId} — skipping", notification.OrderId);
+            return;
+        }
+
+        var record = new UserLibraryAccess
+        {
+            Id          = Guid.NewGuid(),
+            UserId      = notification.UserId,
+            VideoId     = notification.VideoId!.Value,
+            OrderId     = notification.OrderId,
+            PurchasedAt = DateTimeOffset.UtcNow,
+            ExpiresAt   = null,  // Lifetime access
+            IsActive    = true
+        };
+
+        await _libraryAccess.AddAsync(record);
+        await _uow.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("UserLibraryAccess created for user {UserId}, video {VideoId}",
+            notification.UserId, notification.VideoId);
     }
 
     /// <summary>
@@ -309,7 +362,7 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             recipient:   toNumber,
             status:      status,
             errorMsg:    errorMsg,
-            payload:     null,            // no PII in WhatsApp payload log
+            payload:     null,
             cancellationToken: cancellationToken);
     }
 

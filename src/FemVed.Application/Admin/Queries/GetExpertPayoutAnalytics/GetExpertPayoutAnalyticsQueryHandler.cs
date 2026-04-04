@@ -64,9 +64,9 @@ public sealed class GetExpertPayoutAnalyticsQueryHandler
 
         // expertId → list of paid orders (via duration → program → expert)
         var ordersByExpert = paidOrders
-            .Where(o => programByDuration.ContainsKey(o.DurationId)
-                     && expertByProgram.ContainsKey(programByDuration[o.DurationId]))
-            .GroupBy(o => expertByProgram[programByDuration[o.DurationId]])
+            .Where(o => programByDuration.ContainsKey(o.DurationId.GetValueOrDefault())
+                     && expertByProgram.ContainsKey(programByDuration[o.DurationId.GetValueOrDefault()]))
+            .GroupBy(o => expertByProgram[programByDuration[o.DurationId.GetValueOrDefault()]])
             .ToDictionary(g => g.Key, g => g.ToList());
 
         // expertId → list of payout records

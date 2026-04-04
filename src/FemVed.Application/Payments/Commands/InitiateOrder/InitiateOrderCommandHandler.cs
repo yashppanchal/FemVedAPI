@@ -11,8 +11,12 @@ namespace FemVed.Application.Payments.Commands.InitiateOrder;
 
 /// <summary>
 /// Handles <see cref="InitiateOrderCommand"/>.
-/// Validates the duration, applies any coupon, selects the gateway, creates an internal
-/// <see cref="Order"/> record, and calls the gateway to create the external session/approval URL.
+/// Supports two purchase flows:
+/// <list type="bullet">
+///   <item><b>Guided</b> — when <c>DurationId</c> is provided: validates the duration, loads the program, resolves price from <c>duration_prices</c>.</item>
+///   <item><b>Library</b> — when <c>VideoId</c> is provided: validates the video, checks it's PUBLISHED, resolves price from per-video override or tier default.</item>
+/// </list>
+/// Both paths share: idempotency check, coupon validation, gateway creation, and order persistence.
 /// </summary>
 public sealed class InitiateOrderCommandHandler
     : IRequestHandler<InitiateOrderCommand, InitiateOrderResponse>
@@ -21,9 +25,13 @@ public sealed class InitiateOrderCommandHandler
     private readonly IRepository<Program> _programs;
     private readonly IRepository<ProgramDuration> _durations;
     private readonly IRepository<DurationPrice> _prices;
+    private readonly IRepository<LibraryVideo> _videos;
+    private readonly IRepository<LibraryVideoPrice> _videoPrices;
+    private readonly IRepository<LibraryTierPrice> _tierPrices;
     private readonly IRepository<Coupon> _coupons;
     private readonly IRepository<Order> _orders;
     private readonly IRepository<UserProgramAccess> _access;
+    private readonly IRepository<UserLibraryAccess> _libraryAccess;
     private readonly IPaymentGatewayFactory _gatewayFactory;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<InitiateOrderCommandHandler> _logger;
@@ -34,9 +42,13 @@ public sealed class InitiateOrderCommandHandler
         IRepository<Program> programs,
         IRepository<ProgramDuration> durations,
         IRepository<DurationPrice> prices,
+        IRepository<LibraryVideo> videos,
+        IRepository<LibraryVideoPrice> videoPrices,
+        IRepository<LibraryTierPrice> tierPrices,
         IRepository<Coupon> coupons,
         IRepository<Order> orders,
         IRepository<UserProgramAccess> access,
+        IRepository<UserLibraryAccess> libraryAccess,
         IPaymentGatewayFactory gatewayFactory,
         IUnitOfWork uow,
         ILogger<InitiateOrderCommandHandler> logger)
@@ -45,9 +57,13 @@ public sealed class InitiateOrderCommandHandler
         _programs = programs;
         _durations = durations;
         _prices = prices;
+        _videos = videos;
+        _videoPrices = videoPrices;
+        _tierPrices = tierPrices;
         _coupons = coupons;
         _orders = orders;
         _access = access;
+        _libraryAccess = libraryAccess;
         _gatewayFactory = gatewayFactory;
         _uow = uow;
         _logger = logger;
@@ -57,17 +73,18 @@ public sealed class InitiateOrderCommandHandler
     /// <param name="request">The command.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Gateway-specific order tokens and metadata.</returns>
-    /// <exception cref="NotFoundException">Thrown if user, duration, or price record is not found.</exception>
+    /// <exception cref="NotFoundException">Thrown if user, duration/video, or price record is not found.</exception>
     /// <exception cref="DomainException">
-    /// Thrown when the program is not published, the user already has an active enrollment,
+    /// Thrown when the program/video is not published, the user already has access,
     /// the coupon is invalid/expired/exhausted, or no price exists for the user's location.
     /// </exception>
     public async Task<InitiateOrderResponse> Handle(
         InitiateOrderCommand request,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Initiating order for user {UserId}, duration {DurationId}",
-            request.UserId, request.DurationId);
+        _logger.LogInformation(
+            "Initiating order for user {UserId}, DurationId={DurationId}, VideoId={VideoId}",
+            request.UserId, request.DurationId, request.VideoId);
 
         // ── 1. Idempotency check ─────────────────────────────────────────────
         var existing = await _orders.FirstOrDefaultAsync(
@@ -87,49 +104,126 @@ public sealed class InitiateOrderCommandHandler
             cancellationToken)
             ?? throw new NotFoundException("User", request.UserId);
 
-        // Priority: (1) explicit request body value, (2) default GB
         var locationCode = request.CountryCode?.ToString() ?? "GB";
 
-        // ── 3. Load duration, verify program is PUBLISHED, guard duplicate purchase ──
-        var duration = await _durations.FirstOrDefaultAsync(
-            d => d.Id == request.DurationId && d.IsActive,
-            cancellationToken)
-            ?? throw new NotFoundException("ProgramDuration", request.DurationId);
+        // ── 3. Branch: Guided vs Library ─────────────────────────────────────
+        OrderSource orderSource;
+        Guid? durationId = null;
+        Guid? durationPriceId = null;
+        Guid? libraryVideoId = null;
+        decimal baseAmount;
+        string currencyCode;
+        string currencySymbol;
+        string couponScope;
 
-        // Fix 1: only PUBLISHED programs can be purchased
-        var program = await _programs.FirstOrDefaultAsync(
-            p => p.Id == duration.ProgramId && !p.IsDeleted,
-            cancellationToken)
-            ?? throw new NotFoundException("Program", duration.ProgramId);
+        if (request.DurationId.HasValue)
+        {
+            // ── GUIDED FLOW ──────────────────────────────────────────────────
+            orderSource = OrderSource.Guided;
+            durationId = request.DurationId.Value;
 
-        if (program.Status != ProgramStatus.Published)
-            throw new DomainException("This program is not currently available for purchase.");
+            var duration = await _durations.FirstOrDefaultAsync(
+                d => d.Id == request.DurationId.Value && d.IsActive,
+                cancellationToken)
+                ?? throw new NotFoundException("ProgramDuration", request.DurationId.Value);
 
-        // Fix 5: prevent duplicate active enrollment in the same program
-        var alreadyHasAccess = await _access.AnyAsync(
-            a => a.UserId == request.UserId
-              && a.ProgramId == duration.ProgramId
-              && a.Status != UserProgramAccessStatus.Completed
-              && a.Status != UserProgramAccessStatus.Cancelled,
-            cancellationToken);
+            var program = await _programs.FirstOrDefaultAsync(
+                p => p.Id == duration.ProgramId && !p.IsDeleted,
+                cancellationToken)
+                ?? throw new NotFoundException("Program", duration.ProgramId);
 
-        if (alreadyHasAccess)
-            throw new DomainException(
-                "You already have an active enrollment in this program. " +
-                "Complete or cancel your current enrollment before purchasing again.");
+            if (program.Status != ProgramStatus.Published)
+                throw new DomainException("This program is not currently available for purchase.");
 
-        var price = await _prices.FirstOrDefaultAsync(
-            dp => dp.DurationId == request.DurationId
-               && dp.LocationCode == locationCode
-               && dp.IsActive,
-            cancellationToken)
-            ?? await _prices.FirstOrDefaultAsync(
-                dp => dp.DurationId == request.DurationId
-                   && dp.LocationCode == "GB"
+            // Prevent duplicate active enrollment
+            var alreadyHasAccess = await _access.AnyAsync(
+                a => a.UserId == request.UserId
+                  && a.ProgramId == duration.ProgramId
+                  && a.Status != UserProgramAccessStatus.Completed
+                  && a.Status != UserProgramAccessStatus.Cancelled,
+                cancellationToken);
+
+            if (alreadyHasAccess)
+                throw new DomainException(
+                    "You already have an active enrollment in this program. " +
+                    "Complete or cancel your current enrollment before purchasing again.");
+
+            var price = await _prices.FirstOrDefaultAsync(
+                dp => dp.DurationId == request.DurationId.Value
+                   && dp.LocationCode == locationCode
                    && dp.IsActive,
                 cancellationToken)
-            ?? throw new DomainException(
-                $"No price is available for duration {request.DurationId} in location '{locationCode}'.");
+                ?? await _prices.FirstOrDefaultAsync(
+                    dp => dp.DurationId == request.DurationId.Value
+                       && dp.LocationCode == "GB"
+                       && dp.IsActive,
+                    cancellationToken)
+                ?? throw new DomainException(
+                    $"No price is available for duration {request.DurationId.Value} in location '{locationCode}'.");
+
+            durationPriceId = price.Id;
+            baseAmount = price.Amount;
+            currencyCode = price.CurrencyCode;
+            currencySymbol = price.CurrencySymbol;
+            couponScope = "GUIDED";
+        }
+        else
+        {
+            // ── LIBRARY FLOW ─────────────────────────────────────────────────
+            orderSource = OrderSource.Library;
+            libraryVideoId = request.VideoId!.Value;
+
+            var video = await _videos.FirstOrDefaultAsync(
+                v => v.Id == request.VideoId.Value && !v.IsDeleted,
+                cancellationToken)
+                ?? throw new NotFoundException("LibraryVideo", request.VideoId.Value);
+
+            if (video.Status != VideoStatus.Published)
+                throw new DomainException("This video is not currently available for purchase.");
+
+            // Prevent duplicate purchase
+            var alreadyOwns = await _libraryAccess.AnyAsync(
+                a => a.UserId == request.UserId
+                  && a.VideoId == request.VideoId.Value
+                  && a.IsActive,
+                cancellationToken);
+
+            if (alreadyOwns)
+                throw new DomainException("You already own this video.");
+
+            // Price resolution: per-video override → tier default
+            var videoPrice = await _videoPrices.FirstOrDefaultAsync(
+                p => p.VideoId == video.Id && p.LocationCode == locationCode,
+                cancellationToken)
+                ?? await _videoPrices.FirstOrDefaultAsync(
+                    p => p.VideoId == video.Id && p.LocationCode == "GB",
+                    cancellationToken);
+
+            if (videoPrice is not null)
+            {
+                baseAmount = videoPrice.Amount;
+                currencyCode = videoPrice.CurrencyCode;
+                currencySymbol = videoPrice.CurrencySymbol;
+            }
+            else
+            {
+                // Fall back to tier price
+                var tierPrice = await _tierPrices.FirstOrDefaultAsync(
+                    tp => tp.TierId == video.PriceTierId && tp.LocationCode == locationCode,
+                    cancellationToken)
+                    ?? await _tierPrices.FirstOrDefaultAsync(
+                        tp => tp.TierId == video.PriceTierId && tp.LocationCode == "GB",
+                        cancellationToken)
+                    ?? throw new DomainException(
+                        $"No price is available for video '{video.Title}' in location '{locationCode}'.");
+
+                baseAmount = tierPrice.Amount;
+                currencyCode = tierPrice.CurrencyCode;
+                currencySymbol = tierPrice.CurrencySymbol;
+            }
+
+            couponScope = "LIBRARY";
+        }
 
         // ── 4. Apply coupon ──────────────────────────────────────────────────
         decimal discountAmount = 0;
@@ -142,6 +236,11 @@ public sealed class InitiateOrderCommandHandler
                 cancellationToken)
                 ?? throw new DomainException($"Coupon '{request.CouponCode}' is invalid or does not exist.");
 
+            // Validate coupon scope
+            if (coupon.Scope != "ALL" && !string.Equals(coupon.Scope, couponScope, StringComparison.OrdinalIgnoreCase))
+                throw new DomainException(
+                    $"Coupon '{request.CouponCode}' is not valid for {couponScope.ToLowerInvariant()} purchases.");
+
             var now = DateTimeOffset.UtcNow;
             if (coupon.ValidFrom.HasValue && now < coupon.ValidFrom)
                 throw new DomainException($"Coupon '{request.CouponCode}' is not yet valid.");
@@ -149,21 +248,21 @@ public sealed class InitiateOrderCommandHandler
                 throw new DomainException($"Coupon '{request.CouponCode}' has expired.");
             if (coupon.MaxUses.HasValue && coupon.UsedCount >= coupon.MaxUses)
                 throw new DomainException($"Coupon '{request.CouponCode}' has reached its maximum use limit.");
-            if (coupon.MinOrderAmount.HasValue && price.Amount < coupon.MinOrderAmount.Value)
+            if (coupon.MinOrderAmount.HasValue && baseAmount < coupon.MinOrderAmount.Value)
                 throw new DomainException(
-                    $"Coupon '{request.CouponCode}' requires a minimum order amount of {coupon.MinOrderAmount.Value:0.00} {price.CurrencyCode}.");
+                    $"Coupon '{request.CouponCode}' requires a minimum order amount of {coupon.MinOrderAmount.Value:0.00} {currencyCode}.");
 
             discountAmount = coupon.DiscountType == DiscountType.Percentage
-                ? Math.Round(price.Amount * coupon.DiscountValue / 100, 2)
+                ? Math.Round(baseAmount * coupon.DiscountValue / 100, 2)
                 : coupon.DiscountValue;
 
             // Cap: final price must be at least 1 unit of currency
-            var projected = price.Amount - discountAmount;
+            var projected = baseAmount - discountAmount;
             if (projected < 1)
-                discountAmount = price.Amount - 1;
+                discountAmount = baseAmount - 1;
         }
 
-        var amountPaid = price.Amount - discountAmount;
+        var amountPaid = baseAmount - discountAmount;
 
         // Priority: (1) explicit request body gateway, (2) default PayPal
         var gatewayEnum = request.Gateway ?? PaymentGateway.PayPal;
@@ -179,10 +278,12 @@ public sealed class InitiateOrderCommandHandler
         {
             Id = Guid.NewGuid(),
             UserId = request.UserId,
-            DurationId = request.DurationId,
-            DurationPriceId = price.Id,
+            DurationId = durationId,
+            DurationPriceId = durationPriceId,
+            LibraryVideoId = libraryVideoId,
+            OrderSource = orderSource,
             AmountPaid = amountPaid,
-            CurrencyCode = price.CurrencyCode,
+            CurrencyCode = currencyCode,
             LocationCode = locationCode,
             CouponId = coupon?.Id,
             DiscountAmount = discountAmount,
@@ -207,7 +308,7 @@ public sealed class InitiateOrderCommandHandler
         var gatewayRequest = new CreateGatewayOrderRequest(
             InternalOrderId: order.Id.ToString(),
             Amount: amountPaid,
-            CurrencyCode: price.CurrencyCode,
+            CurrencyCode: currencyCode,
             CustomerEmail: user.Email,
             CustomerName: $"{user.FirstName} {user.LastName}",
             CustomerPhone: user.FullMobile);
@@ -234,14 +335,15 @@ public sealed class InitiateOrderCommandHandler
         _orders.Update(order);
         await _uow.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Order {OrderId} created via {Gateway}", order.Id, gatewayEnum);
+        _logger.LogInformation("Order {OrderId} created via {Gateway} (source={Source})",
+            order.Id, gatewayEnum, orderSource);
 
         return new InitiateOrderResponse(
             OrderId: order.Id,
             Gateway: gatewayEnum.ToString().ToUpperInvariant(),
             Amount: amountPaid,
-            Currency: price.CurrencyCode,
-            Symbol: price.CurrencySymbol,
+            Currency: currencyCode,
+            Symbol: currencySymbol,
             GatewayOrderId: gatewayResult.GatewayOrderId,
             PaymentSessionId: gatewayResult.PaymentSessionId,
             ApprovalUrl: gatewayResult.ApprovalUrl);

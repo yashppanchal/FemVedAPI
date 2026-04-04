@@ -292,6 +292,14 @@ namespace FemVed.Infrastructure.Migrations
                         .HasColumnType("decimal(12,2)")
                         .HasColumnName("min_order_amount");
 
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("ALL")
+                        .HasColumnName("scope");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -1112,6 +1120,945 @@ namespace FemVed.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("CardImage")
+                        .HasColumnType("text")
+                        .HasColumnName("card_image");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("DomainId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("domain_id");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("slug");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DomainId")
+                        .HasDatabaseName("idx_library_categories_domain_id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("uq_library_categories_slug");
+
+                    b.ToTable("library_categories", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryDomain", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("HeroImageDesktop")
+                        .HasColumnType("text")
+                        .HasColumnName("hero_image_desktop");
+
+                    b.Property<string>("HeroImageMobile")
+                        .HasColumnType("text")
+                        .HasColumnName("hero_image_mobile");
+
+                    b.Property<string>("HeroImagePortrait")
+                        .HasColumnType("text")
+                        .HasColumnName("hero_image_portrait");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("slug");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("uq_library_domain_slug");
+
+                    b.ToTable("library_domain", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("22222222-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Recorded wellness video content — masterclasses and series for self-paced learning.",
+                            IsActive = true,
+                            Name = "Wellness Library",
+                            Slug = "wellness-library",
+                            SortOrder = 1,
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        });
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryFilterType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("DomainId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("domain_id");
+
+                    b.Property<string>("FilterKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("filter_key");
+
+                    b.Property<string>("FilterTarget")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("filter_target");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DomainId")
+                        .HasDatabaseName("idx_library_filter_types_domain_id");
+
+                    b.ToTable("library_filter_types", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DomainId = new Guid("22222222-0000-0000-0000-000000000001"),
+                            FilterKey = "masterclass",
+                            FilterTarget = "VIDEOTYPE",
+                            IsActive = true,
+                            Name = "Masterclasses",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DomainId = new Guid("22222222-0000-0000-0000-000000000001"),
+                            FilterKey = "series",
+                            FilterTarget = "VIDEOTYPE",
+                            IsActive = true,
+                            Name = "Series",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DomainId = new Guid("22222222-0000-0000-0000-000000000001"),
+                            FilterKey = "mindfulness",
+                            FilterTarget = "CATEGORY",
+                            IsActive = true,
+                            Name = "Mindfulness",
+                            SortOrder = 3
+                        });
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryPriceTier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("display_name");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("TierKey")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("tier_key");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TierKey")
+                        .IsUnique()
+                        .HasDatabaseName("uq_library_price_tiers_tier_key");
+
+                    b.ToTable("library_price_tiers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayName = "Movie",
+                            IsActive = true,
+                            SortOrder = 1,
+                            TierKey = "MOVIE"
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayName = "Standard",
+                            IsActive = true,
+                            SortOrder = 2,
+                            TierKey = "STANDARD"
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayName = "Medium",
+                            IsActive = true,
+                            SortOrder = 3,
+                            TierKey = "MEDIUM"
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayName = "Large",
+                            IsActive = true,
+                            SortOrder = 4,
+                            TierKey = "LARGE"
+                        });
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryTierPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<string>("CurrencySymbol")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("currency_symbol");
+
+                    b.Property<string>("LocationCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("location_code");
+
+                    b.Property<Guid>("TierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tier_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TierId", "LocationCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_library_tier_prices_tier_location");
+
+                    b.ToTable("library_tier_prices", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0001-000000000001"),
+                            Amount = 499m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "INR",
+                            CurrencySymbol = "₹",
+                            LocationCode = "IN",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000001"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0001-000000000002"),
+                            Amount = 9m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "GBP",
+                            CurrencySymbol = "£",
+                            LocationCode = "GB",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000001"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0001-000000000003"),
+                            Amount = 12m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "USD",
+                            CurrencySymbol = "$",
+                            LocationCode = "US",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000001"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0002-000000000001"),
+                            Amount = 999m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "INR",
+                            CurrencySymbol = "₹",
+                            LocationCode = "IN",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000002"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0002-000000000002"),
+                            Amount = 19m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "GBP",
+                            CurrencySymbol = "£",
+                            LocationCode = "GB",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000002"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0002-000000000003"),
+                            Amount = 24m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "USD",
+                            CurrencySymbol = "$",
+                            LocationCode = "US",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000002"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0003-000000000001"),
+                            Amount = 1499m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "INR",
+                            CurrencySymbol = "₹",
+                            LocationCode = "IN",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000003"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0003-000000000002"),
+                            Amount = 29m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "GBP",
+                            CurrencySymbol = "£",
+                            LocationCode = "GB",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000003"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0003-000000000003"),
+                            Amount = 35m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "USD",
+                            CurrencySymbol = "$",
+                            LocationCode = "US",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000003"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0004-000000000001"),
+                            Amount = 2199m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "INR",
+                            CurrencySymbol = "₹",
+                            LocationCode = "IN",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000004"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0004-000000000002"),
+                            Amount = 39m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "GBP",
+                            CurrencySymbol = "£",
+                            LocationCode = "GB",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000004"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-0000-0000-0004-000000000003"),
+                            Amount = 49m,
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            CurrencyCode = "USD",
+                            CurrencySymbol = "$",
+                            LocationCode = "US",
+                            TierId = new Guid("44444444-0000-0000-0000-000000000004"),
+                            UpdatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        });
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("CardImage")
+                        .HasColumnType("text")
+                        .HasColumnName("card_image");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("ExpertId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("expert_id");
+
+                    b.Property<string>("FeaturedLabel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("featured_label");
+
+                    b.Property<int?>("FeaturedPosition")
+                        .HasColumnType("integer")
+                        .HasColumnName("featured_position");
+
+                    b.Property<string>("GradientClass")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("gradient_class");
+
+                    b.Property<string>("HeroImage")
+                        .HasColumnType("text")
+                        .HasColumnName("hero_image");
+
+                    b.Property<string>("IconEmoji")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("icon_emoji");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("IsFeatured")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_featured");
+
+                    b.Property<Guid>("PriceTierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("price_tier_id");
+
+                    b.Property<string>("ReleaseYear")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)")
+                        .HasColumnName("release_year");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("slug");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StreamUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("stream_url");
+
+                    b.Property<string>("Synopsis")
+                        .HasColumnType("text")
+                        .HasColumnName("synopsis");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("TotalDuration")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("total_duration");
+
+                    b.Property<int?>("TotalDurationSeconds")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_duration_seconds");
+
+                    b.Property<string>("TrailerUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("trailer_url");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("VideoType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("video_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("idx_library_videos_category_id");
+
+                    b.HasIndex("ExpertId")
+                        .HasDatabaseName("idx_library_videos_expert_id");
+
+                    b.HasIndex("IsFeatured")
+                        .HasDatabaseName("idx_library_videos_is_featured");
+
+                    b.HasIndex("PriceTierId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("uq_library_videos_slug");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("idx_library_videos_status");
+
+                    b.ToTable("library_videos", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoEpisode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Duration")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("duration");
+
+                    b.Property<int?>("DurationSeconds")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_seconds");
+
+                    b.Property<int>("EpisodeNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("episode_number");
+
+                    b.Property<bool>("IsFreePreview")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_free_preview");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("StreamUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("stream_url");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("thumbnail_url");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("video_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VideoId")
+                        .HasDatabaseName("idx_library_video_episodes_video_id");
+
+                    b.HasIndex("VideoId", "EpisodeNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_library_video_episodes_video_number");
+
+                    b.ToTable("library_video_episodes", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoFeature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("icon");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("video_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VideoId")
+                        .HasDatabaseName("idx_library_video_features_video_id");
+
+                    b.ToTable("library_video_features", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<string>("CurrencySymbol")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("currency_symbol");
+
+                    b.Property<string>("LocationCode")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("character varying(5)")
+                        .HasColumnName("location_code");
+
+                    b.Property<decimal?>("OriginalAmount")
+                        .HasColumnType("decimal(12,2)")
+                        .HasColumnName("original_amount");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("video_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VideoId", "LocationCode")
+                        .IsUnique()
+                        .HasDatabaseName("uq_library_video_prices_video_location");
+
+                    b.ToTable("library_video_prices", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Tag")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("tag");
+
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("video_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VideoId")
+                        .HasDatabaseName("idx_library_video_tags_video_id");
+
+                    b.ToTable("library_video_tags", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoTestimonial", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<string>("ReviewText")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("review_text");
+
+                    b.Property<string>("ReviewerName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reviewer_name");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("sort_order");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("video_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VideoId")
+                        .HasDatabaseName("idx_library_video_testimonials_video_id");
+
+                    b.ToTable("library_video_testimonials", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_library_video_testimonials_rating", "rating >= 1 AND rating <= 5");
+                        });
+                });
+
             modelBuilder.Entity("FemVed.Domain.Entities.NotificationLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1239,11 +2186,21 @@ namespace FemVed.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("idempotency_key");
 
+                    b.Property<Guid?>("LibraryVideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("library_video_id");
+
                     b.Property<string>("LocationCode")
                         .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)")
                         .HasColumnName("location_code");
+
+                    b.Property<string>("OrderSource")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("order_source");
 
                     b.Property<string>("PaymentGateway")
                         .IsRequired()
@@ -1282,13 +2239,18 @@ namespace FemVed.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("uq_orders_idempotency_key");
 
+                    b.HasIndex("LibraryVideoId");
+
                     b.HasIndex("Status")
                         .HasDatabaseName("idx_orders_status");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("idx_orders_user_id");
 
-                    b.ToTable("orders", (string)null);
+                    b.ToTable("orders", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_order_source", "(order_source = 'GUIDED' AND duration_price_id IS NOT NULL AND library_video_id IS NULL) OR (order_source = 'LIBRARY' AND library_video_id IS NOT NULL AND duration_price_id IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("FemVed.Domain.Entities.PasswordResetToken", b =>
@@ -1706,7 +2668,10 @@ namespace FemVed.Infrastructure.Migrations
                     b.HasIndex("AccessId")
                         .HasDatabaseName("idx_psl_access_id");
 
-                    b.ToTable("program_session_log", (string)null);
+                    b.ToTable("program_session_log", null, t =>
+                        {
+                            t.HasCheckConstraint("chk_psl_action", "action IN ('STARTED', 'PAUSED', 'RESUMED', 'ENDED', 'SCHEDULED')");
+                        });
                 });
 
             modelBuilder.Entity("FemVed.Domain.Entities.ProgramTag", b =>
@@ -2433,6 +3398,121 @@ namespace FemVed.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("FemVed.Domain.Entities.UserEpisodeProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("EpisodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("episode_id");
+
+                    b.Property<bool>("IsCompleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_completed");
+
+                    b.Property<DateTimeOffset?>("LastWatchedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_watched_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("WatchProgressSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("watch_progress_seconds");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EpisodeId");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_user_episode_progress_user_id");
+
+                    b.HasIndex("UserId", "EpisodeId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_user_episode_progress_user_episode");
+
+                    b.ToTable("user_episode_progress", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.UserLibraryAccess", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTimeOffset?>("LastWatchedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_watched_at");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<DateTimeOffset>("PurchasedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("purchased_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("video_id");
+
+                    b.Property<int>("WatchProgressSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("watch_progress_seconds");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("idx_user_library_access_user_id");
+
+                    b.HasIndex("VideoId")
+                        .HasDatabaseName("idx_user_library_access_video_id");
+
+                    b.HasIndex("UserId", "VideoId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_user_library_access_user_video");
+
+                    b.ToTable("user_library_access", (string)null);
+                });
+
             modelBuilder.Entity("FemVed.Domain.Entities.UserProgramAccess", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2454,6 +3534,10 @@ namespace FemVed.Infrastructure.Migrations
                     b.Property<Guid>("DurationId")
                         .HasColumnType("uuid")
                         .HasColumnName("duration_id");
+
+                    b.Property<DateTimeOffset?>("EndDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_date");
 
                     b.Property<Guid?>("EndedBy")
                         .HasColumnType("uuid")
@@ -2486,6 +3570,10 @@ namespace FemVed.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("reminder_sent");
 
+                    b.Property<DateTimeOffset?>("RequestedStartDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_start_date");
+
                     b.Property<DateTimeOffset?>("ScheduledStartAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_start_at");
@@ -2494,18 +3582,10 @@ namespace FemVed.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_reminder_sent_at");
 
-                    b.Property<DateTimeOffset?>("RequestedStartDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("requested_start_date");
-
-                    b.Property<string?>("StartRequestStatus")
+                    b.Property<string>("StartRequestStatus")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("start_request_status");
-
-                    b.Property<DateTimeOffset?>("EndDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("end_date");
 
                     b.Property<DateTimeOffset?>("StartedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2546,6 +3626,63 @@ namespace FemVed.Infrastructure.Migrations
                         .HasDatabaseName("idx_upa_user_id");
 
                     b.ToTable("user_program_access", (string)null);
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.UserVideoReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("IsApproved")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_approved");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer")
+                        .HasColumnName("rating");
+
+                    b.Property<string>("ReviewText")
+                        .HasColumnType("text")
+                        .HasColumnName("review_text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("video_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VideoId")
+                        .HasDatabaseName("idx_user_video_reviews_video_id");
+
+                    b.HasIndex("UserId", "VideoId")
+                        .IsUnique()
+                        .HasDatabaseName("uq_user_video_reviews_user_video");
+
+                    b.ToTable("user_video_reviews", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_user_video_reviews_rating", "rating >= 1 AND rating <= 5");
+                        });
                 });
 
             modelBuilder.Entity("FemVed.Domain.Entities.AdminAuditLog", b =>
@@ -2688,6 +3825,132 @@ namespace FemVed.Infrastructure.Migrations
                     b.Navigation("Parent");
                 });
 
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryCategory", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryDomain", "Domain")
+                        .WithMany("Categories")
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_categories_domain");
+
+                    b.Navigation("Domain");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryFilterType", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryDomain", "Domain")
+                        .WithMany("FilterTypes")
+                        .HasForeignKey("DomainId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_filter_types_domain");
+
+                    b.Navigation("Domain");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryTierPrice", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryPriceTier", "Tier")
+                        .WithMany("Prices")
+                        .HasForeignKey("TierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_tier_prices_tier");
+
+                    b.Navigation("Tier");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideo", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryCategory", "Category")
+                        .WithMany("Videos")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_videos_category");
+
+                    b.HasOne("FemVed.Domain.Entities.Expert", "Expert")
+                        .WithMany()
+                        .HasForeignKey("ExpertId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_videos_expert");
+
+                    b.HasOne("FemVed.Domain.Entities.LibraryPriceTier", "PriceTier")
+                        .WithMany("Videos")
+                        .HasForeignKey("PriceTierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_videos_price_tier");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Expert");
+
+                    b.Navigation("PriceTier");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoEpisode", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "Video")
+                        .WithMany("Episodes")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_video_episodes_video");
+
+                    b.Navigation("Video");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoFeature", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "Video")
+                        .WithMany("Features")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_video_features_video");
+
+                    b.Navigation("Video");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoPrice", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "Video")
+                        .WithMany("PriceOverrides")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_video_prices_video");
+
+                    b.Navigation("Video");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoTag", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "Video")
+                        .WithMany("Tags")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_video_tags_video");
+
+                    b.Navigation("Video");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoTestimonial", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "Video")
+                        .WithMany("Testimonials")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_library_video_testimonials_video");
+
+                    b.Navigation("Video");
+                });
+
             modelBuilder.Entity("FemVed.Domain.Entities.NotificationLog", b =>
                 {
                     b.HasOne("FemVed.Domain.Entities.User", "User")
@@ -2719,6 +3982,11 @@ namespace FemVed.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_orders_duration_price");
 
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "LibraryVideo")
+                        .WithMany()
+                        .HasForeignKey("LibraryVideoId")
+                        .HasConstraintName("fk_orders_library_video");
+
                     b.HasOne("FemVed.Domain.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -2731,6 +3999,8 @@ namespace FemVed.Infrastructure.Migrations
                     b.Navigation("Duration");
 
                     b.Navigation("DurationPrice");
+
+                    b.Navigation("LibraryVideo");
 
                     b.Navigation("User");
                 });
@@ -2897,6 +4167,57 @@ namespace FemVed.Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("FemVed.Domain.Entities.UserEpisodeProgress", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideoEpisode", "Episode")
+                        .WithMany("UserProgress")
+                        .HasForeignKey("EpisodeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_episode_progress_episode");
+
+                    b.HasOne("FemVed.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_episode_progress_user");
+
+                    b.Navigation("Episode");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.UserLibraryAccess", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.Order", "Order")
+                        .WithMany("LibraryAccesses")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_library_access_order");
+
+                    b.HasOne("FemVed.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_library_access_user");
+
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "Video")
+                        .WithMany("UserAccesses")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_library_access_video");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("User");
+
+                    b.Navigation("Video");
+                });
+
             modelBuilder.Entity("FemVed.Domain.Entities.UserProgramAccess", b =>
                 {
                     b.HasOne("FemVed.Domain.Entities.ProgramDuration", "Duration")
@@ -2945,6 +4266,27 @@ namespace FemVed.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FemVed.Domain.Entities.UserVideoReview", b =>
+                {
+                    b.HasOne("FemVed.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_video_reviews_user");
+
+                    b.HasOne("FemVed.Domain.Entities.LibraryVideo", "Video")
+                        .WithMany()
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_video_reviews_video");
+
+                    b.Navigation("User");
+
+                    b.Navigation("Video");
+                });
+
             modelBuilder.Entity("FemVed.Domain.Entities.Expert", b =>
                 {
                     b.Navigation("Programs");
@@ -2966,8 +4308,49 @@ namespace FemVed.Infrastructure.Migrations
                     b.Navigation("Categories");
                 });
 
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryCategory", b =>
+                {
+                    b.Navigation("Videos");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryDomain", b =>
+                {
+                    b.Navigation("Categories");
+
+                    b.Navigation("FilterTypes");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryPriceTier", b =>
+                {
+                    b.Navigation("Prices");
+
+                    b.Navigation("Videos");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideo", b =>
+                {
+                    b.Navigation("Episodes");
+
+                    b.Navigation("Features");
+
+                    b.Navigation("PriceOverrides");
+
+                    b.Navigation("Tags");
+
+                    b.Navigation("Testimonials");
+
+                    b.Navigation("UserAccesses");
+                });
+
+            modelBuilder.Entity("FemVed.Domain.Entities.LibraryVideoEpisode", b =>
+                {
+                    b.Navigation("UserProgress");
+                });
+
             modelBuilder.Entity("FemVed.Domain.Entities.Order", b =>
                 {
+                    b.Navigation("LibraryAccesses");
+
                     b.Navigation("ProgramAccesses");
 
                     b.Navigation("Refunds");

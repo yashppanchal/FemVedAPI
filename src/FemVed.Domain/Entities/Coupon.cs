@@ -35,6 +35,9 @@ public class Coupon
     /// <summary>UTC end of validity window. Null = never expires.</summary>
     public DateTimeOffset? ValidUntil { get; set; }
 
+    /// <summary>Scope of this coupon: ALL (both), GUIDED, or LIBRARY.</summary>
+    public string Scope { get; set; } = "ALL";
+
     /// <summary>Whether this coupon is currently redeemable.</summary>
     public bool IsActive { get; set; } = true;
 

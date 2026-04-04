@@ -85,7 +85,7 @@ public sealed class RecordExpertPayoutCommandHandler
 
         var paidOrders = await _orders.GetAllAsync(
             o => o.Status == OrderStatus.Paid
-              && durationIds.Contains(o.DurationId)
+              && durationIds.Contains(o.DurationId.GetValueOrDefault())
               && o.CurrencyCode == request.CurrencyCode.ToUpperInvariant(),
             cancellationToken);
 

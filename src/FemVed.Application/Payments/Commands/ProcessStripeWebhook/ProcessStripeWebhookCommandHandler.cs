@@ -30,6 +30,7 @@ public sealed class ProcessStripeWebhookCommandHandler : IRequestHandler<Process
     private readonly IRepository<Refund> _refunds;
     private readonly IRepository<ProgramDuration> _durations;
     private readonly IRepository<Domain.Entities.Program> _programs;
+    private readonly IRepository<LibraryVideo> _videos;
     private readonly IPaymentGatewayFactory _gatewayFactory;
     private readonly IUnitOfWork _uow;
     private readonly IPublisher _publisher;
@@ -41,6 +42,7 @@ public sealed class ProcessStripeWebhookCommandHandler : IRequestHandler<Process
         IRepository<Refund> refunds,
         IRepository<ProgramDuration> durations,
         IRepository<Domain.Entities.Program> programs,
+        IRepository<LibraryVideo> videos,
         IPaymentGatewayFactory gatewayFactory,
         IUnitOfWork uow,
         IPublisher publisher,
@@ -50,6 +52,7 @@ public sealed class ProcessStripeWebhookCommandHandler : IRequestHandler<Process
         _refunds        = refunds;
         _durations      = durations;
         _programs       = programs;
+        _videos         = videos;
         _gatewayFactory = gatewayFactory;
         _uow            = uow;
         _publisher      = publisher;
@@ -360,6 +363,30 @@ public sealed class ProcessStripeWebhookCommandHandler : IRequestHandler<Process
 
     private async Task PublishOrderPaidEventAsync(Order order, CancellationToken ct)
     {
+        if (order.OrderSource == OrderSource.Library && order.LibraryVideoId.HasValue)
+        {
+            var video = await _videos.FirstOrDefaultAsync(
+                v => v.Id == order.LibraryVideoId.Value, ct);
+
+            if (video is null)
+            {
+                _logger.LogError("Stripe OrderPaidEvent: LibraryVideo {VideoId} not found for order {OrderId}",
+                    order.LibraryVideoId, order.Id);
+                return;
+            }
+
+            await _publisher.Publish(new OrderPaidEvent(
+                OrderId: order.Id,
+                UserId: order.UserId,
+                OrderSource: OrderSource.Library,
+                ProgramId: null,
+                DurationId: null,
+                ExpertId: video.ExpertId,
+                VideoId: video.Id), ct);
+            return;
+        }
+
+        // Guided flow
         var duration = await _durations.FirstOrDefaultAsync(d => d.Id == order.DurationId, ct);
         if (duration is null)
         {
@@ -379,6 +406,7 @@ public sealed class ProcessStripeWebhookCommandHandler : IRequestHandler<Process
         await _publisher.Publish(new OrderPaidEvent(
             OrderId:    order.Id,
             UserId:     order.UserId,
+            OrderSource: OrderSource.Guided,
             ProgramId:  program.Id,
             DurationId: order.DurationId,
             ExpertId:   program.ExpertId), ct);

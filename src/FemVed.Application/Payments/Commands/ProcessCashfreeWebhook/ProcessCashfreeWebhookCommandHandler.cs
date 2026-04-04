@@ -19,6 +19,7 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
     private readonly IRepository<Order> _orders;
     private readonly IRepository<ProgramDuration> _durations;
     private readonly IRepository<Domain.Entities.Program> _programs;
+    private readonly IRepository<LibraryVideo> _videos;
     private readonly IPaymentGatewayFactory _gatewayFactory;
     private readonly IUnitOfWork _uow;
     private readonly IPublisher _publisher;
@@ -29,6 +30,7 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
         IRepository<Order> orders,
         IRepository<ProgramDuration> durations,
         IRepository<Domain.Entities.Program> programs,
+        IRepository<LibraryVideo> videos,
         IPaymentGatewayFactory gatewayFactory,
         IUnitOfWork uow,
         IPublisher publisher,
@@ -37,6 +39,7 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
         _orders = orders;
         _durations = durations;
         _programs = programs;
+        _videos = videos;
         _gatewayFactory = gatewayFactory;
         _uow = uow;
         _publisher = publisher;
@@ -180,6 +183,30 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
 
     private async Task PublishOrderPaidEventAsync(Order order, CancellationToken cancellationToken)
     {
+        if (order.OrderSource == OrderSource.Library && order.LibraryVideoId.HasValue)
+        {
+            var video = await _videos.FirstOrDefaultAsync(
+                v => v.Id == order.LibraryVideoId.Value, cancellationToken);
+
+            if (video is null)
+            {
+                _logger.LogError("OrderPaidEvent: LibraryVideo {VideoId} not found for order {OrderId}",
+                    order.LibraryVideoId, order.Id);
+                return;
+            }
+
+            await _publisher.Publish(new OrderPaidEvent(
+                OrderId: order.Id,
+                UserId: order.UserId,
+                OrderSource: OrderSource.Library,
+                ProgramId: null,
+                DurationId: null,
+                ExpertId: video.ExpertId,
+                VideoId: video.Id), cancellationToken);
+            return;
+        }
+
+        // Guided flow
         var duration = await _durations.FirstOrDefaultAsync(
             d => d.Id == order.DurationId, cancellationToken);
 
@@ -203,6 +230,7 @@ public sealed class ProcessCashfreeWebhookCommandHandler : IRequestHandler<Proce
         await _publisher.Publish(new OrderPaidEvent(
             OrderId: order.Id,
             UserId: order.UserId,
+            OrderSource: OrderSource.Guided,
             ProgramId: program.Id,
             DurationId: order.DurationId,
             ExpertId: program.ExpertId), cancellationToken);

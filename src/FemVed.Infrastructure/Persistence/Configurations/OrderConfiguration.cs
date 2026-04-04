@@ -16,8 +16,13 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasKey(o => o.Id);
         builder.Property(o => o.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(o => o.UserId).HasColumnName("user_id").IsRequired();
-        builder.Property(o => o.DurationId).HasColumnName("duration_id").IsRequired();
-        builder.Property(o => o.DurationPriceId).HasColumnName("duration_price_id").IsRequired();
+        builder.Property(o => o.DurationId).HasColumnName("duration_id");
+        builder.Property(o => o.DurationPriceId).HasColumnName("duration_price_id");
+        builder.Property(o => o.LibraryVideoId).HasColumnName("library_video_id");
+        builder.Property(o => o.OrderSource)
+            .HasColumnName("order_source")
+            .HasMaxLength(20)
+            .HasConversion(v => v.ToString().ToUpperInvariant(), v => Enum.Parse<OrderSource>(v, true));
         builder.Property(o => o.AmountPaid).HasColumnName("amount_paid").HasColumnType("decimal(12,2)").IsRequired();
         builder.Property(o => o.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsRequired();
         builder.Property(o => o.LocationCode).HasColumnName("location_code").HasMaxLength(5).IsRequired();
@@ -48,5 +53,12 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasOne(o => o.Duration).WithMany().HasForeignKey(o => o.DurationId).HasConstraintName("fk_orders_duration");
         builder.HasOne(o => o.DurationPrice).WithMany().HasForeignKey(o => o.DurationPriceId).HasConstraintName("fk_orders_duration_price");
         builder.HasOne(o => o.Coupon).WithMany().HasForeignKey(o => o.CouponId).HasConstraintName("fk_orders_coupon");
+        builder.HasOne(o => o.LibraryVideo).WithMany().HasForeignKey(o => o.LibraryVideoId).HasConstraintName("fk_orders_library_video");
+
+        // Exactly one of (duration_price_id, library_video_id) must be set based on order_source
+        builder.ToTable(t => t.HasCheckConstraint(
+            "chk_order_source",
+            "(order_source = 'GUIDED' AND duration_price_id IS NOT NULL AND library_video_id IS NULL) " +
+            "OR (order_source = 'LIBRARY' AND library_video_id IS NOT NULL AND duration_price_id IS NULL)"));
     }
 }

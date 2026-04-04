@@ -77,8 +77,8 @@ public sealed class GetProgramAnalyticsQueryHandler : IRequestHandler<GetProgram
 
         // programId → list of paid orders
         var ordersByProgram = paidOrders
-            .Where(o => programByDuration.ContainsKey(o.DurationId))
-            .GroupBy(o => programByDuration[o.DurationId])
+            .Where(o => programByDuration.ContainsKey(o.DurationId.GetValueOrDefault()))
+            .GroupBy(o => programByDuration[o.DurationId.GetValueOrDefault()])
             .ToDictionary(g => g.Key, g => g.ToList());
 
         // programId → access records

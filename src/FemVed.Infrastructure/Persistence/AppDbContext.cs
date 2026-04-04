@@ -96,6 +96,50 @@ public class AppDbContext : DbContext
     /// <summary>Expert payout records — funds transferred from platform to experts.</summary>
     public DbSet<ExpertPayout> ExpertPayouts => Set<ExpertPayout>();
 
+    // ── Wellness Library ─────────────────────────────────────────────────────
+
+    /// <summary>Top-level library domain.</summary>
+    public DbSet<LibraryDomain> LibraryDomains => Set<LibraryDomain>();
+
+    /// <summary>Library content categories.</summary>
+    public DbSet<LibraryCategory> LibraryCategories => Set<LibraryCategory>();
+
+    /// <summary>Dynamic filter tabs for the library catalog.</summary>
+    public DbSet<LibraryFilterType> LibraryFilterTypes => Set<LibraryFilterType>();
+
+    /// <summary>Pricing tiers for library videos.</summary>
+    public DbSet<LibraryPriceTier> LibraryPriceTiers => Set<LibraryPriceTier>();
+
+    /// <summary>Region-specific prices per pricing tier.</summary>
+    public DbSet<LibraryTierPrice> LibraryTierPrices => Set<LibraryTierPrice>();
+
+    /// <summary>Library videos (purchasable content units).</summary>
+    public DbSet<LibraryVideo> LibraryVideos => Set<LibraryVideo>();
+
+    /// <summary>Per-video price overrides by location.</summary>
+    public DbSet<LibraryVideoPrice> LibraryVideoPrices => Set<LibraryVideoPrice>();
+
+    /// <summary>Episodes within Series-type library videos.</summary>
+    public DbSet<LibraryVideoEpisode> LibraryVideoEpisodes => Set<LibraryVideoEpisode>();
+
+    /// <summary>Tags on library videos.</summary>
+    public DbSet<LibraryVideoTag> LibraryVideoTags => Set<LibraryVideoTag>();
+
+    /// <summary>"What's included" features on library video purchase cards.</summary>
+    public DbSet<LibraryVideoFeature> LibraryVideoFeatures => Set<LibraryVideoFeature>();
+
+    /// <summary>Admin-curated testimonials on library videos.</summary>
+    public DbSet<LibraryVideoTestimonial> LibraryVideoTestimonials => Set<LibraryVideoTestimonial>();
+
+    /// <summary>Post-purchase access records for library videos.</summary>
+    public DbSet<UserLibraryAccess> UserLibraryAccess => Set<UserLibraryAccess>();
+
+    /// <summary>Per-episode watch progress for Series-type videos.</summary>
+    public DbSet<UserEpisodeProgress> UserEpisodeProgress => Set<UserEpisodeProgress>();
+
+    /// <summary>User-submitted reviews for library videos.</summary>
+    public DbSet<UserVideoReview> UserVideoReviews => Set<UserVideoReview>();
+
     // ── Model configuration ──────────────────────────────────────────────────
 
     /// <inheritdoc />

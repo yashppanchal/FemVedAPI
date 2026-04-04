@@ -15,11 +15,17 @@ public class Order
     /// <summary>FK to the purchasing user.</summary>
     public Guid UserId { get; set; }
 
-    /// <summary>FK to the duration being purchased.</summary>
-    public Guid DurationId { get; set; }
+    /// <summary>FK to the duration being purchased. Required when OrderSource is GUIDED; null for LIBRARY orders.</summary>
+    public Guid? DurationId { get; set; }
 
-    /// <summary>FK to the specific location-priced row used at time of purchase.</summary>
-    public Guid DurationPriceId { get; set; }
+    /// <summary>FK to the specific location-priced row used at time of purchase. Required when OrderSource is GUIDED; null for LIBRARY orders.</summary>
+    public Guid? DurationPriceId { get; set; }
+
+    /// <summary>FK to the library video being purchased. Required when OrderSource is LIBRARY.</summary>
+    public Guid? LibraryVideoId { get; set; }
+
+    /// <summary>Which domain module this order belongs to (GUIDED or LIBRARY).</summary>
+    public OrderSource OrderSource { get; set; } = OrderSource.Guided;
 
     /// <summary>Final amount charged after any coupon discount.</summary>
     public decimal AmountPaid { get; set; }
@@ -75,6 +81,12 @@ public class Order
 
     /// <summary>The coupon applied (null if none).</summary>
     public Coupon? Coupon { get; set; }
+
+    /// <summary>The library video purchased (null if this is a guided order).</summary>
+    public LibraryVideo? LibraryVideo { get; set; }
+
+    /// <summary>Library access records created when this order is paid.</summary>
+    public ICollection<UserLibraryAccess> LibraryAccesses { get; set; } = new List<UserLibraryAccess>();
 
     /// <summary>Refunds issued against this order.</summary>
     public ICollection<Refund> Refunds { get; set; } = new List<Refund>();

@@ -72,7 +72,7 @@ public sealed class GetMyOrdersQueryHandler : IRequestHandler<GetMyOrdersQuery, 
             .OrderByDescending(o => o.CreatedAt)
             .Select(o =>
             {
-                durations.TryGetValue(o.DurationId, out var duration);
+                durations.TryGetValue(o.DurationId.GetValueOrDefault(), out var duration);
                 var programId = duration?.ProgramId;
                 programs.TryGetValue(programId ?? Guid.Empty, out var program);
                 coupons.TryGetValue(o.CouponId ?? Guid.Empty, out var coupon);
@@ -82,7 +82,7 @@ public sealed class GetMyOrdersQueryHandler : IRequestHandler<GetMyOrdersQuery, 
                     UserId:         o.UserId,
                     ProgramId:      programId,
                     ProgramName:    program?.Name,
-                    DurationId:     o.DurationId,
+                    DurationId:     o.DurationId.GetValueOrDefault(),
                     DurationLabel:  duration?.Label ?? string.Empty,
                     Amount:         o.AmountPaid,
                     Currency:       o.CurrencyCode,

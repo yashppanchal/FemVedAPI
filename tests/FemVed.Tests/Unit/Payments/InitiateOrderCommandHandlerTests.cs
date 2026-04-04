@@ -16,15 +16,20 @@ public class InitiateOrderCommandHandlerTests
     private readonly Mock<IRepository<Program>> _programs = new();
     private readonly Mock<IRepository<ProgramDuration>> _durations = new();
     private readonly Mock<IRepository<DurationPrice>> _prices = new();
+    private readonly Mock<IRepository<LibraryVideo>> _videos = new();
+    private readonly Mock<IRepository<LibraryVideoPrice>> _videoPrices = new();
+    private readonly Mock<IRepository<LibraryTierPrice>> _tierPrices = new();
     private readonly Mock<IRepository<Coupon>> _coupons = new();
     private readonly Mock<IRepository<Order>> _orders = new();
     private readonly Mock<IRepository<UserProgramAccess>> _access = new();
+    private readonly Mock<IRepository<UserLibraryAccess>> _libraryAccess = new();
     private readonly Mock<IPaymentGatewayFactory> _gatewayFactory = new();
     private readonly Mock<IUnitOfWork> _uow = new();
 
     private InitiateOrderCommandHandler CreateHandler() =>
         new(_users.Object, _programs.Object, _durations.Object, _prices.Object,
-            _coupons.Object, _orders.Object, _access.Object,
+            _videos.Object, _videoPrices.Object, _tierPrices.Object,
+            _coupons.Object, _orders.Object, _access.Object, _libraryAccess.Object,
             _gatewayFactory.Object, _uow.Object,
             NullLogger<InitiateOrderCommandHandler>.Instance);
 
@@ -134,7 +139,7 @@ public class InitiateOrderCommandHandlerTests
                .ReturnsAsync(existingOrder);
 
         var handler = CreateHandler();
-        var cmd = new InitiateOrderCommand(Guid.NewGuid(), Guid.NewGuid(), null, "idempotent-key-1", null, null);
+        var cmd = new InitiateOrderCommand(Guid.NewGuid(), Guid.NewGuid(), null, null, "idempotent-key-1", null, null);
 
         // Act
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -156,7 +161,7 @@ public class InitiateOrderCommandHandlerTests
         SetupHappyPath(user, program, duration, price);
 
         var handler = CreateHandler();
-        var cmd = new InitiateOrderCommand(user.Id, duration.Id, null, Guid.NewGuid().ToString(), null, null);
+        var cmd = new InitiateOrderCommand(user.Id, duration.Id, null, null, Guid.NewGuid().ToString(), null, null);
 
         // Act
         var result = await handler.Handle(cmd, CancellationToken.None);
@@ -179,7 +184,7 @@ public class InitiateOrderCommandHandlerTests
         SetupHappyPath(user, program, duration, price);
 
         var handler = CreateHandler();
-        var cmd = new InitiateOrderCommand(user.Id, duration.Id, null, Guid.NewGuid().ToString(), null, null);
+        var cmd = new InitiateOrderCommand(user.Id, duration.Id, null, null, Guid.NewGuid().ToString(), null, null);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<DomainException>(
@@ -205,7 +210,7 @@ public class InitiateOrderCommandHandlerTests
                .ReturnsAsync(true);
 
         var handler = CreateHandler();
-        var cmd = new InitiateOrderCommand(user.Id, duration.Id, null, Guid.NewGuid().ToString(), null, null);
+        var cmd = new InitiateOrderCommand(user.Id, duration.Id, null, null, Guid.NewGuid().ToString(), null, null);
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<DomainException>(
@@ -239,7 +244,7 @@ public class InitiateOrderCommandHandlerTests
                 .ReturnsAsync(coupon);
 
         var handler = CreateHandler();
-        var cmd = new InitiateOrderCommand(user.Id, duration.Id, "SAVE10", Guid.NewGuid().ToString(), null, null);
+        var cmd = new InitiateOrderCommand(user.Id, duration.Id, null, "SAVE10", Guid.NewGuid().ToString(), null, null);
 
         // Act
         var result = await handler.Handle(cmd, CancellationToken.None);

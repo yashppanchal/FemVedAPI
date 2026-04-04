@@ -72,7 +72,7 @@ public sealed class GetOrderQueryHandler : IRequestHandler<GetOrderQuery, OrderD
             UserId:         order.UserId,
             ProgramId:      program?.Id,
             ProgramName:    program?.Name,
-            DurationId:     order.DurationId,
+            DurationId:     order.DurationId.GetValueOrDefault(),
             DurationLabel:  duration?.Label ?? string.Empty,
             Amount:         order.AmountPaid,
             Currency:       order.CurrencyCode,

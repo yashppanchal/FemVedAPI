@@ -77,7 +77,7 @@ public sealed class GetExpertPayoutBalanceQueryHandler
 
         // Load paid orders that belong to those durations
         var paidOrders = await _orders.GetAllAsync(
-            o => o.Status == OrderStatus.Paid && durationIds.Contains(o.DurationId),
+            o => o.Status == OrderStatus.Paid && durationIds.Contains(o.DurationId.GetValueOrDefault()),
             cancellationToken);
 
         // Load all payout records for this expert

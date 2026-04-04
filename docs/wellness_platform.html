@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumina — Wellness Masterclasses</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f5f2;
+    --card: #ffffff;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.14);
+    --text: #1a1816;
+    --muted: #7a746e;
+    --accent: #9a6f3a;
+    --accent2: #b8884e;
+    --green: #3a7a52;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== FILTER TABS ===== */
+  .filters-wrap {
+    padding: 2.5rem 2.5rem 0;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .filters {
+    display: flex; gap: 0.45rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    font-size: 0.73rem; letter-spacing: 0.08em;
+    text-transform: uppercase; font-family: var(--sans);
+    padding: 0.42rem 1rem; border-radius: 2px;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all 0.2s;
+  }
+  .filter-btn:hover { color: var(--text); border-color: rgba(0,0,0,0.25); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ===== SECTION ===== */
+  .section { padding: 0 2.5rem 3rem; max-width: 1400px; margin: 0 auto; }
+
+  /* ===== FEATURED ROW ===== */
+  .featured-row {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1fr;
+    gap: 1.2rem;
+    margin-bottom: 2.5rem;
+  }
+  .featured-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .featured-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 32px rgba(0,0,0,0.12);
+  }
+  .featured-thumb {
+    position: relative;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+  }
+  .featured-thumb-img {
+    width: 100%; height: 100%;
+    transition: transform 0.5s;
+  }
+  .featured-card:hover .featured-thumb-img { transform: scale(1.03); }
+  .featured-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0.25) 55%, transparent 100%);
+  }
+  .featured-content {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 1.1rem 1.2rem;
+  }
+  .featured-eyebrow {
+    font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+  .featured-title {
+    font-family: var(--serif);
+    font-size: 1.28rem; font-weight: 400; line-height: 1.2;
+    color: #f0ede6; margin-bottom: 0.3rem;
+  }
+  .featured-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 0.4rem;
+  }
+
+  /* ===== CARD GRID ===== */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+    gap: 1.2rem;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94), box-shadow 0.3s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.11);
+  }
+  .card-thumb {
+    position: relative;
+    aspect-ratio: 3/4;
+    overflow: hidden;
+  }
+  .card-thumb-img {
+    width: 100%; height: 100%;
+    transition: transform 0.5s;
+    display: block;
+  }
+  .card:hover .card-thumb-img { transform: scale(1.04); }
+  .card-thumb-overlay {
+    position: absolute; inset: 0;
+    background: rgba(10,10,10,0.32);
+    opacity: 0; transition: opacity 0.3s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card:hover .card-thumb-overlay { opacity: 1; }
+  .play-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    display: flex; align-items: center; justify-content: center;
+    transform: scale(0.85); transition: transform 0.3s;
+  }
+  .card:hover .play-btn { transform: scale(1); }
+  .play-btn svg { width: 15px; height: 15px; fill: #1a1816; margin-left: 3px; }
+  .card-badge {
+    position: absolute; top: 0.65rem; left: 0.65rem;
+    font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 0.18rem 0.5rem; border-radius: 2px;
+  }
+  .badge-series { background: rgba(58,122,82,0.14); color: var(--green); border: 1px solid rgba(58,122,82,0.28); }
+  .badge-masterclass { background: rgba(154,111,58,0.11); color: var(--accent); border: 1px solid rgba(154,111,58,0.23); }
+  .card-body { padding: 0.85rem 1rem 1rem; }
+  .card-category {
+    font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 0.28rem;
+  }
+  .card-title {
+    font-family: var(--serif);
+    font-size: 1.03rem; font-weight: 400; line-height: 1.25;
+    color: var(--text); margin-bottom: 0.3rem;
+  }
+  .card-instructor { font-size: 0.76rem; color: var(--muted); margin-bottom: 0.65rem; }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; }
+  .card-duration {
+    font-size: 0.7rem; color: var(--muted);
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .card-duration svg { width: 11px; height: 11px; opacity: 0.5; }
+  .card-price { font-family: var(--serif); font-size: 1.1rem; font-weight: 400; color: var(--accent); }
+
+  /* Gradient fills for cards */
+  .grad-1 { background: linear-gradient(160deg,#2a1e0e,#3d2a12); display:flex;align-items:center;justify-content:center; }
+  .grad-2 { background: linear-gradient(160deg,#0e2218,#163022); display:flex;align-items:center;justify-content:center; }
+  .grad-3 { background: linear-gradient(160deg,#1e1a0e,#2c2614); display:flex;align-items:center;justify-content:center; }
+  .grad-4 { background: linear-gradient(160deg,#0e1426,#141e38); display:flex;align-items:center;justify-content:center; }
+  .grad-5 { background: linear-gradient(160deg,#261018,#381620); display:flex;align-items:center;justify-content:center; }
+  .grad-6 { background: linear-gradient(160deg,#162210,#203016); display:flex;align-items:center;justify-content:center; }
+  .grad-7 { background: linear-gradient(160deg,#24181e,#32202a); display:flex;align-items:center;justify-content:center; }
+  .grad-8 { background: linear-gradient(160deg,#101e26,#162c38); display:flex;align-items:center;justify-content:center; }
+  .card-icon { font-size: 2.4rem; opacity: 0.6; }
+
+  /* ===== DETAIL PAGE ===== */
+  #detail-page { display: none; }
+
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); cursor: pointer; transition: color 0.2s;
+    background: none; border: none; font-family: var(--sans);
+    padding: 1.5rem 2.5rem;
+  }
+  .back-btn:hover { color: var(--accent); }
+  .back-btn svg { width: 13px; height: 13px; }
+
+  .detail-hero {
+    position: relative;
+    height: 62vh; min-height: 420px;
+    overflow: hidden;
+  }
+  .detail-hero-bg {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail-hero-icon {
+    font-size: 9rem; opacity: 0.1; position: absolute;
+  }
+  .detail-hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to right, rgba(8,8,8,0.93) 0%, rgba(8,8,8,0.55) 55%, transparent 100%),
+                linear-gradient(to top, rgba(8,8,8,0.97) 0%, transparent 45%);
+  }
+  .detail-hero-content {
+    position: relative; z-index: 2;
+    max-width: 1400px; margin: 0 auto;
+    padding: 0 2.5rem 3rem;
+    height: 100%;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .detail-type {
+    font-size: 0.67rem; letter-spacing: 0.22em; text-transform: uppercase;
+    color: #c9a96e; margin-bottom: 0.6rem;
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .detail-type::before { content:''; display:inline-block; width:1.4rem; height:1px; background:#c9a96e; }
+  .detail-title {
+    font-family: var(--serif);
+    font-size: clamp(2.1rem, 4.2vw, 3.5rem);
+    font-weight: 300; line-height: 1.05;
+    color: #f0ede6; margin-bottom: 0.55rem;
+  }
+  .detail-instructor {
+    font-size: 0.86rem; color: rgba(240,237,230,0.55);
+    margin-bottom: 1.1rem;
+  }
+  .detail-instructor strong { color: rgba(240,237,230,0.88); font-weight: 400; }
+  .detail-tags { display: flex; flex-wrap: wrap; gap: 0.38rem; margin-bottom: 1.4rem; }
+  .tag {
+    font-size: 0.63rem; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.26rem 0.6rem; border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.16); color: rgba(255,255,255,0.45);
+  }
+  .detail-actions { display: flex; gap: 0.9rem; align-items: center; flex-wrap: wrap; }
+
+  .btn-primary {
+    font-size: 0.77rem; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; font-family: var(--sans);
+    padding: 0.78rem 1.65rem; border-radius: 3px;
+    background: var(--accent); color: #fff;
+    border: none; cursor: pointer; transition: all 0.22s;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn-secondary {
+    font-size: 0.77rem; font-weight: 400; letter-spacing: 0.1em;
+    text-transform: uppercase; font-family: var(--sans);
+    padding: 0.78rem 1.4rem; border-radius: 3px;
+    background: transparent; color: #f0ede6;
+    border: 1px solid rgba(255,255,255,0.22); cursor: pointer; transition: all 0.22s;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.42); background: rgba(255,255,255,0.07); }
+  .hero-price {
+    font-family: var(--serif); font-size: 1.55rem; font-weight: 400; color: #c9a96e;
+    margin-left: auto;
+  }
+  .hero-price small {
+    font-family: var(--sans); font-size: 0.7rem;
+    color: rgba(240,237,230,0.4); display: block; text-align: right; letter-spacing: 0.05em;
+  }
+
+  /* ===== DETAIL BODY ===== */
+  .detail-body {
+    max-width: 1400px; margin: 0 auto;
+    padding: 3rem 2.5rem;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 4rem;
+  }
+  .section-label {
+    font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 0.85rem;
+  }
+  .detail-desc {
+    font-size: 0.92rem; line-height: 1.87; color: var(--muted);
+    margin-bottom: 2rem;
+  }
+  .detail-desc strong { color: var(--text); font-weight: 400; }
+
+  /* Episodes */
+  .episode-item {
+    display: flex; gap: 0.9rem; align-items: flex-start;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: padding-left 0.2s;
+  }
+  .episode-item:last-child { border-bottom: none; }
+  .episode-item:hover { padding-left: 0.4rem; }
+  .ep-num {
+    font-family: var(--serif); font-size: 1.25rem; font-weight: 300;
+    color: rgba(0,0,0,0.15); min-width: 2rem; line-height: 1;
+  }
+  .ep-info { flex: 1; }
+  .ep-title { font-size: 0.86rem; color: var(--text); margin-bottom: 0.2rem; }
+  .ep-desc { font-size: 0.76rem; color: var(--muted); line-height: 1.5; }
+  .ep-dur { font-size: 0.69rem; color: var(--muted); margin-top: 0.28rem; opacity: 0.65; }
+  .ep-lock { color: var(--muted); font-size: 0.8rem; opacity: 0.4; margin-top: 0.2rem; }
+
+  /* Trailer */
+  .trailer-wrap { margin-bottom: 1.5rem; }
+  .trailer-box {
+    border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.07);
+  }
+  .trailer-aspect {
+    position: relative; aspect-ratio: 16/9;
+    cursor: pointer; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .trailer-bg { position: absolute; inset: 0; }
+  .trailer-icon { position: absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:4.5rem; opacity:0.15; }
+  .trailer-ui {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.22);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 0.6rem;
+    transition: background 0.3s;
+  }
+  .trailer-aspect:hover .trailer-ui { background: rgba(0,0,0,0.08); }
+  .trailer-play-btn {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.72);
+    background: rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.28s;
+  }
+  .trailer-aspect:hover .trailer-play-btn {
+    border-color: rgba(255,255,255,0.92);
+    background: rgba(255,255,255,0.22);
+    transform: scale(1.07);
+  }
+  .trailer-play-btn svg { width: 20px; height: 20px; fill: #fff; margin-left: 4px; }
+  .trailer-lbl { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.75); }
+
+  /* Purchase card */
+  .purchase-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 1.65rem;
+    position: sticky; top: 2rem;
+    box-shadow: 0 4px 22px rgba(0,0,0,0.07);
+  }
+  .purchase-price {
+    font-family: var(--serif); font-size: 2.7rem; font-weight: 300;
+    color: var(--text); margin-bottom: 0.18rem; line-height: 1;
+  }
+  .purchase-price sup { font-size: 1rem; vertical-align: super; color: var(--muted); font-family: var(--sans); font-weight: 300; }
+  .purchase-sub { font-size: 0.71rem; color: var(--muted); margin-bottom: 1.3rem; }
+  .purchase-divider { height: 1px; background: var(--border); margin: 1.2rem 0; }
+  .purchase-features { margin-bottom: 1.3rem; }
+  .purchase-feature {
+    display: flex; align-items: center; gap: 0.65rem;
+    font-size: 0.8rem; color: var(--muted);
+    padding: 0.42rem 0; border-bottom: 1px solid var(--border);
+  }
+  .purchase-feature:last-child { border-bottom: none; }
+  .pf-icon { font-size: 0.82rem; }
+  .btn-purchase {
+    width: 100%;
+    font-size: 0.79rem; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; font-family: var(--sans);
+    padding: 0.92rem; border-radius: 3px;
+    background: var(--accent); color: #fff;
+    border: none; cursor: pointer; transition: background 0.22s;
+  }
+  .btn-purchase:hover { background: var(--accent2); }
+  .purchase-guarantee { text-align: center; margin-top: 0.9rem; font-size: 0.69rem; color: var(--muted); line-height: 1.6; }
+
+  /* Instructor */
+  .instructor-strip {
+    max-width: 1400px; margin: 0 auto;
+    padding: 0 2.5rem 3rem;
+    border-top: 1px solid var(--border); padding-top: 2rem;
+  }
+  .instructor-card {
+    display: flex; gap: 1.2rem; align-items: center;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 1.2rem 1.4rem;
+    max-width: 500px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  .instructor-avatar {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), #7a4f1e);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 1.15rem; color: #fff; flex-shrink: 0;
+  }
+  .instructor-name { font-size: 0.93rem; color: var(--text); margin-bottom: 0.16rem; }
+  .instructor-role { font-size: 0.74rem; color: var(--muted); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--accent); color: #fff;
+    font-size: 0.79rem; font-weight: 500; letter-spacing: 0.08em;
+    padding: 0.78rem 1.65rem; border-radius: 3px;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999; white-space: nowrap;
+    box-shadow: 0 4px 18px rgba(154,111,58,0.28);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 900px) {
+    .featured-row { grid-template-columns: 1fr; }
+    .detail-body { grid-template-columns: 1fr; gap: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== GRID PAGE ===== -->
+<div id="grid-page">
+  <div class="filters-wrap">
+    <div class="filters">
+      <button class="filter-btn active" onclick="filterCards(this,'all')">All Programs</button>
+      <button class="filter-btn" onclick="filterCards(this,'masterclass')">Masterclasses</button>
+      <button class="filter-btn" onclick="filterCards(this,'series')">Series</button>
+      <button class="filter-btn" onclick="filterCards(this,'mindfulness')">Mindfulness</button>
+      <button class="filter-btn" onclick="filterCards(this,'movement')">Movement</button>
+      <button class="filter-btn" onclick="filterCards(this,'nutrition')">Nutrition</button>
+      <button class="filter-btn" onclick="filterCards(this,'sleep')">Sleep</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div id="featured-row" class="featured-row">
+      <div class="featured-card" onclick="openDetail(0)">
+        <div class="featured-thumb">
+          <div class="featured-thumb-img grad-1" style="height:100%"><span style="font-size:5rem;opacity:0.5;">🧘</span></div>
+          <div class="featured-overlay"></div>
+          <div class="featured-content">
+            <div class="featured-eyebrow" style="color:#c9a96e;">Editor's Choice · Series</div>
+            <div class="featured-title">The 30-Day Mindfulness Immersion</div>
+            <div class="featured-meta">
+              <span style="font-size:0.75rem;color:rgba(240,237,230,0.58);">Priya Nair · 30 episodes</span>
+              <span style="font-family:var(--serif);font-size:1.18rem;color:#c9a96e;">$149</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="featured-card" onclick="openDetail(1)">
+        <div class="featured-thumb">
+          <div class="featured-thumb-img grad-2" style="height:100%"><span style="font-size:4rem;opacity:0.5;">🌿</span></div>
+          <div class="featured-overlay"></div>
+          <div class="featured-content">
+            <div class="featured-eyebrow" style="color:#7dbf93;">New · Masterclass</div>
+            <div class="featured-title">Functional Nutrition</div>
+            <div class="featured-meta">
+              <span style="font-size:0.75rem;color:rgba(240,237,230,0.58);">Dr. Lena Moore · 4h 20m</span>
+              <span style="font-family:var(--serif);font-size:1.18rem;color:#c9a96e;">$129</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="featured-card" onclick="openDetail(2)">
+        <div class="featured-thumb">
+          <div class="featured-thumb-img grad-4" style="height:100%"><span style="font-size:4rem;opacity:0.5;">🌊</span></div>
+          <div class="featured-overlay"></div>
+          <div class="featured-content">
+            <div class="featured-eyebrow" style="color:rgba(240,237,230,0.42);">Masterclass</div>
+            <div class="featured-title">Breathwork & Inner Calm</div>
+            <div class="featured-meta">
+              <span style="font-size:0.75rem;color:rgba(240,237,230,0.58);">Marcus Elias · 2h 55m</span>
+              <span style="font-family:var(--serif);font-size:1.18rem;color:#c9a96e;">$89</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-grid" id="card-grid"></div>
+  </div>
+</div>
+
+<!-- ===== DETAIL PAGE ===== -->
+<div id="detail-page">
+  <button class="back-btn" onclick="showGrid()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    Back to Library
+  </button>
+
+  <div class="detail-hero">
+    <div class="detail-hero-bg" id="d-bg">
+      <div class="detail-hero-icon" id="d-icon"></div>
+    </div>
+    <div class="detail-hero-overlay"></div>
+    <div class="detail-hero-content">
+      <div class="detail-type" id="d-type"></div>
+      <h1 class="detail-title" id="d-title"></h1>
+      <p class="detail-instructor" id="d-instructor"></p>
+      <div class="detail-tags" id="d-tags"></div>
+      <div class="detail-actions">
+        <button class="btn-primary" onclick="purchaseNow()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          Purchase Now
+        </button>
+        <button class="btn-secondary" onclick="scrollToTrailer()">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Watch Trailer
+        </button>
+        <div class="hero-price" id="d-price-hero"><small>One-time purchase</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-body">
+    <div>
+      <div class="section-label">About This Program</div>
+      <p class="detail-desc" id="d-desc"></p>
+      <div id="episode-section" style="display:none">
+        <div class="section-label">Episodes</div>
+        <div id="episode-list"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="trailer-wrap" id="trailer-section">
+        <div class="section-label" style="margin-bottom:0.6rem">Trailer</div>
+        <div class="trailer-box">
+          <div class="trailer-aspect" id="trailer-area" onclick="playTrailer()">
+            <div class="trailer-bg" id="t-bg"></div>
+            <div class="trailer-icon" id="t-icon"></div>
+            <div class="trailer-ui">
+              <div class="trailer-play-btn">
+                <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              </div>
+              <div class="trailer-lbl">Watch Trailer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="purchase-card">
+        <div class="purchase-price" id="p-price"></div>
+        <div class="purchase-sub">Lifetime access · One-time payment</div>
+        <div class="purchase-divider"></div>
+        <div class="purchase-features">
+          <div class="purchase-feature"><span class="pf-icon">▶</span><span id="pf-content"></span></div>
+          <div class="purchase-feature"><span class="pf-icon">♾</span>Lifetime access, watch anytime</div>
+          <div class="purchase-feature"><span class="pf-icon">📱</span>Available on all devices</div>
+          <div class="purchase-feature"><span class="pf-icon">📄</span>Downloadable workbooks & resources</div>
+          <div class="purchase-feature"><span class="pf-icon">✦</span>Certificate of completion</div>
+        </div>
+        <button class="btn-purchase" onclick="purchaseNow()">Purchase — <span id="btn-price"></span></button>
+        <div class="purchase-guarantee">30-day money-back guarantee · No questions asked</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructor-strip">
+    <div class="section-label" style="margin-bottom:0.85rem">Your Instructor</div>
+    <div class="instructor-card">
+      <div class="instructor-avatar" id="ins-initials"></div>
+      <div>
+        <div class="instructor-name" id="ins-name"></div>
+        <div class="instructor-role" id="ins-title"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Added to your library</div>
+
+<script>
+const GRADS = {
+  'grad-1':'linear-gradient(160deg,#2a1e0e,#3d2a12)',
+  'grad-2':'linear-gradient(160deg,#0e2218,#163022)',
+  'grad-3':'linear-gradient(160deg,#1e1a0e,#2c2614)',
+  'grad-4':'linear-gradient(160deg,#0e1426,#141e38)',
+  'grad-5':'linear-gradient(160deg,#261018,#381620)',
+  'grad-6':'linear-gradient(160deg,#162210,#203016)',
+  'grad-7':'linear-gradient(160deg,#24181e,#32202a)',
+  'grad-8':'linear-gradient(160deg,#101e26,#162c38)'
+};
+
+const programs = [
+  { id:0, type:'series', category:'mindfulness', title:'The 30-Day Mindfulness Immersion', instructor:'Priya Nair', instructorTitle:'Mindfulness Teacher & Author', episodes:30, price:149, icon:'🧘', grad:'grad-1', tags:['Mindfulness','Meditation','Stress Relief','Daily Practice'], desc:'A complete month-long journey into the heart of mindfulness practice. Each episode is thoughtfully crafted to build upon the last, guiding you through foundational awareness, emotional regulation, compassionate inquiry, and finally — an integrated daily practice that sustains long after the program ends. <strong>Priya Nair</strong> draws on 20 years of teaching across three continents to offer something genuinely transformative.', episodeList:[{title:'The Ground of Awareness',desc:'What mindfulness really is, and why it matters now more than ever.',dur:'18 min'},{title:'The Breath as Anchor',desc:'Your breath is always available. Learning to return to it.',dur:'22 min'},{title:'Working with Thoughts',desc:'Observing the mind without becoming the mind.',dur:'25 min'},{title:'The Body Speaks',desc:'Somatic awareness and what the body holds.',dur:'20 min'},{title:'Sitting with Difficulty',desc:'Meeting challenging emotions with open presence.',dur:'28 min'}] },
+  { id:1, type:'masterclass', category:'nutrition', title:'Functional Nutrition: Eat for Energy', instructor:'Dr. Lena Moore', instructorTitle:'Integrative Nutritionist, PhD', duration:'4h 20m', price:129, icon:'🌿', grad:'grad-2', tags:['Nutrition','Energy','Gut Health','Longevity'], desc:'Evidence-based nutritional science meets ancient dietary wisdom in this comprehensive masterclass. <strong>Dr. Lena Moore</strong> breaks down the science of food-as-medicine, explores the gut-brain axis, and teaches you how to build a personal nutrition protocol that fuels sustained energy, mental clarity, and long-term vitality. No fad diets. No overwhelm. Just deep, actionable knowledge.' },
+  { id:2, type:'masterclass', category:'mindfulness', title:'Breathwork & Inner Calm', instructor:'Marcus Elias', instructorTitle:'Breathwork Facilitator & Somatic Coach', duration:'2h 55m', price:89, icon:'🌊', grad:'grad-4', tags:['Breathwork','Nervous System','Anxiety Relief','Inner Peace'], desc:'The breath is the only autonomic function you can consciously control — making it the most powerful tool for nervous system regulation we have. In this masterclass, <strong>Marcus Elias</strong> teaches classical pranayama alongside modern somatic breathwork techniques, giving you a complete toolkit for shifting your physiological and psychological state on demand.' },
+  { id:3, type:'masterclass', category:'sleep', title:'The Art of Deep Rest', instructor:'Dr. Sophie Vance', instructorTitle:'Sleep Researcher & Neuroscientist', duration:'3h 15m', price:99, icon:'🌙', grad:'grad-3', tags:['Sleep','Recovery','Circadian Rhythm','Rest'], desc:'Sleep is not a passive state — it is the most active and regenerative process your body undergoes. <strong>Dr. Sophie Vance</strong> synthesizes the latest neuroscience of sleep to help you understand your unique sleep architecture, optimize your circadian biology, and resolve the habits and beliefs that sabotage your rest.' },
+  { id:4, type:'series', category:'movement', title:'Yoga for the Modern Body', instructor:'Anika Shah', instructorTitle:'Yoga Teacher & Physical Therapist', episodes:20, price:119, icon:'🏃', grad:'grad-5', tags:['Yoga','Flexibility','Strength','Mobility'], desc:'A 20-episode series for those who live in human bodies in the 21st century — desk posture, phone neck, tight hips and all. <strong>Anika Shah</strong> combines her physical therapy background with yoga to offer a sequence that meets your body exactly where it is, then systematically opens, strengthens, and liberates it.', episodeList:[{title:'Where Are You Starting?',desc:'An honest assessment of your body and where to begin.',dur:'35 min'},{title:'Opening the Hips',desc:'The largest joint complex in the body deserves attention.',dur:'40 min'},{title:'Spine Health Fundamentals',desc:'Flexion, extension, rotation, lateral bend — all four planes.',dur:'38 min'},{title:'Shoulder Liberation',desc:'Undoing what desk work has done to your shoulders.',dur:'42 min'},{title:'Finding Your Core',desc:'The core is not your abs — and this episode proves it.',dur:'35 min'}] },
+  { id:5, type:'masterclass', category:'mindfulness', title:'Emotional Intelligence Mastery', instructor:'James Okafor', instructorTitle:'Clinical Psychologist & Coach', duration:'5h 00m', price:159, icon:'💛', grad:'grad-6', tags:['EQ','Psychology','Relationships','Self-Mastery'], desc:'Emotional intelligence is the meta-skill of our time. <strong>James Okafor</strong>, drawing on decades of clinical and coaching work, teaches a rigorous, practical framework for developing self-awareness, managing internal states, cultivating empathy, and navigating relationships — from the intimate to the professional — with grace and integrity.' },
+  { id:6, type:'series', category:'movement', title:'Strength from the Inside Out', instructor:'Tomas Reyes', instructorTitle:'Functional Fitness Coach', episodes:16, price:109, icon:'⚡', grad:'grad-7', tags:['Strength','Fitness','Body Composition','Energy'], desc:'Functional strength training designed around how your body actually moves in life — not how it performs on machines. <strong>Tomas Reyes</strong> progressively builds you through 16 episodes of intelligent movement, with a clear philosophy: build a body you can live in joyfully for decades.', episodeList:[{title:'Movement Patterns 101',desc:'The six fundamental patterns every human needs.',dur:'30 min'},{title:'The Hinge',desc:'One of the most neglected and most important patterns.',dur:'35 min'},{title:'Push and Pull',desc:'Upper body balance and the shoulder blade.',dur:'32 min'},{title:'Squat Variations',desc:'Finding your squat and owning it.',dur:'38 min'}] },
+  { id:7, type:'masterclass', category:'nutrition', title:'The Anti-Inflammatory Kitchen', instructor:'Chef Ravi Mehta', instructorTitle:'Ayurvedic Chef & Nutritionist', duration:'3h 40m', price:89, icon:'🔥', grad:'grad-8', tags:['Cooking','Anti-Inflammatory','Ayurveda','Gut Health'], desc:'Food is information. In this beautiful and practical masterclass, <strong>Chef Ravi Mehta</strong> marries Ayurvedic nutritional philosophy with modern food science to teach you how to cook meals that reduce systemic inflammation, heal the gut, and taste extraordinary. Includes 20 signature recipes with full preparation guidance.' }
+];
+
+function renderCards(items) {
+  document.getElementById('card-grid').innerHTML = items.map(p => `
+    <div class="card" onclick="openDetail(${p.id})">
+      <div class="card-thumb">
+        <div class="card-thumb-img ${p.grad}"><span class="card-icon">${p.icon}</span></div>
+        <div class="card-thumb-overlay"><div class="play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></div></div>
+        <div class="card-badge ${p.type==='series'?'badge-series':'badge-masterclass'}">${p.type==='series'?'Series':'Masterclass'}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-category">${p.category}</div>
+        <div class="card-title">${p.title}</div>
+        <div class="card-instructor">with ${p.instructor}</div>
+        <div class="card-meta">
+          <div class="card-duration">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            ${p.type==='series'?p.episodes+' episodes':p.duration}
+          </div>
+          <div class="card-price">$${p.price}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+renderCards(programs);
+
+function filterCards(btn, filter) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const feat = document.getElementById('featured-row');
+  if (filter === 'all') { renderCards(programs); feat.style.display = 'grid'; }
+  else { renderCards(programs.filter(p => p.type===filter || p.category===filter)); feat.style.display = 'none'; }
+}
+
+function openDetail(id) {
+  const p = programs[id];
+  document.getElementById('grid-page').style.display = 'none';
+  document.getElementById('detail-page').style.display = 'block';
+  window.scrollTo(0,0);
+
+  document.getElementById('d-type').textContent = p.type==='series' ? `Series · ${p.episodes} Episodes` : `Masterclass · ${p.duration}`;
+  document.getElementById('d-title').textContent = p.title;
+  document.getElementById('d-instructor').innerHTML = `with <strong>${p.instructor}</strong> — ${p.instructorTitle}`;
+  document.getElementById('d-price-hero').innerHTML = `<small>One-time purchase</small>$${p.price}`;
+  document.getElementById('d-desc').innerHTML = p.desc;
+  document.getElementById('p-price').innerHTML = `<sup>$</sup>${p.price}`;
+  document.getElementById('btn-price').textContent = `$${p.price}`;
+  document.getElementById('pf-content').textContent = p.type==='series' ? `${p.episodes} episodes, lifetime access` : `${p.duration} of video content`;
+  document.getElementById('ins-initials').textContent = p.instructor.split(' ').map(n=>n[0]).join('');
+  document.getElementById('ins-name').textContent = p.instructor;
+  document.getElementById('ins-title').textContent = p.instructorTitle;
+  document.getElementById('d-tags').innerHTML = p.tags.map(t=>`<div class="tag">${t}</div>`).join('');
+
+  const g = GRADS[p.grad] || GRADS['grad-1'];
+  document.getElementById('d-bg').style.background = g;
+  document.getElementById('d-icon').textContent = p.icon;
+  document.getElementById('t-bg').style.background = g;
+  document.getElementById('t-icon').textContent = p.icon;
+
+  const epSec = document.getElementById('episode-section');
+  if (p.episodeList) {
+    epSec.style.display = 'block';
+    document.getElementById('episode-list').innerHTML = p.episodeList.map((ep,i) => `
+      <div class="episode-item">
+        <div class="ep-num">0${i+1}</div>
+        <div class="ep-info"><div class="ep-title">${ep.title}</div><div class="ep-desc">${ep.desc}</div><div class="ep-dur">⏱ ${ep.dur}</div></div>
+        <div class="ep-lock">🔒</div>
+      </div>`).join('');
+  } else { epSec.style.display = 'none'; }
+}
+
+function showGrid() {
+  document.getElementById('grid-page').style.display = 'block';
+  document.getElementById('detail-page').style.display = 'none';
+  window.scrollTo(0,0);
+}
+
+function scrollToTrailer() {
+  document.getElementById('trailer-section').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function playTrailer() {
+  document.getElementById('trailer-area').innerHTML = `
+    <div style="width:100%;height:100%;background:#1a1614;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.6rem;">
+      <div style="font-size:1.6rem;opacity:0.3;">▶</div>
+      <div style="font-size:0.72rem;color:rgba(240,237,230,0.38);letter-spacing:0.14em;text-transform:uppercase;">Trailer preview</div>
+    </div>`;
+}
+
+function purchaseNow() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

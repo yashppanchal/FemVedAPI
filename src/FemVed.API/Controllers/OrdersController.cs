@@ -54,6 +54,7 @@ public sealed class OrdersController : ControllerBase
             new InitiateOrderCommand(
                 userId,
                 request.DurationId,
+                request.VideoId,
                 request.CouponCode,
                 request.IdempotencyKey,
                 request.CountryCode,
@@ -165,7 +166,8 @@ public sealed class OrdersController : ControllerBase
 // ── Request body records ──────────────────────────────────────────────────────
 
 /// <summary>HTTP request body for POST /api/v1/orders/initiate.</summary>
-/// <param name="DurationId">The program duration option to purchase.</param>
+/// <param name="DurationId">The program duration option to purchase (guided flow). Mutually exclusive with <paramref name="VideoId"/>.</param>
+/// <param name="VideoId">The library video to purchase (library flow). Mutually exclusive with <paramref name="DurationId"/>.</param>
 /// <param name="CouponCode">Optional discount coupon code.</param>
 /// <param name="IdempotencyKey">Client-generated UUID to prevent duplicate orders.</param>
 /// <param name="CountryCode">
@@ -179,9 +181,10 @@ public sealed class OrdersController : ControllerBase
 /// Any country + gateway combination is accepted.
 /// </param>
 public record InitiateOrderRequest(
-    Guid DurationId,
-    string? CouponCode,
-    string IdempotencyKey,
+    Guid? DurationId = null,
+    Guid? VideoId = null,
+    string? CouponCode = null,
+    string IdempotencyKey = "",
     LocationCode? CountryCode = null,
     PaymentGateway? Gateway = null);
 

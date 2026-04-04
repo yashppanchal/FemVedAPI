@@ -1,6 +1,7 @@
 using FemVed.Application.Interfaces;
 using FemVed.Infrastructure.BackgroundJobs;
 using FemVed.Infrastructure.Guided;
+using FemVed.Infrastructure.Library;
 using FemVed.Infrastructure.Notifications;
 using FemVed.Infrastructure.Notifications.Options;
 using FemVed.Infrastructure.Payment;
@@ -100,7 +101,10 @@ public static class InfrastructureServiceExtensions
         // Guided catalog read service (complex EF Core projections)
         services.AddScoped<IGuidedCatalogReadService, GuidedCatalogReadService>();
 
-        // In-memory cache for guided tree (10-min TTL per location code)
+        // Library catalog read service (complex EF Core projections)
+        services.AddScoped<ILibraryCatalogReadService, LibraryCatalogReadService>();
+
+        // In-memory cache for guided/library tree (10-min TTL per location code)
         services.AddMemoryCache();
 
         // ── Payment gateways ─────────────────────────────────────────────────

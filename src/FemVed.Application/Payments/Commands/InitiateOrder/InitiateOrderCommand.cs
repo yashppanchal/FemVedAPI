@@ -6,13 +6,15 @@ namespace FemVed.Application.Payments.Commands.InitiateOrder;
 
 /// <summary>
 /// Initiates a purchase order for an authenticated user.
+/// Exactly one of <paramref name="DurationId"/> (guided) or <paramref name="VideoId"/> (library) must be provided.
 /// Location resolution: <paramref name="CountryCode"/> if provided, otherwise default "GB".
 /// Gateway resolution: <paramref name="Gateway"/> if provided, otherwise default PayPal.
 /// Any country + gateway combination is valid; the frontend is in full control.
 /// Idempotent: duplicate <paramref name="IdempotencyKey"/> returns the existing order.
 /// </summary>
 /// <param name="UserId">Authenticated user's ID.</param>
-/// <param name="DurationId">The program duration option to purchase.</param>
+/// <param name="DurationId">The program duration option to purchase (guided flow). Mutually exclusive with <paramref name="VideoId"/>.</param>
+/// <param name="VideoId">The library video to purchase (library flow). Mutually exclusive with <paramref name="DurationId"/>.</param>
 /// <param name="CouponCode">Optional discount coupon code.</param>
 /// <param name="IdempotencyKey">Client-generated UUID preventing duplicate orders.</param>
 /// <param name="CountryCode">
@@ -24,7 +26,8 @@ namespace FemVed.Application.Payments.Commands.InitiateOrder;
 /// </param>
 public record InitiateOrderCommand(
     Guid UserId,
-    Guid DurationId,
+    Guid? DurationId,
+    Guid? VideoId,
     string? CouponCode,
     string IdempotencyKey,
     LocationCode? CountryCode = null,

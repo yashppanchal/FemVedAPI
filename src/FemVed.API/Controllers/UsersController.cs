@@ -3,6 +3,9 @@ using FemVed.Application.Enrollments.Commands.EndEnrollment;
 using FemVed.Application.Enrollments.Commands.PauseEnrollment;
 using FemVed.Application.Enrollments.Commands.RequestStartDate;
 using FemVed.Application.Enrollments.Commands.ResumeEnrollment;
+using FemVed.Application.Library.Commands.UpdateWatchProgress;
+using FemVed.Application.Library.DTOs;
+using FemVed.Application.Library.Queries.GetMyLibrary;
 using FemVed.Application.Payments.DTOs;
 using FemVed.Application.Payments.Queries.GetMyOrders;
 using FemVed.Application.Payments.Queries.GetMyRefunds;
@@ -128,6 +131,51 @@ public sealed class UsersController : ControllerBase
         var userId = GetCurrentUserId();
         var result = await _mediator.Send(new GetMyRefundsQuery(userId), cancellationToken);
         return Ok(result);
+    }
+
+    // ── Wellness Library ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the authenticated user's purchased library videos with watch progress.
+    /// An empty list is returned when the user has not purchased any library videos.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the list of purchased videos and progress.</returns>
+    [HttpGet("me/library")]
+    [ProducesResponseType(typeof(MyLibraryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyLibrary(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(new GetMyLibraryQuery(userId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Updates watch progress for a purchased library video.
+    /// For Masterclass: updates overall progress. EpisodeId should be null.
+    /// For Series: updates per-episode progress and recalculates overall. EpisodeId is required.
+    /// </summary>
+    /// <param name="videoId">The purchased video's ID.</param>
+    /// <param name="request">Progress data.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>204 No Content on success.</returns>
+    [HttpPut("me/library/{videoId:guid}/progress")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateWatchProgress(
+        Guid videoId,
+        [FromBody] UpdateWatchProgressRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        await _mediator.Send(
+            new UpdateWatchProgressCommand(userId, videoId, request.ProgressSeconds, request.EpisodeId),
+            cancellationToken);
+        return NoContent();
     }
 
     // ── Session Lifecycle (User) ──────────────────────────────────────────────
@@ -287,3 +335,10 @@ public record UpdateMyProfileRequest(
     string? CountryCode,
     string? MobileNumber,
     bool WhatsAppOptIn);
+
+/// <summary>HTTP request body for PUT /api/v1/users/me/library/{videoId}/progress.</summary>
+/// <param name="ProgressSeconds">Current playback position in seconds.</param>
+/// <param name="EpisodeId">Episode ID (required for Series, null for Masterclass).</param>
+public record UpdateWatchProgressRequest(
+    int ProgressSeconds,
+    Guid? EpisodeId = null);
