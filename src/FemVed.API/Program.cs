@@ -132,11 +132,16 @@ try
     var app = builder.Build();
 
     // ── Auto-apply pending EF Core migrations on startup ─────────────────────
-    using (var scope = app.Services.CreateScope())
+    try
     {
+        using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<FemVed.Infrastructure.Persistence.AppDbContext>();
         db.Database.Migrate();
         Log.Information("Database migrations applied successfully");
+    }
+    catch (Exception ex)
+    {
+        Log.Warning(ex, "Auto-migration skipped — migrations may already be applied");
     }
 
     // ── Middleware Pipeline ───────────────────────────────────────────────────

@@ -33,11 +33,14 @@ public static class InfrastructureServiceExtensions
             ?? throw new InvalidOperationException("DB_CONNECTION_STRING environment variable is not set.");
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString, npgsql =>
-            {
-                npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
-                npgsql.EnableRetryOnFailure(maxRetryCount: 3);
-            }));
+            options
+                .UseNpgsql(connectionString, npgsql =>
+                {
+                    npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+                    npgsql.EnableRetryOnFailure(maxRetryCount: 3);
+                })
+                .ConfigureWarnings(w => w.Log(
+                    Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
         // Allow Repository<T> (which injects DbContext) to resolve AppDbContext
         services.AddScoped<DbContext>(sp => sp.GetRequiredService<AppDbContext>());
