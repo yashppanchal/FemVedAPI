@@ -1,6 +1,7 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 using FemVed.API.Extensions;
 using FemVed.API.Middleware;
@@ -129,6 +130,14 @@ try
     });
 
     var app = builder.Build();
+
+    // ── Auto-apply pending EF Core migrations on startup ─────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<FemVed.Infrastructure.Persistence.AppDbContext>();
+        db.Database.Migrate();
+        Log.Information("Database migrations applied successfully");
+    }
 
     // ── Middleware Pipeline ───────────────────────────────────────────────────
     // 1. Correlation ID (first — all subsequent middleware can use it)
