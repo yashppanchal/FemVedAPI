@@ -1,5 +1,8 @@
 using System.Security.Claims;
 using FemVed.Application.Library.Commands.AddLibraryEpisode;
+using FemVed.Application.Library.DTOs;
+using FemVed.Application.Library.Queries.GetLibraryAnalytics;
+using FemVed.Application.Library.Queries.GetLibraryPurchases;
 using FemVed.Application.Library.Commands.AddLibraryTestimonial;
 using FemVed.Application.Library.Commands.AddLibraryTierPrice;
 using FemVed.Application.Library.Commands.AddLibraryVideoPrice;
@@ -27,7 +30,6 @@ using FemVed.Application.Library.Commands.UpdateLibraryTestimonial;
 using FemVed.Application.Library.Commands.UpdateLibraryTierPrice;
 using FemVed.Application.Library.Commands.UpdateLibraryVideo;
 using FemVed.Application.Library.Commands.UpdateLibraryVideoPrice;
-using FemVed.Application.Library.DTOs;
 using FemVed.Application.Library.Queries.GetAllLibraryCategories;
 using FemVed.Application.Library.Queries.GetAllLibraryDomains;
 using FemVed.Application.Library.Queries.GetAllLibraryFilterTypes;
@@ -408,6 +410,29 @@ public sealed class AdminLibraryController : ControllerBase
         await _mediator.Send(new DeleteLibraryTierPriceCommand(priceId), ct);
         return NoContent();
     }
+
+    // ── Analytics ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns aggregated analytics for the Wellness Library.
+    /// Includes video counts, purchase stats, revenue by currency, top-selling videos, and monthly trend.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>200 OK with library analytics.</returns>
+    [HttpGet("analytics")]
+    [ProducesResponseType(typeof(LibraryAnalyticsDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAnalytics(CancellationToken ct) =>
+        Ok(await _mediator.Send(new GetLibraryAnalyticsQuery(), ct));
+
+    /// <summary>
+    /// Returns all library purchase records — who bought what, when, and for how much.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>200 OK with the purchases list.</returns>
+    [HttpGet("purchases")]
+    [ProducesResponseType(typeof(LibraryPurchasesResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPurchases(CancellationToken ct) =>
+        Ok(await _mediator.Send(new GetLibraryPurchasesQuery(), ct));
 }
 
 // ── Request body records ─────────────────────────────────────────────────────
