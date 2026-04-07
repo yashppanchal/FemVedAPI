@@ -159,7 +159,8 @@ public sealed class AdminLibraryController : ControllerBase
             r.Synopsis, r.Description, r.CardImage, r.HeroImage, r.IconEmoji, r.GradientClass,
             r.TrailerUrl, r.StreamUrl, r.VideoType, r.TotalDuration, r.TotalDurationSeconds,
             r.ReleaseYear, r.IsFeatured, r.FeaturedLabel, r.FeaturedPosition, r.SortOrder,
-            r.Tags, r.Features?.Select(f => new CreateVideoFeatureInput(f.Icon, f.Description)).ToList()), ct);
+            r.Tags, r.Features?.Select(f => new CreateVideoFeatureInput(f.Icon, f.Description)).ToList(),
+            r.Prices?.Select(p => new CreateVideoPriceInput(p.LocationCode, p.Amount, p.CurrencyCode, p.CurrencySymbol, p.OriginalAmount)).ToList()), ct);
         return Created($"/api/v1/admin/library/videos/{id}", id);
     }
 
@@ -452,15 +453,19 @@ public record UpdateLibraryCategoryRequest(string? Name, string? Slug, string? D
 /// <summary>Feature input for video create/update.</summary>
 public record LibraryFeatureInput(string Icon, string Description);
 
+/// <summary>Price input for video creation.</summary>
+public record CreateVideoPriceInputRequest(string LocationCode, decimal Amount, string CurrencyCode, string CurrencySymbol, decimal? OriginalAmount = null);
+
 /// <summary>Request body for POST /api/v1/admin/library/videos.</summary>
 public record CreateLibraryVideoRequest(
-    Guid CategoryId, Guid ExpertId, Guid PriceTierId,
+    Guid CategoryId, Guid ExpertId, Guid? PriceTierId,
     string Title, string Slug, string? Synopsis, string? Description,
     string? CardImage, string? HeroImage, string? IconEmoji, string? GradientClass,
     string? TrailerUrl, string? StreamUrl, string VideoType,
     string? TotalDuration, int? TotalDurationSeconds, string? ReleaseYear,
     bool IsFeatured = false, string? FeaturedLabel = null, int? FeaturedPosition = null,
-    int SortOrder = 0, List<string>? Tags = null, List<LibraryFeatureInput>? Features = null);
+    int SortOrder = 0, List<string>? Tags = null, List<LibraryFeatureInput>? Features = null,
+    List<CreateVideoPriceInputRequest>? Prices = null);
 
 /// <summary>Request body for PUT /api/v1/admin/library/videos/{id}.</summary>
 public record UpdateLibraryVideoRequest(

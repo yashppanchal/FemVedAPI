@@ -45,7 +45,9 @@ public sealed class GetLibraryVideoEditDetailsQueryHandler
 
         var category = await _categories.GetByIdAsync(video.CategoryId, cancellationToken);
         var expert = await _experts.GetByIdAsync(video.ExpertId, cancellationToken);
-        var tier = await _tiers.GetByIdAsync(video.PriceTierId, cancellationToken);
+        var tier = video.PriceTierId.HasValue
+            ? await _tiers.GetByIdAsync(video.PriceTierId.Value, cancellationToken)
+            : null;
         var episodes = await _episodes.GetAllAsync(e => e.VideoId == video.Id, cancellationToken);
         var tags = await _tags.GetAllAsync(t => t.VideoId == video.Id, cancellationToken);
         var features = await _features.GetAllAsync(f => f.VideoId == video.Id, cancellationToken);

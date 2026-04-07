@@ -17,7 +17,7 @@ internal sealed class LibraryVideoConfiguration : IEntityTypeConfiguration<Libra
         builder.Property(v => v.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(v => v.CategoryId).HasColumnName("category_id").IsRequired();
         builder.Property(v => v.ExpertId).HasColumnName("expert_id").IsRequired();
-        builder.Property(v => v.PriceTierId).HasColumnName("price_tier_id").IsRequired();
+        builder.Property(v => v.PriceTierId).HasColumnName("price_tier_id").IsRequired(false);
         builder.Property(v => v.Title).HasColumnName("title").HasMaxLength(500).IsRequired();
         builder.Property(v => v.Slug).HasColumnName("slug").HasMaxLength(500).IsRequired();
         builder.Property(v => v.Synopsis).HasColumnName("synopsis");
@@ -66,6 +66,7 @@ internal sealed class LibraryVideoConfiguration : IEntityTypeConfiguration<Libra
         builder.HasOne(v => v.PriceTier)
             .WithMany(t => t.Videos)
             .HasForeignKey(v => v.PriceTierId)
+            .IsRequired(false)
             .HasConstraintName("fk_library_videos_price_tier");
     }
 }

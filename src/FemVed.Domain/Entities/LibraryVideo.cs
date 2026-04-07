@@ -18,8 +18,8 @@ public class LibraryVideo
     /// <summary>FK to the expert who created this content.</summary>
     public Guid ExpertId { get; set; }
 
-    /// <summary>FK to the pricing tier for this video.</summary>
-    public Guid PriceTierId { get; set; }
+    /// <summary>FK to the pricing tier for this video (optional — direct prices preferred).</summary>
+    public Guid? PriceTierId { get; set; }
 
     /// <summary>Full video title.</summary>
     public string Title { get; set; } = string.Empty;
@@ -94,8 +94,8 @@ public class LibraryVideo
     /// <summary>The expert who created this content.</summary>
     public Expert Expert { get; set; } = null!;
 
-    /// <summary>The pricing tier for this video.</summary>
-    public LibraryPriceTier PriceTier { get; set; } = null!;
+    /// <summary>The pricing tier for this video (optional).</summary>
+    public LibraryPriceTier? PriceTier { get; set; }
 
     /// <summary>Episodes (for Series type only).</summary>
     public ICollection<LibraryVideoEpisode> Episodes { get; set; } = new List<LibraryVideoEpisode>();

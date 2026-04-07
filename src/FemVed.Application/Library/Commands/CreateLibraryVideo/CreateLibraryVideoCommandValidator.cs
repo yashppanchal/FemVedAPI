@@ -14,9 +14,6 @@ public sealed class CreateLibraryVideoCommandValidator : AbstractValidator<Creat
         RuleFor(x => x.ExpertId)
             .NotEmpty().WithMessage("ExpertId is required.");
 
-        RuleFor(x => x.PriceTierId)
-            .NotEmpty().WithMessage("PriceTierId is required.");
-
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Title is required.")
             .MaximumLength(300).WithMessage("Title must not exceed 300 characters.");

@@ -25,6 +25,7 @@ public sealed class CreateLibraryVideoCommandHandler : IRequestHandler<CreateLib
     private readonly IRepository<LibraryPriceTier> _priceTiers;
     private readonly IRepository<LibraryVideoTag> _tags;
     private readonly IRepository<LibraryVideoFeature> _features;
+    private readonly IRepository<LibraryVideoPrice> _prices;
     private readonly IUnitOfWork _uow;
     private readonly IMemoryCache _cache;
     private readonly ILogger<CreateLibraryVideoCommandHandler> _logger;
@@ -37,6 +38,7 @@ public sealed class CreateLibraryVideoCommandHandler : IRequestHandler<CreateLib
         IRepository<LibraryPriceTier> priceTiers,
         IRepository<LibraryVideoTag> tags,
         IRepository<LibraryVideoFeature> features,
+        IRepository<LibraryVideoPrice> prices,
         IUnitOfWork uow,
         IMemoryCache cache,
         ILogger<CreateLibraryVideoCommandHandler> logger)
@@ -47,6 +49,7 @@ public sealed class CreateLibraryVideoCommandHandler : IRequestHandler<CreateLib
         _priceTiers = priceTiers;
         _tags = tags;
         _features = features;
+        _prices = prices;
         _uow = uow;
         _cache = cache;
         _logger = logger;
@@ -76,11 +79,14 @@ public sealed class CreateLibraryVideoCommandHandler : IRequestHandler<CreateLib
         if (!expertExists)
             throw new NotFoundException("Expert", request.ExpertId);
 
-        // Validate price tier exists
-        var priceTierExists = await _priceTiers.AnyAsync(
-            pt => pt.Id == request.PriceTierId, cancellationToken);
-        if (!priceTierExists)
-            throw new NotFoundException("LibraryPriceTier", request.PriceTierId);
+        // Validate price tier exists (optional — direct prices preferred)
+        if (request.PriceTierId.HasValue)
+        {
+            var priceTierExists = await _priceTiers.AnyAsync(
+                pt => pt.Id == request.PriceTierId.Value, cancellationToken);
+            if (!priceTierExists)
+                throw new NotFoundException("LibraryPriceTier", request.PriceTierId.Value);
+        }
 
         // Check slug uniqueness
         var slugTaken = await _videos.AnyAsync(
@@ -157,6 +163,27 @@ public sealed class CreateLibraryVideoCommandHandler : IRequestHandler<CreateLib
                     SortOrder = i
                 };
                 await _features.AddAsync(feature);
+            }
+        }
+
+        // Create direct price records
+        if (request.Prices is { Count: > 0 })
+        {
+            foreach (var p in request.Prices)
+            {
+                var price = new LibraryVideoPrice
+                {
+                    Id = Guid.NewGuid(),
+                    VideoId = videoId,
+                    LocationCode = p.LocationCode,
+                    Amount = p.Amount,
+                    CurrencyCode = p.CurrencyCode,
+                    CurrencySymbol = p.CurrencySymbol,
+                    OriginalAmount = p.OriginalAmount,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+                await _prices.AddAsync(price);
             }
         }
 

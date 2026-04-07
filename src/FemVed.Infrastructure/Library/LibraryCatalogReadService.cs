@@ -382,10 +382,10 @@ public sealed class LibraryCatalogReadService : ILibraryCatalogReadService
     /// </summary>
     private static (string Price, string? OriginalPrice) ResolvePrice(
         ICollection<LibraryVideoPrice> overrides,
-        LibraryPriceTier tier,
+        LibraryPriceTier? tier,
         string locationCode)
     {
-        // 1. Check per-video price overrides
+        // 1. Check per-video direct prices (preferred)
         var videoPrice = overrides.FirstOrDefault(p => p.LocationCode == locationCode)
                       ?? overrides.FirstOrDefault(p => p.LocationCode == "GB")
                       ?? overrides.FirstOrDefault();
@@ -399,14 +399,17 @@ public sealed class LibraryCatalogReadService : ILibraryCatalogReadService
             return (formatted, formattedOriginal);
         }
 
-        // 2. Fall back to tier prices
-        var tierPrices = tier.Prices.ToList();
-        var tierPrice = tierPrices.FirstOrDefault(p => p.LocationCode == locationCode)
-                     ?? tierPrices.FirstOrDefault(p => p.LocationCode == "GB")
-                     ?? tierPrices.FirstOrDefault();
+        // 2. Fall back to tier prices (if tier assigned)
+        if (tier is not null)
+        {
+            var tierPrices = tier.Prices.ToList();
+            var tierPrice = tierPrices.FirstOrDefault(p => p.LocationCode == locationCode)
+                         ?? tierPrices.FirstOrDefault(p => p.LocationCode == "GB")
+                         ?? tierPrices.FirstOrDefault();
 
-        if (tierPrice is not null)
-            return (FormatAmount(tierPrice.CurrencySymbol, tierPrice.Amount), null);
+            if (tierPrice is not null)
+                return (FormatAmount(tierPrice.CurrencySymbol, tierPrice.Amount), null);
+        }
 
         return ("N/A", null);
     }

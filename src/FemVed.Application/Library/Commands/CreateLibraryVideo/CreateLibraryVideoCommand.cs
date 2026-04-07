@@ -2,12 +2,11 @@ using MediatR;
 
 namespace FemVed.Application.Library.Commands.CreateLibraryVideo;
 
-/// <summary>
-/// Input record for a video feature (icon + description).
-/// </summary>
-/// <param name="Icon">Icon character, e.g. "▶", "♾".</param>
-/// <param name="Description">Feature description text.</param>
+/// <summary>Input record for a video feature (icon + description).</summary>
 public record CreateVideoFeatureInput(string Icon, string Description);
+
+/// <summary>Input record for a per-video regional price.</summary>
+public record CreateVideoPriceInput(string LocationCode, decimal Amount, string CurrencyCode, string CurrencySymbol, decimal? OriginalAmount);
 
 /// <summary>
 /// Creates a new library video in Draft status with optional tags and features.
@@ -39,7 +38,7 @@ public record CreateVideoFeatureInput(string Icon, string Description);
 public record CreateLibraryVideoCommand(
     Guid CategoryId,
     Guid ExpertId,
-    Guid PriceTierId,
+    Guid? PriceTierId,
     string Title,
     string Slug,
     string? Synopsis,
@@ -59,4 +58,5 @@ public record CreateLibraryVideoCommand(
     int? FeaturedPosition,
     int SortOrder,
     List<string>? Tags,
-    List<CreateVideoFeatureInput>? Features) : IRequest<Guid>;
+    List<CreateVideoFeatureInput>? Features,
+    List<CreateVideoPriceInput>? Prices) : IRequest<Guid>;

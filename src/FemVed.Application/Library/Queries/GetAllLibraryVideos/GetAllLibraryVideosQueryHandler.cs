@@ -58,7 +58,7 @@ public sealed class GetAllLibraryVideosQueryHandler
                 TotalDuration: v.TotalDuration,
                 EpisodeCount: v.VideoType == VideoType.Series
                     ? episodeCounts.GetValueOrDefault(v.Id, 0) : null,
-                PriceTierKey: tierMap.GetValueOrDefault(v.PriceTierId, "Unknown"),
+                PriceTierKey: v.PriceTierId.HasValue ? tierMap.GetValueOrDefault(v.PriceTierId.Value, "Unknown") : null,
                 SortOrder: v.SortOrder,
                 IsFeatured: v.IsFeatured,
                 IsDeleted: v.IsDeleted,
