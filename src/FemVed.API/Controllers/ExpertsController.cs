@@ -16,6 +16,8 @@ using FemVed.Application.Experts.Queries.GetMyEnrollments;
 using FemVed.Application.Experts.Queries.GetMyExpertProfile;
 using FemVed.Application.Experts.Queries.GetMyExpertPrograms;
 using FemVed.Application.Experts.Queries.GetMyPayoutHistory;
+using FemVed.Application.Library.DTOs;
+using FemVed.Application.Library.Queries.GetExpertLibrarySales;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -153,6 +155,26 @@ public sealed class ExpertsController : ControllerBase
     {
         var userId = GetCurrentUserId();
         var result = await _mediator.Send(new GetMyPayoutHistoryQuery(userId), cancellationToken);
+        return Ok(result);
+    }
+
+    // ── Library Sales ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns library video sales summary for the authenticated expert:
+    /// per-video purchase counts, total revenue by currency.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the sales summary; 404 if no expert profile is linked.</returns>
+    [HttpGet("me/library-sales")]
+    [ProducesResponseType(typeof(ExpertLibrarySalesResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMyLibrarySales(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _mediator.Send(new GetExpertLibrarySalesQuery(userId), cancellationToken);
         return Ok(result);
     }
 
