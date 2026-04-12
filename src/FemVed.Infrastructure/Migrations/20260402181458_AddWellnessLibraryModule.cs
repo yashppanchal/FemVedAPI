@@ -25,7 +25,7 @@ namespace FemVed.Infrastructure.Migrations
                 type: "character varying(20)",
                 maxLength: 20,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "GUIDED");
 
             migrationBuilder.AddColumn<string>(
                 name: "scope",
