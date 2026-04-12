@@ -199,7 +199,7 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             _logger.LogWarning("OrderPaidEventHandler: expert user not found for expert {ExpertId}, skipping expert_new_enrollment email", notification.ExpertId);
         }
 
-        // ── 5. admin_new_enrollment email → aditi@femved.com ─────────────────
+        // ── 5. admin_new_enrollment email → configurable admin addresses ────────
         var adminEnrollmentData = new Dictionary<string, object>
         {
             ["userName"]      = user is not null ? $"{user.FirstName} {user.LastName}" : "Unknown user",
@@ -214,7 +214,10 @@ public sealed class OrderPaidEventHandler : INotificationHandler<OrderPaidEvent>
             ["orderSource"]   = notification.OrderSource.ToString().ToUpperInvariant()
         };
 
-        foreach (var adminEmail in new[] { "aditi@femved.com", "femvedwellness@gmail.com" })
+        var adminEmails = (_configuration["ADMIN_NOTIFICATION_EMAILS"] ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var adminEmail in adminEmails)
             await SendEmailWithLogAsync(
                 toEmail:      adminEmail,
                 toName:       "FemVed Admin",
