@@ -10,7 +10,7 @@ namespace FemVed.Application.Library.Commands.DeleteLibraryVideo;
 
 /// <summary>
 /// Handles <see cref="DeleteLibraryVideoCommand"/>.
-/// Soft-deletes the video and evicts the library tree cache.
+/// Hard-deletes the video and evicts the library tree cache.
 /// </summary>
 public sealed class DeleteLibraryVideoCommandHandler : IRequestHandler<DeleteLibraryVideoCommand>
 {
@@ -36,28 +36,26 @@ public sealed class DeleteLibraryVideoCommandHandler : IRequestHandler<DeleteLib
     }
 
     /// <summary>
-    /// Soft-deletes the library video and evicts the tree cache.
+    /// Hard-deletes the library video and evicts the tree cache.
     /// </summary>
     /// <param name="request">The delete command.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <exception cref="NotFoundException">Thrown when the video is not found or already deleted.</exception>
+    /// <exception cref="NotFoundException">Thrown when the video is not found.</exception>
     public async Task Handle(DeleteLibraryVideoCommand request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Soft-deleting library video {VideoId}", request.VideoId);
+        _logger.LogInformation("Hard-deleting library video {VideoId}", request.VideoId);
 
         var video = await _videos.FirstOrDefaultAsync(
-            v => v.Id == request.VideoId && !v.IsDeleted, cancellationToken)
+            v => v.Id == request.VideoId, cancellationToken)
             ?? throw new NotFoundException("LibraryVideo", request.VideoId);
 
-        video.IsDeleted = true;
-        video.UpdatedAt = DateTimeOffset.UtcNow;
-        _videos.Update(video);
+        _videos.Remove(video);
         await _uow.SaveChangesAsync(cancellationToken);
 
         // Evict library tree cache for all known location codes
         foreach (var loc in KnownLocationCodes)
             _cache.Remove($"{GetLibraryTreeQueryHandler.CacheKeyPrefix}{loc}");
 
-        _logger.LogInformation("Library video {VideoId} soft-deleted. Cache evicted.", request.VideoId);
+        _logger.LogInformation("Library video {VideoId} permanently deleted. Cache evicted.", request.VideoId);
     }
 }
