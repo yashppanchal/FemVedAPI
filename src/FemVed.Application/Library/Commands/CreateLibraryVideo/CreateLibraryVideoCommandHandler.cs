@@ -124,7 +124,7 @@ public sealed class CreateLibraryVideoCommandHandler : IRequestHandler<CreateLib
             IsFeatured = request.IsFeatured,
             FeaturedLabel = request.FeaturedLabel,
             FeaturedPosition = request.FeaturedPosition,
-            Status = VideoStatus.Draft,
+            Status = VideoStatus.Published,
             SortOrder = request.SortOrder,
             IsDeleted = false,
             CreatedAt = now,
