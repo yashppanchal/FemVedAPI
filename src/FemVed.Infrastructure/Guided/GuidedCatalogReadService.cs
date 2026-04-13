@@ -204,6 +204,7 @@ public sealed class GuidedCatalogReadService : IGuidedCatalogReadService
     private static ProgramInCategoryDto MapProgram(Program program, string locationCode) =>
         new(
             ProgramId: program.Id,
+            ProgramSlug: program.Slug,
             ProgramName: program.Name,
             ProgramGridDescription: program.GridDescription,
             ProgramGridImage: program.GridImageUrl,

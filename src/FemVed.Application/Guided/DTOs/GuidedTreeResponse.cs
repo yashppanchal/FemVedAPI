@@ -50,6 +50,7 @@ public record CategoryPageDataDto(
 
 /// <summary>A single published program shown in the category grid.</summary>
 /// <param name="ProgramId">Program primary key.</param>
+/// <param name="ProgramSlug">URL-friendly slug for the program, e.g. "hormonal-reset-6-weeks".</param>
 /// <param name="ProgramName">Full program name.</param>
 /// <param name="ProgramGridDescription">Short description for the grid card.</param>
 /// <param name="ProgramGridImage">Grid card image URL.</param>
@@ -63,6 +64,7 @@ public record CategoryPageDataDto(
 /// <param name="ProgramPageDisplayDetails">Full detail page content.</param>
 public record ProgramInCategoryDto(
     Guid ProgramId,
+    string ProgramSlug,
     string? ProgramName,
     string? ProgramGridDescription,
     string? ProgramGridImage,
