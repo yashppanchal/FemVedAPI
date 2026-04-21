@@ -19,7 +19,7 @@ namespace FemVed.Application.Library.DTOs;
 /// <param name="ReleaseYear">Release year, e.g. "2026".</param>
 /// <param name="Price">Formatted price for the user's location.</param>
 /// <param name="OriginalPrice">Struck-through original price, or null.</param>
-/// <param name="PriceTier">Tier key, e.g. "LARGE".</param>
+/// <param name="PriceTier">Tier key, e.g. "LARGE", or null if using direct price overrides.</param>
 /// <param name="ExpertId">Expert primary key.</param>
 /// <param name="ExpertName">Expert display name.</param>
 /// <param name="ExpertTitle">Expert professional title.</param>
@@ -45,7 +45,7 @@ public record LibraryVideoDetailResponse(
     string? ReleaseYear,
     string Price,
     string? OriginalPrice,
-    string PriceTier,
+    string? PriceTier,
     Guid ExpertId,
     string ExpertName,
     string ExpertTitle,

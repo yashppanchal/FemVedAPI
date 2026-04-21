@@ -218,7 +218,7 @@ public sealed class LibraryCatalogReadService : ILibraryCatalogReadService
             ReleaseYear: video.ReleaseYear,
             Price: price,
             OriginalPrice: originalPrice,
-            PriceTier: video.PriceTier.TierKey,
+            PriceTier: video.PriceTier?.TierKey,
             ExpertId: video.Expert.Id,
             ExpertName: video.Expert.DisplayName,
             ExpertTitle: video.Expert.Title,
