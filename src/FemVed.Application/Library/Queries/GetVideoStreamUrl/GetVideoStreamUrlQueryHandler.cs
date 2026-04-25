@@ -43,7 +43,7 @@ public sealed class GetVideoStreamUrlQueryHandler
     /// <param name="request">The query containing the slug and user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Stream response with URLs and progress.</returns>
-    /// <exception cref="NotFoundException">Thrown when the video is not found or not published.</exception>
+    /// <exception cref="NotFoundException">Thrown when the video is not found, deleted, or still in draft/pending review.</exception>
     /// <exception cref="DomainException">Thrown when the user has not purchased this video.</exception>
     public async Task<LibraryStreamResponse> Handle(
         GetVideoStreamUrlQuery request,
@@ -52,9 +52,11 @@ public sealed class GetVideoStreamUrlQueryHandler
         _logger.LogInformation("Fetching stream URLs for video slug {Slug}, user {UserId}",
             request.Slug, request.UserId);
 
+        // Archived videos remain streamable for users who already purchased them — archive only
+        // removes the video from the public catalog, it does not revoke prior access.
         var video = await _videos.FirstOrDefaultAsync(
             v => v.Slug == request.Slug
-              && v.Status == VideoStatus.Published
+              && (v.Status == VideoStatus.Published || v.Status == VideoStatus.Archived)
               && !v.IsDeleted,
             cancellationToken);
 
@@ -99,6 +101,7 @@ public sealed class GetVideoStreamUrlQueryHandler
                         EpisodeId: e.Id,
                         EpisodeNumber: e.EpisodeNumber,
                         Title: e.Title,
+                        Description: e.Description,
                         StreamUrl: e.StreamUrl,
                         WatchProgressSeconds: progress?.WatchProgressSeconds ?? 0,
                         IsCompleted: progress?.IsCompleted ?? false);

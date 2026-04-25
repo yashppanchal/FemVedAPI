@@ -74,4 +74,45 @@ public sealed class SendGridEmailService : IEmailService
 
         _logger.LogInformation("SendGridEmailService: '{TemplateKey}' delivered to {ToEmail}", templateKey, toEmail);
     }
+
+    /// <inheritdoc/>
+    public async Task SendRawAsync(
+        string toEmail,
+        string toName,
+        string subject,
+        string htmlBody,
+        string? replyToEmail = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(toEmail))
+        {
+            _logger.LogWarning("SendGridEmailService: toEmail is empty, skipping raw send for subject '{Subject}'", subject);
+            return;
+        }
+
+        _logger.LogInformation("SendGridEmailService: sending raw email '{Subject}' to {ToEmail}", subject, toEmail);
+
+        var client  = new SendGridClient(_options.ApiKey);
+        var from    = new EmailAddress(_options.FromEmail, _options.FromName);
+        var to      = new EmailAddress(toEmail, toName);
+        var message = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent: null, htmlContent: htmlBody);
+
+        if (!string.IsNullOrWhiteSpace(replyToEmail))
+            message.ReplyTo = new EmailAddress(replyToEmail);
+
+        var response = await client.SendEmailAsync(message, cancellationToken);
+
+        if ((int)response.StatusCode >= 400)
+        {
+            var body = await response.Body.ReadAsStringAsync(cancellationToken);
+            _logger.LogError(
+                "SendGridEmailService: SendGrid returned {StatusCode} for raw email '{Subject}' to {ToEmail}. Body: {Body}",
+                response.StatusCode, subject, toEmail, body);
+
+            throw new InvalidOperationException(
+                $"SendGrid returned {response.StatusCode} for raw email '{subject}'.");
+        }
+
+        _logger.LogInformation("SendGridEmailService: raw email '{Subject}' delivered to {ToEmail}", subject, toEmail);
+    }
 }

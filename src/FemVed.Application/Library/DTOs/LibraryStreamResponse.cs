@@ -22,6 +22,7 @@ public record LibraryStreamResponse(
 /// <param name="EpisodeId">Episode primary key.</param>
 /// <param name="EpisodeNumber">1-based episode number.</param>
 /// <param name="Title">Episode title.</param>
+/// <param name="Description">Episode description (HTML supported), or null.</param>
 /// <param name="StreamUrl">YouTube embed URL for this episode.</param>
 /// <param name="WatchProgressSeconds">Per-episode watch progress in seconds.</param>
 /// <param name="IsCompleted">Whether the user has completed this episode.</param>
@@ -29,6 +30,7 @@ public record LibraryStreamEpisodeDto(
     Guid EpisodeId,
     int EpisodeNumber,
     string Title,
+    string? Description,
     string? StreamUrl,
     int WatchProgressSeconds,
     bool IsCompleted);
