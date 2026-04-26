@@ -19,6 +19,7 @@ using FemVed.Application.Guided.Commands.DeleteDomain;
 using FemVed.Application.Guided.Commands.DeleteProgram;
 using FemVed.Application.Guided.Commands.PublishProgram;
 using FemVed.Application.Guided.Commands.RejectProgram;
+using FemVed.Application.Guided.Commands.RestoreProgram;
 using FemVed.Application.Guided.Commands.SubmitProgramForReview;
 using FemVed.Application.Guided.Commands.UpdateCategory;
 using FemVed.Application.Guided.Commands.UpdateDomain;
@@ -463,6 +464,27 @@ public sealed class GuidedController : ControllerBase
     {
         await _mediator.Send(new ArchiveProgramCommand(id), cancellationToken);
         return Ok(new ProgramLifecycleResultResponse(id, "ARCHIVED", true));
+    }
+
+    /// <summary>
+    /// Restores an ARCHIVED or soft-deleted program back to PUBLISHED. Admin only.
+    /// Reactivates the program's durations if the program was previously soft-deleted.
+    /// Evicts the guided tree cache so the program reappears in the public catalog.
+    /// </summary>
+    /// <param name="id">Program ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with lifecycle confirmation payload.</returns>
+    [HttpPost("programs/{id:guid}/restore")]
+    [Authorize(Policy = "AdminOnly")]
+    [ProducesResponseType(typeof(ProgramLifecycleResultResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Restore(Guid id, CancellationToken cancellationToken)
+    {
+        await _mediator.Send(new RestoreProgramCommand(id), cancellationToken);
+        return Ok(new ProgramLifecycleResultResponse(id, "PUBLISHED", true));
     }
 
     /// <summary>

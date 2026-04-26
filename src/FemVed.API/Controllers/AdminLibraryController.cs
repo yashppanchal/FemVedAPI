@@ -7,6 +7,7 @@ using FemVed.Application.Library.Commands.AddLibraryTestimonial;
 using FemVed.Application.Library.Commands.AddLibraryTierPrice;
 using FemVed.Application.Library.Commands.AddLibraryVideoPrice;
 using FemVed.Application.Library.Commands.ArchiveLibraryVideo;
+using FemVed.Application.Library.Commands.RestoreLibraryVideo;
 using FemVed.Application.Library.Commands.CreateLibraryCategory;
 using FemVed.Application.Library.Commands.CreateLibraryDomain;
 using FemVed.Application.Library.Commands.CreateLibraryFilterType;
@@ -228,6 +229,20 @@ public sealed class AdminLibraryController : ControllerBase
     public async Task<IActionResult> ArchiveVideo(Guid id, CancellationToken ct)
     {
         await _mediator.Send(new ArchiveLibraryVideoCommand(id), ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Restores an archived video back to Published, and/or clears its soft-delete flag.
+    /// 422 is returned when the video is not in a restorable state.
+    /// </summary>
+    [HttpPost("videos/{id:guid}/restore")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> RestoreVideo(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new RestoreLibraryVideoCommand(id), ct);
         return NoContent();
     }
 
