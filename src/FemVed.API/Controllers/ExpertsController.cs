@@ -22,6 +22,7 @@ using FemVed.Application.Library.Queries.GetExpertLibrarySales;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace FemVed.API.Controllers;
 
@@ -54,7 +55,9 @@ public sealed class ExpertsController : ControllerBase
     /// <returns>200 OK with the list of experts (may be empty).</returns>
     [HttpGet]
     [AllowAnonymous]
+    [EnableRateLimiting("global")]
     [ProducesResponseType(typeof(List<PublicExpertDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> GetAllExperts(CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetAllExpertsQuery(), cancellationToken);
