@@ -224,6 +224,8 @@ public sealed class LibraryCatalogReadService : ILibraryCatalogReadService
             ExpertTitle: video.Expert.Title,
             ExpertGridDescription: video.Expert.GridDescription,
             ExpertDetailedDescription: video.Expert.DetailedDescription,
+            ExpertGridImageUrl: video.Expert.GridImageUrl,
+            ExpertImageUrl: video.Expert.ProfileImageUrl,
             Tags: video.Tags.Select(t => t.Tag).ToList(),
             Episodes: video.Episodes
                 .Select(e => new LibraryEpisodeDto(

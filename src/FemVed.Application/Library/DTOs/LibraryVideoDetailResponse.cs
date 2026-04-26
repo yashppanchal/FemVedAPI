@@ -25,6 +25,8 @@ namespace FemVed.Application.Library.DTOs;
 /// <param name="ExpertTitle">Expert professional title.</param>
 /// <param name="ExpertGridDescription">Short expert bio.</param>
 /// <param name="ExpertDetailedDescription">Detailed expert bio for the video detail page, or null.</param>
+/// <param name="ExpertGridImageUrl">Grid-card expert photo URL (used on cards and the detail page header), or null.</param>
+/// <param name="ExpertImageUrl">Full profile expert photo URL, or null.</param>
 /// <param name="Tags">Display tags.</param>
 /// <param name="Episodes">Episode list (locked, no stream URLs).</param>
 /// <param name="Features">"What's included" features on the purchase card.</param>
@@ -52,6 +54,8 @@ public record LibraryVideoDetailResponse(
     string ExpertTitle,
     string? ExpertGridDescription,
     string? ExpertDetailedDescription,
+    string? ExpertGridImageUrl,
+    string? ExpertImageUrl,
     List<string> Tags,
     List<LibraryEpisodeDto> Episodes,
     List<LibraryFeatureDto> Features,
