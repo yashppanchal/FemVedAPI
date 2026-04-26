@@ -10,6 +10,7 @@ using FemVed.Application.Enrollments.Commands.StartEnrollment;
 using FemVed.Application.Experts.Commands.SendProgressUpdate;
 using FemVed.Application.Experts.Commands.UpdateMyExpertProfile;
 using FemVed.Application.Experts.DTOs;
+using FemVed.Application.Experts.Queries.GetAllExperts;
 using FemVed.Application.Experts.Queries.GetEnrollmentComments;
 using FemVed.Application.Experts.Queries.GetMyEarnings;
 using FemVed.Application.Experts.Queries.GetMyEnrollments;
@@ -42,6 +43,22 @@ public sealed class ExpertsController : ControllerBase
     public ExpertsController(IMediator mediator)
     {
         _mediator = mediator;
+    }
+
+    // ── Public listing ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns every expert profile in the platform. Public endpoint — no authentication required.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>200 OK with the list of experts (may be empty).</returns>
+    [HttpGet]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<PublicExpertDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllExperts(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetAllExpertsQuery(), cancellationToken);
+        return Ok(result);
     }
 
     // ── Profile & Programs ────────────────────────────────────────────────────
