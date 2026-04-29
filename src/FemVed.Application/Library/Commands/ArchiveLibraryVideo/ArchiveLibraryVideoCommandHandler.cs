@@ -22,14 +22,19 @@ public sealed class ArchiveLibraryVideoCommandHandler : IRequestHandler<ArchiveL
     public ArchiveLibraryVideoCommandHandler(IRepository<LibraryVideo> videos, IUnitOfWork uow, IMemoryCache cache, ILogger<ArchiveLibraryVideoCommandHandler> logger)
     { _videos = videos; _uow = uow; _cache = cache; _logger = logger; }
 
-    /// <summary>Archives the video.</summary>
+    /// <summary>
+    /// Archives the video, regardless of current lifecycle state. Once archived the video
+    /// is hidden from the public catalog, but users who already purchased it retain access
+    /// (see <see cref="GetVideoStreamUrl.GetVideoStreamUrlQueryHandler"/> which permits
+    /// streaming Published OR Archived videos for active purchasers).
+    /// </summary>
     public async Task Handle(ArchiveLibraryVideoCommand request, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Archiving library video {VideoId}", request.VideoId);
         var video = await _videos.FirstOrDefaultAsync(v => v.Id == request.VideoId && !v.IsDeleted, cancellationToken)
             ?? throw new NotFoundException(nameof(LibraryVideo), request.VideoId);
-        if (video.Status != VideoStatus.Published)
-            throw new DomainException($"Video must be Published to archive. Current: {video.Status}");
+        if (video.Status == VideoStatus.Archived)
+            throw new DomainException("Video is already archived.");
         video.Status = VideoStatus.Archived;
         video.UpdatedAt = DateTimeOffset.UtcNow;
         _videos.Update(video);
