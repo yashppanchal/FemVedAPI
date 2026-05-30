@@ -278,6 +278,9 @@ ASPNETCORE_ENVIRONMENT=Production
 | `email_verify` | Manual verify-email request (dormant — endpoint kept for future use) | User |
 | `welcome` | Post-registration | User |
 | `expert_progress_update` | Expert sends update from dashboard | User |
+| `expert_enrollment_ended` | Program ended (any actor) | Expert |
+| `feedback_user` | Program ended | User |
+| `feedback_expert` | Program ended | Expert |
 
 WhatsApp templates (Twilio, pre-approved by Meta before launch):
 - `purchase_confirmation_wa`

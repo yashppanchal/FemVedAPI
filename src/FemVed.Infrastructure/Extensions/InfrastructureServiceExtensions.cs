@@ -85,6 +85,8 @@ public static class InfrastructureServiceExtensions
                 ["session_start_reminder_24h"]   = configuration["SENDGRID_TEMPLATE_SESSION_START_REMINDER_24H"]   ?? string.Empty,
                 ["start_date_approved"]          = configuration["SENDGRID_TEMPLATE_START_DATE_APPROVED"]          ?? string.Empty,
                 ["start_date_declined"]          = configuration["SENDGRID_TEMPLATE_START_DATE_DECLINED"]          ?? string.Empty,
+                ["feedback_user"]                = configuration["SENDGRID_TEMPLATE_FEEDBACK_USER"]                ?? string.Empty,
+                ["feedback_expert"]              = configuration["SENDGRID_TEMPLATE_FEEDBACK_EXPERT"]              ?? string.Empty,
             };
         });
 

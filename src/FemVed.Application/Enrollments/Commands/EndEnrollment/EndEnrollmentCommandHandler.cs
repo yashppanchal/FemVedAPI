@@ -121,9 +121,8 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
         // ── Notify enrolled user ──────────────────────────────────────────────
         await SendUserEmailAsync(record, "session_ended", cancellationToken);
 
-        // ── Fix 12/13: Notify expert when user self-ends enrollment ───────────
-        if (performedByRole == "USER")
-            await SendExpertNotificationEmailAsync(record, cancellationToken);
+        // ── Notify expert regardless of who ended the program ────────────────
+        await SendExpertNotificationEmailAsync(record, cancellationToken);
 
         // ── Always send feedback form links on program end ────────────────────
         await SendFeedbackFormEmailsAsync(record, cancellationToken);
@@ -133,25 +132,24 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
         UserProgramAccess record,
         CancellationToken cancellationToken)
     {
+        var year = DateTimeOffset.UtcNow.Year.ToString();
+
         // Enrolled user feedback
         try
         {
             var enrolledUser = await _users.FirstOrDefaultAsync(u => u.Id == record.UserId, cancellationToken);
             if (enrolledUser is not null)
             {
-                var firstName = enrolledUser.FirstName;
-                var html = $@"
-<p>Hi {System.Net.WebUtility.HtmlEncode(firstName)},</p>
-<p>Thank you for completing your guided program with FemVed. Your experience matters to us — would you mind taking a moment to share your feedback?</p>
-<p><a href=""{UserFeedbackFormUrl}"">Open the feedback form</a></p>
-<p>It only takes a couple of minutes and helps us keep improving the care we offer.</p>
-<p>Warmly,<br/>The FemVed Team</p>";
-
-                await _emailService.SendRawAsync(
-                    toEmail:  enrolledUser.Email,
-                    toName:   $"{enrolledUser.FirstName} {enrolledUser.LastName}",
-                    subject:  "Share your feedback on your FemVed program",
-                    htmlBody: html,
+                await _emailService.SendAsync(
+                    toEmail:      enrolledUser.Email,
+                    toName:       $"{enrolledUser.FirstName} {enrolledUser.LastName}",
+                    templateKey:  "feedback_user",
+                    templateData: new Dictionary<string, object>
+                    {
+                        ["firstName"]   = enrolledUser.FirstName,
+                        ["feedbackUrl"] = UserFeedbackFormUrl,
+                        ["year"]        = year
+                    },
                     cancellationToken: cancellationToken);
 
                 _logger.LogInformation("EndEnrollment: user feedback-form email sent to {UserId}", enrolledUser.Id);
@@ -171,18 +169,16 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
             var expertUser = await _users.FirstOrDefaultAsync(u => u.Id == expertProfile.UserId, cancellationToken);
             if (expertUser is null) return;
 
-            var html = $@"
-<p>Hi {System.Net.WebUtility.HtmlEncode(expertUser.FirstName)},</p>
-<p>One of your guided programs has just ended. We'd love a quick reflection from you to help shape FemVed's next chapter.</p>
-<p><a href=""{ExpertFeedbackFormUrl}"">Open the expert feedback form</a></p>
-<p>Thank you for the care you bring to our community.</p>
-<p>Warmly,<br/>The FemVed Team</p>";
-
-            await _emailService.SendRawAsync(
-                toEmail:  expertUser.Email,
-                toName:   $"{expertUser.FirstName} {expertUser.LastName}",
-                subject:  "Share your feedback on the FemVed program you just ended",
-                htmlBody: html,
+            await _emailService.SendAsync(
+                toEmail:      expertUser.Email,
+                toName:       $"{expertUser.FirstName} {expertUser.LastName}",
+                templateKey:  "feedback_expert",
+                templateData: new Dictionary<string, object>
+                {
+                    ["firstName"]   = expertUser.FirstName,
+                    ["feedbackUrl"] = ExpertFeedbackFormUrl,
+                    ["year"]        = year
+                },
                 cancellationToken: cancellationToken);
 
             _logger.LogInformation("EndEnrollment: expert feedback-form email sent to {ExpertUserId}", expertUser.Id);
