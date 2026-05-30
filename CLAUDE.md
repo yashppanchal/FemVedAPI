@@ -275,7 +275,8 @@ ASPNETCORE_ENVIRONMENT=Production
 | `program_reminder` | 24h before start_date | User |
 | `expert_new_enrollment` | Order status → PAID | Expert |
 | `password_reset` | Forgot password | User |
-| `email_verify` | Post-registration | User |
+| `email_verify` | Manual verify-email request (dormant — endpoint kept for future use) | User |
+| `welcome` | Post-registration | User |
 | `expert_progress_update` | Expert sends update from dashboard | User |
 
 WhatsApp templates (Twilio, pre-approved by Meta before launch):

@@ -14,7 +14,7 @@ namespace FemVed.Application.Auth.Commands.Register;
 
 /// <summary>
 /// Handles <see cref="RegisterCommand"/>.
-/// Creates a new User (role = User), issues tokens, and sends a verification email.
+/// Creates a new User (role = User), issues tokens, and sends a welcome email.
 /// </summary>
 public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthResponse>
 {
@@ -111,28 +111,27 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         var expiryMinutes = int.Parse(_config["JWT_ACCESS_EXPIRY_MINUTES"] ?? "15");
         var accessExpiry = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes);
 
-        // Send email verification — non-blocking; failure must never abort registration
-        var verifyToken = _jwt.GenerateEmailVerificationToken(user.Id);
+        // Send welcome email — non-blocking; failure must never abort registration
         var baseUrl = _config["APP_BASE_URL"] ?? "https://femved.com";
-        var verifyLink = $"{baseUrl}/verify-email?token={Uri.EscapeDataString(verifyToken)}";
+        var dashboardUrl = $"{baseUrl}/dashboard";
 
         try
         {
             await _email.SendAsync(
                 user.Email,
                 $"{user.FirstName} {user.LastName}",
-                "email_verify",
+                "welcome",
                 new Dictionary<string, object>
                 {
                     { "firstName", user.FirstName },
-                    { "verifyUrl", verifyLink },
+                    { "dashboardUrl", dashboardUrl },
                     { "year", DateTimeOffset.UtcNow.Year.ToString() }
                 },
                 cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Registration: verification email failed for user {UserId} — registration still succeeded", user.Id);
+            _logger.LogWarning(ex, "Registration: welcome email failed for user {UserId} — registration still succeeded", user.Id);
         }
 
         _logger.LogInformation("User {UserId} registered successfully", user.Id);

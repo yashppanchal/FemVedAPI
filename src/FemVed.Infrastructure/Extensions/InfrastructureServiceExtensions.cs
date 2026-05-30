@@ -68,6 +68,7 @@ public static class InfrastructureServiceExtensions
                 ["expert_new_enrollment"]    = configuration["SENDGRID_TEMPLATE_EXPERT_NEW_ENROLLMENT"]    ?? string.Empty,
                 ["password_reset"]           = configuration["SENDGRID_TEMPLATE_PASSWORD_RESET"]           ?? string.Empty,
                 ["email_verify"]             = configuration["SENDGRID_TEMPLATE_EMAIL_VERIFY"]             ?? string.Empty,
+                ["welcome"]                  = configuration["SENDGRID_TEMPLATE_WELCOME"]                  ?? string.Empty,
                 ["expert_progress_update"]   = configuration["SENDGRID_TEMPLATE_EXPERT_PROGRESS_UPDATE"]   ?? string.Empty,
                 ["session_started"]              = configuration["SENDGRID_TEMPLATE_SESSION_STARTED"]              ?? string.Empty,
                 ["session_paused"]               = configuration["SENDGRID_TEMPLATE_SESSION_PAUSED"]               ?? string.Empty,
