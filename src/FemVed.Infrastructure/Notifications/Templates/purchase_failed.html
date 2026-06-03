@@ -1,0 +1,46 @@
+<!--subject: Your FemVed payment didn't go through-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment didn't go through</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f7f3ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2d3a2e;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f3ef;padding:32px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <tr>
+            <td style="background-color:#3d5a40;padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:600;letter-spacing:0.5px;">FemVed</h1>
+              <p style="margin:6px 0 0;color:#d9e4d8;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;">Payment Notice</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              <h2 style="margin:0 0 16px;font-size:22px;font-weight:600;color:#2d3a2e;">Hi {{firstName}},</h2>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#4a554b;">
+                Your recent payment on FemVed didn't go through. Don't worry — no charge has been made.
+              </p>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#4a554b;">
+                If you'd like to try again, head back to the program page and start the checkout once more. Most payment failures are resolved by trying a different card or payment method.
+              </p>
+              <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#7a857b;">
+                Reference order ID: <span style="font-family:monospace;color:#3d5a40;">{{orderId}}</span>
+              </p>
+              <p style="margin:24px 0 0;font-size:16px;line-height:1.6;color:#4a554b;">
+                Need a hand? Just reply to this email and we'll help you sort it.
+              </p>
+              <p style="margin:24px 0 0;font-size:16px;line-height:1.6;color:#4a554b;">With warmth,<br/>The FemVed Team</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f7f3ef;padding:20px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#a0a8a1;">&copy; {{year}} FemVed. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>

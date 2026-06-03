@@ -1,0 +1,75 @@
+<!--subject: Welcome to FemVed, {{firstName}} 🌸-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to FemVed</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f7f3ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2d3a2e;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f3ef;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+            <tr>
+              <td style="background-color:#3d5a40;padding:32px 40px;text-align:center;">
+                <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:600;letter-spacing:0.5px;">FemVed</h1>
+                <p style="margin:6px 0 0;color:#d9e4d8;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;">Women's Wellness, Guided</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:40px 40px 24px;">
+                <h2 style="margin:0 0 16px;font-size:22px;font-weight:600;color:#2d3a2e;">
+                  Welcome, {{firstName}} 🌸
+                </h2>
+                <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#4a554b;">
+                  We're so glad you're here. FemVed connects you with hand-picked experts who guide you through personalised programs for hormonal health, stress, gut wellness, and more — at your own pace.
+                </p>
+                <p style="margin:0 0 28px;font-size:16px;line-height:1.6;color:#4a554b;">
+                  Your account is ready. Take a look around your dashboard, explore programs, and start your journey whenever you feel ready.
+                </p>
+
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:8px auto 24px;">
+                  <tr>
+                    <td style="background-color:#3d5a40;border-radius:6px;">
+                      <a href="{{dashboardUrl}}"
+                         style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.3px;">
+                        Go to My Dashboard
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#7a857b;text-align:center;">
+                  Or copy this link into your browser:<br />
+                  <a href="{{dashboardUrl}}" style="color:#3d5a40;word-break:break-all;">{{dashboardUrl}}</a>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 40px 32px;">
+                <hr style="border:none;border-top:1px solid #e8e4df;margin:0 0 24px;" />
+                <h3 style="margin:0 0 12px;font-size:16px;font-weight:600;color:#2d3a2e;">What's next</h3>
+                <ul style="margin:0;padding:0 0 0 18px;font-size:15px;line-height:1.7;color:#4a554b;">
+                  <li>Browse our <strong>Guided 1:1 Care</strong> programs by category</li>
+                  <li>Read expert bios and choose your perfect match</li>
+                  <li>Enrol in a program — your expert will reach out to begin</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td style="background-color:#f7f3ef;padding:24px 40px;text-align:center;">
+                <p style="margin:0 0 8px;font-size:13px;color:#7a857b;">
+                  Questions? Reply to this email — we read every message.
+                </p>
+                <p style="margin:0;font-size:12px;color:#a0a8a1;">
+                  &copy; {{year}} FemVed. All rights reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

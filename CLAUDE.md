@@ -45,7 +45,7 @@ There are 3 modules — build in this order:
 | Mediator / CQRS | MediatR 12 |
 | Auth | JWT Bearer tokens + Refresh tokens |
 | Password hashing | BCrypt.Net-Next (work factor 12) |
-| Email | SendGrid (dynamic templates) |
+| Email | Resend (HTTP API) with Handlebars.Net for template rendering. Templates live as embedded HTML resources under `src/FemVed.Infrastructure/Notifications/Templates/*.html` and declare their subject via a `<!--subject: ...-->` metadata comment on the first line. |
 | WhatsApp + SMS | Twilio (WhatsApp Business API + SMS) |
 | Payments — India | CashFree Payments API |
 | Payments — UK/US | PayPal Orders API v2 |
@@ -233,10 +233,10 @@ JWT_AUDIENCE=https://femved.com
 JWT_ACCESS_EXPIRY_MINUTES=15
 JWT_REFRESH_EXPIRY_DAYS=7
 
-# SendGrid
-SENDGRID_API_KEY=SG.xxxxx
-SENDGRID_FROM_EMAIL=hello@femved.com
-SENDGRID_FROM_NAME=FemVed
+# Resend (email transport — replaces SendGrid)
+RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=hello@femved.com    # must be a verified sender / domain in Resend
+RESEND_FROM_NAME=FemVed
 
 # Twilio
 TWILIO_ACCOUNT_SID=ACxxxx
@@ -266,7 +266,11 @@ ASPNETCORE_ENVIRONMENT=Production
 
 ---
 
-## 11. NOTIFICATION TEMPLATES (SendGrid)
+## 11. NOTIFICATION TEMPLATES (Resend, Handlebars.Net)
+
+Templates ship as embedded HTML files at `src/FemVed.Infrastructure/Notifications/Templates/<key>.html`.
+Each file declares its subject via `<!--subject: Hello {{firstName}}-->` on the first line, then the HTML body.
+Variables use `{{handlebars}}` syntax. If no file exists for a template key, the send is skipped with a warning.
 
 | template_key | Trigger | Recipient |
 |---|---|---|
@@ -278,9 +282,8 @@ ASPNETCORE_ENVIRONMENT=Production
 | `email_verify` | Manual verify-email request (dormant — endpoint kept for future use) | User |
 | `welcome` | Post-registration | User |
 | `expert_progress_update` | Expert sends update from dashboard | User |
-| `expert_enrollment_ended` | Program ended (any actor) | Expert |
-| `feedback_user` | Program ended | User |
-| `feedback_expert` | Program ended | Expert |
+| `program_ended_user` | Program ended (any actor) — single consolidated email with program/expert details + user feedback form | User |
+| `program_ended_expert_admin` | Program ended (any actor) — single consolidated email with program/expert/user details + expert feedback form | Expert, Admin(s) |
 
 WhatsApp templates (Twilio, pre-approved by Meta before launch):
 - `purchase_confirmation_wa`

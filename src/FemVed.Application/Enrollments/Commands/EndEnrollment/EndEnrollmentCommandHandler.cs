@@ -3,6 +3,7 @@ using FemVed.Domain.Entities;
 using FemVed.Domain.Enums;
 using FemVed.Domain.Exceptions;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace FemVed.Application.Enrollments.Commands.EndEnrollment;
@@ -14,7 +15,8 @@ namespace FemVed.Application.Enrollments.Commands.EndEnrollment;
 ///   <item>Guards against invalid state transitions (must be ACTIVE or PAUSED).</item>
 ///   <item>Sets Status = COMPLETED, CompletedAt = now, EndedBy + EndedByRole.</item>
 ///   <item>Appends a <see cref="ProgramSessionLog"/> entry.</item>
-///   <item>Emails the enrolled user via the <c>session_ended</c> SendGrid template.</item>
+///   <item>Sends one consolidated <c>program_ended_user</c> email to the enrolled user (with the user feedback form).</item>
+///   <item>Sends one <c>program_ended_expert_admin</c> email to the expert and to each admin in <c>ADMIN_NOTIFICATION_EMAILS</c> (with the expert feedback form).</item>
 /// </list>
 /// </summary>
 public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentCommand>
@@ -28,7 +30,10 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
     private readonly IRepository<Expert> _experts;
     private readonly IRepository<ProgramSessionLog> _sessionLogs;
     private readonly IRepository<User> _users;
+    private readonly IRepository<Domain.Entities.Program> _programs;
+    private readonly IRepository<ProgramDuration> _durations;
     private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<EndEnrollmentCommandHandler> _logger;
 
@@ -38,20 +43,26 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
         IRepository<Expert> experts,
         IRepository<ProgramSessionLog> sessionLogs,
         IRepository<User> users,
+        IRepository<Domain.Entities.Program> programs,
+        IRepository<ProgramDuration> durations,
         IEmailService emailService,
+        IConfiguration configuration,
         IUnitOfWork uow,
         ILogger<EndEnrollmentCommandHandler> logger)
     {
-        _access       = access;
-        _experts      = experts;
-        _sessionLogs  = sessionLogs;
-        _users        = users;
-        _emailService = emailService;
-        _uow          = uow;
-        _logger       = logger;
+        _access        = access;
+        _experts       = experts;
+        _sessionLogs   = sessionLogs;
+        _users         = users;
+        _programs      = programs;
+        _durations     = durations;
+        _emailService  = emailService;
+        _configuration = configuration;
+        _uow           = uow;
+        _logger        = logger;
     }
 
-    /// <summary>Ends the enrollment and notifies the enrolled user.</summary>
+    /// <summary>Ends the enrollment and notifies the enrolled user, the expert, and admins.</summary>
     /// <param name="request">The command payload.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <exception cref="NotFoundException">Thrown when the access record does not exist.</exception>
@@ -118,138 +129,165 @@ public sealed class EndEnrollmentCommandHandler : IRequestHandler<EndEnrollmentC
 
         _logger.LogInformation("EndEnrollment: access {AccessId} → COMPLETED", record.Id);
 
-        // ── Notify enrolled user ──────────────────────────────────────────────
-        await SendUserEmailAsync(record, "session_ended", cancellationToken);
-
-        // ── Notify expert regardless of who ended the program ────────────────
-        await SendExpertNotificationEmailAsync(record, cancellationToken);
-
-        // ── Always send feedback form links on program end ────────────────────
-        await SendFeedbackFormEmailsAsync(record, cancellationToken);
+        // ── Send consolidated emails ──────────────────────────────────────────
+        await SendProgramEndedEmailsAsync(record, performedByRole, now, cancellationToken);
     }
 
-    private async Task SendFeedbackFormEmailsAsync(
+    /// <summary>
+    /// Loads program / expert / user context once and sends:
+    /// (1) a single email to the enrolled user with the user feedback form,
+    /// (2) a single email to the expert and to each configured admin with the expert feedback form.
+    /// All sends are wrapped in try/catch — the enrollment state change is already persisted.
+    /// </summary>
+    private async Task SendProgramEndedEmailsAsync(
         UserProgramAccess record,
+        string performedByRole,
+        DateTimeOffset endedAt,
         CancellationToken cancellationToken)
     {
-        var year = DateTimeOffset.UtcNow.Year.ToString();
+        // Load everything we need for the email body
+        var enrolledUser = await _users.FirstOrDefaultAsync(u => u.Id == record.UserId, cancellationToken);
+        var expert       = await _experts.FirstOrDefaultAsync(e => e.Id == record.ExpertId, cancellationToken);
+        var expertUser   = expert is not null
+            ? await _users.FirstOrDefaultAsync(u => u.Id == expert.UserId, cancellationToken)
+            : null;
+        var program      = await _programs.FirstOrDefaultAsync(p => p.Id == record.ProgramId, cancellationToken);
+        var duration     = await _durations.FirstOrDefaultAsync(d => d.Id == record.DurationId, cancellationToken);
 
-        // Enrolled user feedback
-        try
+        var programName   = program?.Name ?? "Your Program";
+        var durationLabel = duration?.Label ?? string.Empty;
+        var expertName    = !string.IsNullOrWhiteSpace(expert?.DisplayName)
+            ? expert!.DisplayName
+            : expertUser is not null ? $"{expertUser.FirstName} {expertUser.LastName}" : "Your Expert";
+        var expertTitle   = expert?.Title ?? string.Empty;
+        var userName      = enrolledUser is not null
+            ? $"{enrolledUser.FirstName} {enrolledUser.LastName}"
+            : "A user";
+        var endedOn       = endedAt.ToString("dddd, d MMMM yyyy");
+        var year          = endedAt.Year.ToString();
+        var appBaseUrl    = _configuration["APP_BASE_URL"] ?? "https://femved.com";
+        var dashboardUrl  = $"{appBaseUrl}/dashboard";
+
+        // ── 1. Consolidated email to enrolled user ───────────────────────────
+        if (enrolledUser is not null)
         {
-            var enrolledUser = await _users.FirstOrDefaultAsync(u => u.Id == record.UserId, cancellationToken);
-            if (enrolledUser is not null)
+            try
             {
                 await _emailService.SendAsync(
                     toEmail:      enrolledUser.Email,
                     toName:       $"{enrolledUser.FirstName} {enrolledUser.LastName}",
-                    templateKey:  "feedback_user",
+                    templateKey:  "program_ended_user",
                     templateData: new Dictionary<string, object>
                     {
-                        ["firstName"]   = enrolledUser.FirstName,
-                        ["feedbackUrl"] = UserFeedbackFormUrl,
-                        ["year"]        = year
+                        ["firstName"]     = enrolledUser.FirstName,
+                        ["programName"]   = programName,
+                        ["expertName"]    = expertName,
+                        ["expertTitle"]   = expertTitle,
+                        ["durationLabel"] = durationLabel,
+                        ["endedOn"]       = endedOn,
+                        ["endedBy"]       = performedByRole,
+                        ["feedbackUrl"]   = UserFeedbackFormUrl,
+                        ["dashboardUrl"]  = dashboardUrl,
+                        ["year"]          = year
                     },
                     cancellationToken: cancellationToken);
 
-                _logger.LogInformation("EndEnrollment: user feedback-form email sent to {UserId}", enrolledUser.Id);
+                _logger.LogInformation("EndEnrollment: program_ended_user email sent to {UserId}", enrolledUser.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "EndEnrollment: failed to send program_ended_user email — enrollment update is still saved");
             }
         }
-        catch (Exception ex)
+
+        // ── 2. Consolidated email to expert (same template, expert form) ─────
+        if (expertUser is not null)
         {
-            _logger.LogError(ex, "EndEnrollment: failed to send user feedback-form email — enrollment update is still saved");
+            await SendExpertAdminEmailAsync(
+                toEmail:            expertUser.Email,
+                toName:             $"{expertUser.FirstName} {expertUser.LastName}",
+                recipientFirstName: expertUser.FirstName,
+                userName:           userName,
+                userEmail:          enrolledUser?.Email ?? string.Empty,
+                userMobile:         enrolledUser?.FullMobile ?? string.Empty,
+                programName:        programName,
+                expertName:         expertName,
+                expertTitle:        expertTitle,
+                durationLabel:      durationLabel,
+                endedOn:            endedOn,
+                endedBy:            performedByRole,
+                year:               year,
+                cancellationToken:  cancellationToken);
         }
 
-        // Expert feedback
-        try
+        // ── 3. Same email to each admin in ADMIN_NOTIFICATION_EMAILS ─────────
+        var adminEmails = (_configuration["ADMIN_NOTIFICATION_EMAILS"] ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var adminEmail in adminEmails)
         {
-            var expertProfile = await _experts.FirstOrDefaultAsync(e => e.Id == record.ExpertId, cancellationToken);
-            if (expertProfile is null) return;
-
-            var expertUser = await _users.FirstOrDefaultAsync(u => u.Id == expertProfile.UserId, cancellationToken);
-            if (expertUser is null) return;
-
-            await _emailService.SendAsync(
-                toEmail:      expertUser.Email,
-                toName:       $"{expertUser.FirstName} {expertUser.LastName}",
-                templateKey:  "feedback_expert",
-                templateData: new Dictionary<string, object>
-                {
-                    ["firstName"]   = expertUser.FirstName,
-                    ["feedbackUrl"] = ExpertFeedbackFormUrl,
-                    ["year"]        = year
-                },
-                cancellationToken: cancellationToken);
-
-            _logger.LogInformation("EndEnrollment: expert feedback-form email sent to {ExpertUserId}", expertUser.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "EndEnrollment: failed to send expert feedback-form email — enrollment update is still saved");
+            await SendExpertAdminEmailAsync(
+                toEmail:            adminEmail,
+                toName:             "FemVed Admin",
+                recipientFirstName: "FemVed Admin",
+                userName:           userName,
+                userEmail:          enrolledUser?.Email ?? string.Empty,
+                userMobile:         enrolledUser?.FullMobile ?? string.Empty,
+                programName:        programName,
+                expertName:         expertName,
+                expertTitle:        expertTitle,
+                durationLabel:      durationLabel,
+                endedOn:            endedOn,
+                endedBy:            performedByRole,
+                year:               year,
+                cancellationToken:  cancellationToken);
         }
     }
 
-    private async Task SendUserEmailAsync(
-        UserProgramAccess record,
-        string templateKey,
+    private async Task SendExpertAdminEmailAsync(
+        string toEmail,
+        string toName,
+        string recipientFirstName,
+        string userName,
+        string userEmail,
+        string userMobile,
+        string programName,
+        string expertName,
+        string expertTitle,
+        string durationLabel,
+        string endedOn,
+        string endedBy,
+        string year,
         CancellationToken cancellationToken)
     {
         try
         {
-            var enrolledUser = await _users.FirstOrDefaultAsync(u => u.Id == record.UserId, cancellationToken);
-            if (enrolledUser is null) return;
-
             await _emailService.SendAsync(
-                toEmail:      enrolledUser.Email,
-                toName:       $"{enrolledUser.FirstName} {enrolledUser.LastName}",
-                templateKey:  templateKey,
+                toEmail:      toEmail,
+                toName:       toName,
+                templateKey:  "program_ended_expert_admin",
                 templateData: new Dictionary<string, object>
                 {
-                    ["first_name"] = enrolledUser.FirstName
+                    ["recipientFirstName"] = recipientFirstName,
+                    ["userName"]           = userName,
+                    ["userEmail"]          = userEmail,
+                    ["userMobile"]         = userMobile,
+                    ["programName"]        = programName,
+                    ["expertName"]         = expertName,
+                    ["expertTitle"]        = expertTitle,
+                    ["durationLabel"]      = durationLabel,
+                    ["endedOn"]            = endedOn,
+                    ["endedBy"]            = endedBy,
+                    ["feedbackUrl"]        = ExpertFeedbackFormUrl,
+                    ["year"]               = year
                 },
                 cancellationToken: cancellationToken);
 
-            _logger.LogInformation("EndEnrollment: '{Template}' email sent to user {UserId}", templateKey, enrolledUser.Id);
+            _logger.LogInformation("EndEnrollment: program_ended_expert_admin email sent to {Email}", toEmail);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "EndEnrollment: failed to send '{Template}' email — enrollment update is still saved", templateKey);
-        }
-    }
-
-    private async Task SendExpertNotificationEmailAsync(
-        UserProgramAccess record,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var expertProfile = await _experts.FirstOrDefaultAsync(e => e.Id == record.ExpertId, cancellationToken);
-            if (expertProfile is null) return;
-
-            var expertUser = await _users.FirstOrDefaultAsync(u => u.Id == expertProfile.UserId, cancellationToken);
-            if (expertUser is null) return;
-
-            var enrolledUser = await _users.FirstOrDefaultAsync(u => u.Id == record.UserId, cancellationToken);
-            var userName = enrolledUser is not null
-                ? $"{enrolledUser.FirstName} {enrolledUser.LastName}"
-                : "A user";
-
-            await _emailService.SendAsync(
-                toEmail:      expertUser.Email,
-                toName:       $"{expertUser.FirstName} {expertUser.LastName}",
-                templateKey:  "expert_enrollment_ended",
-                templateData: new Dictionary<string, object>
-                {
-                    ["expert_first_name"] = expertUser.FirstName,
-                    ["user_name"]         = userName
-                },
-                cancellationToken: cancellationToken);
-
-            _logger.LogInformation("EndEnrollment: expert enrollment-ended notification sent to expert user {ExpertUserId}", expertUser.Id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "EndEnrollment: failed to send expert notification email — enrollment update is still saved");
+            _logger.LogError(ex, "EndEnrollment: failed to send program_ended_expert_admin email to {Email} — enrollment update is still saved", toEmail);
         }
     }
 }

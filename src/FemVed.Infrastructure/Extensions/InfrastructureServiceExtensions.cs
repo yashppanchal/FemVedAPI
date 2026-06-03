@@ -4,6 +4,7 @@ using FemVed.Infrastructure.Guided;
 using FemVed.Infrastructure.Library;
 using FemVed.Infrastructure.Notifications;
 using FemVed.Infrastructure.Notifications.Options;
+using FemVed.Infrastructure.Notifications.Templates;
 using FemVed.Infrastructure.Payment;
 using FemVed.Infrastructure.Payment.Options;
 using FemVed.Infrastructure.Persistence;
@@ -52,43 +53,18 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IJwtService, JwtService>();
 
         // ── Notifications ─────────────────────────────────────────────────────
-        services.Configure<SendGridOptions>(opts =>
+        // Email transport: Resend (https://resend.com). Templates ship as embedded
+        // HTML resources under Notifications/Templates/*.html and are rendered with
+        // Handlebars.Net at send time.
+        services.Configure<ResendOptions>(opts =>
         {
-            opts.ApiKey    = configuration["SENDGRID_API_KEY"]    ?? throw new InvalidOperationException("SENDGRID_API_KEY is not set.");
-            opts.FromEmail = configuration["SENDGRID_FROM_EMAIL"] ?? throw new InvalidOperationException("SENDGRID_FROM_EMAIL is not set.");
-            opts.FromName  = configuration["SENDGRID_FROM_NAME"]  ?? "FemVed";
-
-            // Template IDs: SENDGRID_TEMPLATE_<KEY>=d-xxx
-            // e.g. SENDGRID_TEMPLATE_PURCHASE_SUCCESS=d-abc123
-            opts.TemplateIds = new Dictionary<string, string>
-            {
-                ["purchase_success"]         = configuration["SENDGRID_TEMPLATE_PURCHASE_SUCCESS"]         ?? string.Empty,
-                ["purchase_failed"]          = configuration["SENDGRID_TEMPLATE_PURCHASE_FAILED"]          ?? string.Empty,
-                ["program_reminder"]         = configuration["SENDGRID_TEMPLATE_PROGRAM_REMINDER"]         ?? string.Empty,
-                ["expert_new_enrollment"]    = configuration["SENDGRID_TEMPLATE_EXPERT_NEW_ENROLLMENT"]    ?? string.Empty,
-                ["password_reset"]           = configuration["SENDGRID_TEMPLATE_PASSWORD_RESET"]           ?? string.Empty,
-                ["email_verify"]             = configuration["SENDGRID_TEMPLATE_EMAIL_VERIFY"]             ?? string.Empty,
-                ["welcome"]                  = configuration["SENDGRID_TEMPLATE_WELCOME"]                  ?? string.Empty,
-                ["expert_progress_update"]   = configuration["SENDGRID_TEMPLATE_EXPERT_PROGRESS_UPDATE"]   ?? string.Empty,
-                ["session_started"]              = configuration["SENDGRID_TEMPLATE_SESSION_STARTED"]              ?? string.Empty,
-                ["session_paused"]               = configuration["SENDGRID_TEMPLATE_SESSION_PAUSED"]               ?? string.Empty,
-                ["session_resumed"]              = configuration["SENDGRID_TEMPLATE_SESSION_RESUMED"]              ?? string.Empty,
-                ["session_ended"]                = configuration["SENDGRID_TEMPLATE_SESSION_ENDED"]                ?? string.Empty,
-                ["expert_enrollment_ended"]      = configuration["SENDGRID_TEMPLATE_EXPERT_ENROLLMENT_ENDED"]      ?? string.Empty,
-                ["admin_new_enrollment"]         = configuration["SENDGRID_TEMPLATE_ADMIN_NEW_ENROLLMENT"]         ?? string.Empty,
-                ["admin_purchase_failed"]        = configuration["SENDGRID_TEMPLATE_ADMIN_PURCHASE_FAILED"]        ?? string.Empty,
-                ["session_started_expert"]       = configuration["SENDGRID_TEMPLATE_SESSION_STARTED_EXPERT"]       ?? string.Empty,
-                ["admin_session_started"]        = configuration["SENDGRID_TEMPLATE_ADMIN_SESSION_STARTED"]        ?? string.Empty,
-                ["session_scheduled"]            = configuration["SENDGRID_TEMPLATE_SESSION_SCHEDULED"]            ?? string.Empty,
-                ["session_scheduled_expert"]     = configuration["SENDGRID_TEMPLATE_SESSION_SCHEDULED_EXPERT"]     ?? string.Empty,
-                ["admin_session_scheduled"]      = configuration["SENDGRID_TEMPLATE_ADMIN_SESSION_SCHEDULED"]      ?? string.Empty,
-                ["session_start_reminder_24h"]   = configuration["SENDGRID_TEMPLATE_SESSION_START_REMINDER_24H"]   ?? string.Empty,
-                ["start_date_approved"]          = configuration["SENDGRID_TEMPLATE_START_DATE_APPROVED"]          ?? string.Empty,
-                ["start_date_declined"]          = configuration["SENDGRID_TEMPLATE_START_DATE_DECLINED"]          ?? string.Empty,
-                ["feedback_user"]                = configuration["SENDGRID_TEMPLATE_FEEDBACK_USER"]                ?? string.Empty,
-                ["feedback_expert"]              = configuration["SENDGRID_TEMPLATE_FEEDBACK_EXPERT"]              ?? string.Empty,
-            };
+            opts.ApiKey    = configuration["RESEND_API_KEY"]    ?? throw new InvalidOperationException("RESEND_API_KEY is not set.");
+            opts.FromEmail = configuration["RESEND_FROM_EMAIL"] ?? throw new InvalidOperationException("RESEND_FROM_EMAIL is not set.");
+            opts.FromName  = configuration["RESEND_FROM_NAME"]  ?? "FemVed";
         });
+
+        services.AddHttpClient<ResendEmailService>();
+        services.AddSingleton<ITemplateRenderer, HandlebarsTemplateRenderer>();
 
         services.Configure<TwilioOptions>(opts =>
         {
@@ -100,7 +76,7 @@ public static class InfrastructureServiceExtensions
             opts.SmsEnabled   = string.Equals(configuration["SMS_ENABLED"], "true", StringComparison.OrdinalIgnoreCase);
         });
 
-        services.AddScoped<IEmailService, SendGridEmailService>();
+        services.AddScoped<IEmailService>(sp => sp.GetRequiredService<ResendEmailService>());
         services.AddScoped<IWhatsAppService, TwilioWhatsAppService>();
         services.AddScoped<ISmsService, TwilioSmsService>();
 

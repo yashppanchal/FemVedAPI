@@ -1,0 +1,67 @@
+<!--subject: New enrollment — {{userName}} joined {{programName}}-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New enrollment</title>
+  </head>
+  <body style="margin:0;padding:0;background-color:#f7f3ef;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#2d3a2e;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f3ef;padding:32px 16px;">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+          <tr>
+            <td style="background-color:#3d5a40;padding:32px 40px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:600;letter-spacing:0.5px;">FemVed</h1>
+              <p style="margin:6px 0 0;color:#d9e4d8;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;">New Enrollment</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px 40px 16px;">
+              <h2 style="margin:0 0 16px;font-size:22px;font-weight:600;color:#2d3a2e;">Hi {{expertFirstName}},</h2>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#4a554b;">
+                Wonderful news — <strong>{{userName}}</strong> has just enrolled in your program <strong>{{programName}}</strong> ({{durationLabel}}).
+              </p>
+              <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#4a554b;">
+                Please reach out to schedule the start of their journey at your earliest convenience.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 40px 16px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f3ef;border-radius:8px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <h3 style="margin:0 0 12px;font-size:14px;font-weight:600;color:#3d5a40;letter-spacing:0.5px;text-transform:uppercase;">Enrollment details</h3>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr><td style="padding:4px 0;font-size:14px;color:#7a857b;width:140px;">User</td><td style="padding:4px 0;font-size:14px;color:#2d3a2e;font-weight:600;">{{userName}}</td></tr>
+                      <tr><td style="padding:4px 0;font-size:14px;color:#7a857b;">User email</td><td style="padding:4px 0;font-size:14px;color:#2d3a2e;"><a href="mailto:{{userEmail}}" style="color:#3d5a40;text-decoration:none;">{{userEmail}}</a></td></tr>
+                      <tr><td style="padding:4px 0;font-size:14px;color:#7a857b;">Program</td><td style="padding:4px 0;font-size:14px;color:#2d3a2e;">{{programName}}</td></tr>
+                      <tr><td style="padding:4px 0;font-size:14px;color:#7a857b;">Duration</td><td style="padding:4px 0;font-size:14px;color:#2d3a2e;">{{durationLabel}}</td></tr>
+                      <tr><td style="padding:4px 0;font-size:14px;color:#7a857b;">Order ID</td><td style="padding:4px 0;font-size:13px;color:#7a857b;font-family:monospace;">{{orderId}}</td></tr>
+                      <tr><td style="padding:4px 0;font-size:14px;color:#7a857b;">Purchased</td><td style="padding:4px 0;font-size:14px;color:#2d3a2e;">{{purchaseDate}}</td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 40px 32px;text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center">
+                <tr><td style="background-color:#3d5a40;border-radius:6px;">
+                  <a href="{{dashboardUrl}}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.3px;">Open Expert Dashboard</a>
+                </td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f7f3ef;padding:20px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#a0a8a1;">&copy; {{year}} FemVed. All rights reserved.</p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>
